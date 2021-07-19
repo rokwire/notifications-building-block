@@ -1,0 +1,54 @@
+{
+    "schemes": [
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Rokwire Content Building Block API Documentation.",
+        "title": "Rokwire Content Building Block API",
+        "contact": {},
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "0.4.0"
+    },
+    "host": "localhost",
+    "basePath": "/content",
+    "paths": {
+        "/version": {
+            "get": {
+                "description": "Gives the service version.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "Version",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "AdminGroupAuth": {
+            "type": "apiKey",
+            "name": "GROUP",
+            "in": "header"
+        },
+        "AdminUserAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header (add Bearer prefix to the Authorization value)"
+        },
+        "RokwireAuth": {
+            "type": "apiKey",
+            "name": "ROKWIRE-API-KEY",
+            "in": "header"
+        }
+    }
+}

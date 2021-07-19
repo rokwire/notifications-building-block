@@ -1,0 +1,8 @@
+vendor/
+bin/
+.vscode/
+.idea/
+.git
+go.sum
+docker-compose.env
+docker-compose.yml
