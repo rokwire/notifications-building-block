@@ -17,6 +17,12 @@
 
 package core
 
+import "notifications/core/model"
+
 func (app *Application) getVersion() string {
 	return app.version
+}
+
+func (app *Application) storeFirebaseToken(token string, user *model.User) error {
+	return app.storage.StoreFirebaseToken(token, user)
 }

@@ -26,6 +26,7 @@ import (
 	"log"
 	"net/http"
 	"notifications/core"
+	"notifications/core/model"
 	"strings"
 	"sync"
 	"time"
@@ -72,7 +73,7 @@ func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) bool {
 	return auth.apiKeysAuth.check(w, r)
 }
 
-func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *string, *string) {
+func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
 	return auth.userAuth.userCheck(w, r)
 }
 
@@ -308,7 +309,7 @@ func (auth *UserAuth) start() {
 
 }
 
-func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *string, *string) {
+func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
 	//get the tokens
 	token, tokenSourceType, csrfToken, err := auth.getTokens(r)
 	if err != nil {
@@ -345,16 +346,19 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 	// process the token - validate it, extract the user identifier
 	var externalID string
 	var authType string
+	user := &model.User{}
 
 	switch *tokenType {
 	case 1:
 		//support this for back compatability
-		uin, err := auth.processShibbolethToken(rawToken)
+		shibboData, err := auth.processShibbolethToken(rawToken)
 		if err != nil {
 			auth.responseUnauthorized(err.Error(), w)
 			return false, nil, nil
 		}
-		externalID = *uin
+		user.Uin = shibboData.UIuceduUIN
+		user.Email = shibboData.Email
+		user.Membership = shibboData.UIuceduIsMemberOf
 		authType = "shibboleth"
 	case 2:
 		//support this for back compatability
@@ -363,7 +367,7 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 			auth.responseUnauthorized(err.Error(), w)
 			return false, nil, nil
 		}
-		externalID = *phone
+		user.Phone = phone
 		authType = "phone"
 	case 3:
 		//mobile app sends just token, the browser sends token + csrf token
@@ -406,7 +410,7 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 		authType = "shibboleth"
 	}
 
-	return true, &externalID, &authType
+	return true, user, &authType
 }
 
 //token source type - cookie and header
@@ -442,14 +446,14 @@ func (auth *UserAuth) getTokens(r *http.Request) (*string, *string, *string, err
 	return &token, &tokenSourceType, nil, nil
 }
 
-func (auth *UserAuth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *string, *string) {
+func (auth *UserAuth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
 	//apply main check
-	ok, externalID, authType := auth.mainCheck(w, r)
+	ok, user, authType := auth.mainCheck(w, r)
 	if !ok {
 		return false, nil, nil
 	}
 
-	return true, externalID, authType
+	return true, user, authType
 }
 
 //mobile app sends just token, the browser sends token + csrf token
@@ -569,7 +573,7 @@ func (auth *UserAuth) validateToken(token string, tokenType string) (*tokenData,
 	return tokenData, nil
 }
 
-func (auth *UserAuth) processShibbolethToken(token string) (*string, error) {
+func (auth *UserAuth) processShibbolethToken(token string) (*userData, error) {
 	// Validate the token
 	idToken, err := auth.appIDTokenVerifier.Verify(context.Background(), token)
 	if err != nil {
@@ -578,7 +582,7 @@ func (auth *UserAuth) processShibbolethToken(token string) (*string, error) {
 	}
 
 	// Get the user data from the token
-	var userData shData
+	var userData *userData
 	if err := idToken.Claims(&userData); err != nil {
 		log.Printf("error getting user data from token - %s\n", err)
 		return nil, err
@@ -588,7 +592,7 @@ func (auth *UserAuth) processShibbolethToken(token string) (*string, error) {
 		log.Printf("missing uiuceuin data in the token - %s\n", token)
 		return nil, errors.New("missing uiuceuin data in the token")
 	}
-	return userData.UIuceduUIN, nil
+	return userData, nil
 }
 
 func (auth *UserAuth) findUINByPhone(phone string) *string {

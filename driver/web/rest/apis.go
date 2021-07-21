@@ -18,8 +18,13 @@
 package rest
 
 import (
+	"encoding/json"
+	"go.mongodb.org/mongo-driver/bson"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"notifications/core"
+	"notifications/core/model"
 )
 
 //ApisHandler handles the rest APIs implementation
@@ -46,6 +51,42 @@ func NewAdminApisHandler(app *core.Application) AdminApisHandler {
 // @Router /version [get]
 func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
+}
+
+//StoreFirebaseToken Sends a message to a user, list of users or a topic
+// @Description Stores a firebase token and maps it to a idToken if presents
+// @Tags Client
+// @ID SendMessage
+// @Produce plain
+// @Success 200
+// @Router /message [post]
+func (h ApisHandler) StoreFirebaseToken(user *model.User, w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal token data - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var tokenData bson.M
+	err = json.Unmarshal(data, &tokenData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create student guide request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var token string
+	token = tokenData["token"].(string)
+
+	err = h.app.Services.StoreFirebaseToken(token, user)
+	if err != nil {
+		log.Printf("Error on creating student guide: %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 //Subscribe Subscribes the current user to a topic

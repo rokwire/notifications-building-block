@@ -73,10 +73,12 @@ func (we Adapter) Start() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// handle apis
-	mainRouter := router.PathPrefix("/notifications").Subrouter()
+	mainRouter := router.PathPrefix("/notifications/api").Subrouter()
 	mainRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	mainRouter.HandleFunc("/doc", we.serveDoc)
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+
+	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
 
 	mainRouter.HandleFunc("/subscribe", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
 	mainRouter.HandleFunc("/unsubscribe", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
@@ -103,30 +105,17 @@ func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-type apiKeysAuthFunc = func(http.ResponseWriter, *http.Request)
+type apiKeysAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeyOrTokenWrapFunc(handler apiKeysAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		apiKey := req.Header.Get("ROKWIRE-API-KEY")
-		//apply api key check
-		if len(apiKey) > 0 {
-			authenticated := we.auth.apiKeyCheck(w, req)
-			if !authenticated {
-				return
-			}
+		apiKeyAuthenticated := we.auth.apiKeyCheck(w, req)
+		userAuthenticated, user, _ := we.auth.userCheck(w, req)
 
-			handler(w, req)
-
-			return
-		}
-
-		//apply token check
-		authenticated, _, _ := we.auth.userCheck(w, req)
-		if authenticated {
-			handler(w, req)
-			return
+		if apiKeyAuthenticated || userAuthenticated {
+			handler(user, w, req)
 		}
 	}
 }
@@ -161,7 +150,7 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 		act := req.Method   // the operation that the user performs on the resource.
 
 		var HasAccess bool = false
-		for _, s := range *shiboUser.IsMemberOf {
+		for _, s := range *shiboUser.Membership {
 			HasAccess = we.authorization.Enforce(s, obj, act)
 			if HasAccess {
 				break
@@ -178,11 +167,11 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 	}
 }
 
-func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethAuth) {
+func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User) {
 	return auth.adminAuth.check(w, r)
 }
 
-func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethAuth) {
+func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *model.User) {
 	//1. Get the token from the request
 	rawIDToken, tokenType, err := auth.getIDToken(r)
 	if err != nil {
@@ -215,8 +204,8 @@ func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *mod
 		return false, nil
 	}
 
-	shibboAuth := &model.ShibbolethAuth{Uin: *userData.UIuceduUIN, Email: *userData.Email,
-		IsMemberOf: userData.UIuceduIsMemberOf}
+	shibboAuth := &model.User{Uin: userData.UIuceduUIN, Email: userData.Email,
+		Membership: userData.UIuceduIsMemberOf}
 
 	return true, shibboAuth
 }

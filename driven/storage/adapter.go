@@ -18,7 +18,11 @@
 package storage
 
 import (
+	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
+	"notifications/core/model"
 	"strconv"
 	"time"
 )
@@ -34,15 +38,90 @@ func (sa *Adapter) Start() error {
 	return err
 }
 
+type FirebaseTokenMapping struct {
+	Token    string  `json:"firebase_token" bson:"_id"`
+	DeviceID *string `json:"device_id" bson:"device_id"`
+	Uin      *string `json:"uin" bson:"uin"`
+	Email    *string `json:"email" bson:"email"`
+	Phone    *string `json:"phone" bson:"phone"`
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
 	if err != nil {
-		log.Println("Set default timeout - 500")
-		timeout = 500
+		log.Println("Set default timeout - 2000")
+		timeout = 2000
 	}
 	timeoutMS := time.Millisecond * time.Duration(timeout)
 
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS}
 	return &Adapter{db: db}
+}
+
+func (sa Adapter) StoreFirebaseToken(token string, user *model.User) error {
+	filter := bson.D{}
+	if len(token) > 0 {
+		filter = bson.D{
+			primitive.E{Key: "_id", Value: token},
+		}
+	}
+
+	var result *FirebaseTokenMapping
+	err := sa.db.tokens.FindOne(filter, &result, nil)
+	if err != nil {
+		fmt.Println("warning: error while retriving token (%s) - %s", token, err)
+	}
+
+	if result == nil {
+		err = sa.createFirebaseToken(token, user)
+	} else {
+		err = sa.updateFirebaseToken(token, user)
+	}
+
+	return nil
+}
+
+func (sa Adapter) createFirebaseToken(token string, user *model.User) error {
+	record := &FirebaseTokenMapping{
+		Token: token,
+	}
+
+	if user != nil {
+		record.Uin = user.Uin
+		record.Email = user.Email
+	} else {
+		record.Uin = nil
+		record.Email = nil
+	}
+
+	_, err := sa.db.tokens.InsertOne(record)
+	if err != nil {
+		fmt.Printf("warning: error while inserting token (%s) - %s\n", token, err)
+	}
+
+	return err
+}
+
+func (sa Adapter) updateFirebaseToken(token string, user *model.User) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: token}}
+
+	record := &FirebaseTokenMapping{
+		Token: token,
+	}
+
+	if user != nil {
+		record.Uin = user.Uin
+		record.Email = user.Email
+	} else {
+		record.Uin = nil
+		record.Email = nil
+	}
+
+	err := sa.db.tokens.ReplaceOne(filter, record, nil)
+	if err != nil {
+		fmt.Printf("warning: error while updating token (%s) - %s\n", token, err)
+	}
+
+	return err
 }

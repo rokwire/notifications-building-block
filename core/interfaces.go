@@ -17,9 +17,12 @@
 
 package core
 
+import "notifications/core/model"
+
 //Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
+	StoreFirebaseToken(token string, user *model.User) error
 }
 
 type servicesImpl struct {
@@ -30,6 +33,11 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
+func (s *servicesImpl) StoreFirebaseToken(token string, user *model.User) error {
+	return s.app.storeFirebaseToken(token, user)
+}
+
 //Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
+	StoreFirebaseToken(token string, user *model.User) error
 }
