@@ -125,3 +125,38 @@ func (sa Adapter) updateFirebaseToken(token string, user *model.User) error {
 
 	return err
 }
+
+func (sa Adapter) GetFirebaseTokensBy(recipients []model.Recipient) ([]string, error) {
+	if len(recipients) > 0 {
+		innerFilter := []interface{}{}
+		for _, recipient := range recipients{
+			if recipient.Uin != nil {
+				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "uin", Value: recipient.Uin}})
+			}
+			if recipient.Email != nil {
+				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "email", Value: recipient.Email}})
+			}
+			if recipient.Phone != nil {
+				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "phone", Value: recipient.Phone}})
+			}
+		}
+
+		filter := bson.D{
+			primitive.E{Key: "$or", Value: innerFilter},
+		}
+
+		var tokenMapping []FirebaseTokenMapping
+		err := sa.db.tokens.Find(filter, &tokenMapping, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		tokens := make([]string, len(tokenMapping))
+		for i, token := range tokenMapping {
+			tokens[i] = token.Token
+		}
+
+		return tokens, nil
+	}
+	return nil, fmt.Errorf("empty recient information")
+}

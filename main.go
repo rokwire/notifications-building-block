@@ -20,6 +20,7 @@ package main
 import (
 	"log"
 	"notifications/core"
+	"notifications/driven/firebase"
 	storage "notifications/driven/storage"
 	driver "notifications/driver/web"
 	"os"
@@ -50,8 +51,17 @@ func main() {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
 
+	// firebase credentials
+	firebaseProjectID := getEnvKey("FIREBASE_PROJECT_ID", true)
+	firebaseAuth := getEnvKey("FIREBASE_AUTH", true)
+	firebaseAdapter := firebase.NewFirebaseAdapter(firebaseAuth, firebaseProjectID)
+	err = firebaseAdapter.Start()
+	if err != nil {
+		log.Fatal("Cannot start the Firebase adapter - " + err.Error())
+	}
+
 	//application
-	application := core.NewApplication(Version, Build, storageAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter)
 	application.Start()
 
 	//web adapter
@@ -65,7 +75,8 @@ func main() {
 	authKeys := getEnvKey("AUTH_KEYS", true)
 	authIssuer := getEnvKey("AUTH_ISSUER", true)
 
-	webAdapter := driver.NewWebAdapter(host, port, application, apiKeys, oidcProvider, oidcAppClientID, adminAppClientID, adminWebAppClientID, phoneSecret, authKeys, authIssuer)
+	webAdapter := driver.NewWebAdapter(host, port, application, apiKeys, oidcProvider, oidcAppClientID, adminAppClientID,
+		adminWebAppClientID, phoneSecret, authKeys, authIssuer, firebaseAuth, firebaseProjectID)
 
 	webAdapter.Start()
 }

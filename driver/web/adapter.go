@@ -82,7 +82,7 @@ func (we Adapter) Start() {
 
 	mainRouter.HandleFunc("/subscribe", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
 	mainRouter.HandleFunc("/unsubscribe", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
-	mainRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.SendMessage)).Methods("POST")
+	mainRouter.HandleFunc("/message", we.apiKeyOrTokenWrapFunc(we.apisHandler.SendMessage)).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -213,7 +213,7 @@ func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *mod
 //NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(host string, port string, app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, adminAppClientID string, adminWebAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string) Adapter {
+	authKeys string, authIssuer string, firebaseAuth string, firebaseProjectID string) Adapter {
 	auth := NewAuth(app, appKeys, oidcProvider, oidcAppClientID, adminAppClientID, adminWebAppClientID,
 		phoneAuthSecret, authKeys, authIssuer)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")

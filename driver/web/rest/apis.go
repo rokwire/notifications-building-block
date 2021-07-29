@@ -19,6 +19,7 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"io/ioutil"
 	"log"
@@ -27,22 +28,22 @@ import (
 	"notifications/core/model"
 )
 
-//ApisHandler handles the rest APIs implementation
+// ApisHandler handles the rest APIs implementation
 type ApisHandler struct {
 	app *core.Application
 }
 
-//NewApisHandler creates new rest Handler instance
+// NewApisHandler creates new rest Handler instance
 func NewApisHandler(app *core.Application) ApisHandler {
 	return ApisHandler{app: app}
 }
 
-//NewAdminApisHandler creates new rest Handler instance
+// NewAdminApisHandler creates new rest Handler instance
 func NewAdminApisHandler(app *core.Application) AdminApisHandler {
 	return AdminApisHandler{app: app}
 }
 
-//Version gives the service version
+// Version gives the service version
 // @Description Gives the service version.
 // @Tags Client
 // @ID Version
@@ -53,7 +54,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
 }
 
-//StoreFirebaseToken Sends a message to a user, list of users or a topic
+// StoreFirebaseToken Sends a message to a user, list of users or a topic
 // @Description Stores a firebase token and maps it to a idToken if presents
 // @Tags Client
 // @ID SendMessage
@@ -89,7 +90,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.User, w http.ResponseWriter,
 	w.WriteHeader(http.StatusOK)
 }
 
-//Subscribe Subscribes the current user to a topic
+// Subscribe Subscribes the current user to a topic
 // @Description Subscribes the current user to a topic
 // @Tags Client
 // @ID Subscribe
@@ -100,7 +101,7 @@ func (h ApisHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//Unsubscribe Unsubscribes the current user to a topic
+// Unsubscribe Unsubscribes the current user to a topic
 // @Description Unsubscribes the current user to a topic
 // @Tags Client
 // @ID Unsubscribe
@@ -111,13 +112,35 @@ func (h ApisHandler) Unsubscribe(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//SendMessage Sends a message to a user, list of users or a topic
+// SendMessage Sends a message to a user, list of users or a topic
 // @Description Sends a message to a user, list of users or a topic
 // @Tags Client
 // @ID SendMessage
 // @Produce plain
 // @Success 200
 // @Router /message [post]
-func (h ApisHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) SendMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on reading message data - %s\n", err.Error())
+		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
+		return
+	}
 
+	var message model.Message
+	err = json.Unmarshal(data, &message)
+	if err != nil {
+		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.app.Services.SendMessage(message)
+	if err != nil {
+		log.Printf("Error on sending message: %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

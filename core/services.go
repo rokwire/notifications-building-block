@@ -26,3 +26,18 @@ func (app *Application) getVersion() string {
 func (app *Application) storeFirebaseToken(token string, user *model.User) error {
 	return app.storage.StoreFirebaseToken(token, user)
 }
+
+func (app *Application) sendMessage(message model.Message) error {
+	if len(message.Recipients) > 0 {
+		tokens, err := app.storage.GetFirebaseTokensBy(message.Recipients)
+		if err != nil {
+			return err
+		}
+		if len(tokens) > 0 {
+			for _, token := range tokens {
+				_ = app.firebase.SendNotificationToToken(token, message.Subject, message.Body)
+			}
+		}
+	}
+	return nil
+}

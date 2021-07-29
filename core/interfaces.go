@@ -19,10 +19,11 @@ package core
 
 import "notifications/core/model"
 
-//Services exposes APIs for the driver adapters
+// Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
 	StoreFirebaseToken(token string, user *model.User) error
+	SendMessage(message model.Message) error
 }
 
 type servicesImpl struct {
@@ -37,7 +38,17 @@ func (s *servicesImpl) StoreFirebaseToken(token string, user *model.User) error 
 	return s.app.storeFirebaseToken(token, user)
 }
 
-//Storage is used by core to storage data - DB storage adapter, file storage adapter etc
+func (s *servicesImpl) SendMessage(message model.Message) error{
+	return s.app.sendMessage(message)
+}
+
+// Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	StoreFirebaseToken(token string, user *model.User) error
+	GetFirebaseTokensBy(recipient []model.Recipient) ([]string, error)
+}
+
+type Firebase interface {
+	SendNotificationToToken(token string, title string, body string) error
+	SendNotificationToTopic(topic string, title string, body string) error
 }
