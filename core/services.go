@@ -35,9 +35,32 @@ func (app *Application) sendMessage(message model.Message) error {
 		}
 		if len(tokens) > 0 {
 			for _, token := range tokens {
-				_ = app.firebase.SendNotificationToToken(token, message.Subject, message.Body)
+				err = app.firebase.SendNotificationToToken(token, message.Subject, message.Body)
+				if err != nil {
+					return err
+				}
 			}
+		}
+	} else {
+		if message.Topic != nil {
+			return app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
 		}
 	}
 	return nil
+}
+
+func (app *Application) subscribeToTopic(token string, user *model.User, topic string) error {
+	err := app.storage.SubscribeToTopic(token, user, topic)
+	if err == nil {
+		err = app.firebase.SubscribeToTopic(token, topic)
+	}
+	return err
+}
+
+func (app *Application) unsubscribeToTopic(token string, user *model.User, topic string) error {
+	err := app.storage.UnsubscribeToTopic(token, user, topic)
+	if err == nil {
+		err = app.firebase.UnsubscribeToTopic(token, topic)
+	}
+	return err
 }

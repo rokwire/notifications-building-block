@@ -17,7 +17,7 @@
 
 package model
 
-//User represents shibboleth auth entity
+// User represents shibboleth auth entity
 type User struct {
 	Uin        *string   `json:"uiucedu_uin" bson:"uiucedu_uin"`
 	Email      *string   `json:"email" bson:"email"`

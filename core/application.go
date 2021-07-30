@@ -22,7 +22,7 @@ type Application struct {
 	version string
 	build   string
 
-	Services Services //expose to the drivers adapters
+	Services Services // expose to the drivers adapters
 
 	storage  Storage
 	firebase Firebase
