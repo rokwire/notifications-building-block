@@ -26,6 +26,9 @@ type Services interface {
 	SendMessage(message model.Message) error
 	SubscribeToTopic(token string, user *model.User, topic string) error
 	UnsubscribeToTopic(token string, user *model.User, topic string) error
+	GetTopics() ([]model.Topic, error)
+	AppendTopic(*model.Topic) (*model.Topic, error)
+	UpdateTopic(*model.Topic) (*model.Topic, error)
 }
 
 type servicesImpl struct {
@@ -52,12 +55,27 @@ func (s *servicesImpl) UnsubscribeToTopic(token string, user *model.User, topic 
 	return s.app.unsubscribeToTopic(token, user, topic)
 }
 
+func (s *servicesImpl) GetTopics() ([]model.Topic, error) {
+	return s.app.getTopics()
+}
+
+func (s *servicesImpl) AppendTopic(topic *model.Topic) (*model.Topic, error) {
+	return s.app.appendTopic(topic)
+}
+
+func (s *servicesImpl) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
+	return s.app.updateTopic(topic)
+}
+
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	StoreFirebaseToken(token string, user *model.User) error
 	GetFirebaseTokensBy(recipient []model.Recipient) ([]string, error)
 	SubscribeToTopic(token string, user *model.User, topic string) error
 	UnsubscribeToTopic(token string, user *model.User, topic string) error
+	GetTopics() ([]model.Topic, error)
+	AppendTopic(*model.Topic) (*model.Topic, error)
+	UpdateTopic(*model.Topic) (*model.Topic, error)
 }
 
 type Firebase interface {

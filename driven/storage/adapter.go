@@ -196,6 +196,8 @@ func (sa Adapter) SubscribeToTopic(token string, user *model.User, topic string)
 			err = sa.db.tokens.ReplaceOne(filter, record, nil)
 			if err != nil {
 				log.Fatalf("warning: error while subscribe (%s) to topic (%s) - %s\n", token, topic, err)
+			} else {
+				_, _ = sa.AppendTopic(&model.Topic{Name: &topic}) // just try to append within the topics collection
 			}
 		}
 	}
@@ -211,7 +213,7 @@ func (sa Adapter) UnsubscribeToTopic(token string, user *model.User, topic strin
 		}
 		if err == nil && record != nil {
 			record.DateUpdated = time.Now()
-			record.AddTopic(topic)
+			record.RemoveTopic(topic)
 
 			filter := bson.D{primitive.E{Key: "_id", Value: record.Token}}
 			err = sa.db.tokens.ReplaceOne(filter, record, nil)
@@ -222,4 +224,54 @@ func (sa Adapter) UnsubscribeToTopic(token string, user *model.User, topic strin
 	}
 
 	return err
+}
+
+func (sa Adapter) GetTopics() ([]model.Topic, error) {
+	filter := bson.D{}
+	var result []model.Topic
+
+	err := sa.db.topics.Find(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (sa Adapter) AppendTopic(topic *model.Topic) (*model.Topic, error) {
+	if topic.Name != nil {
+		now := time.Now()
+		topic.DateUpdated = &now
+		topic.DateCreated = &now
+
+		_, err := sa.db.topics.InsertOne(&topic)
+		if err != nil {
+			fmt.Println("warning: error while store topic (%s) - %s", topic, err)
+			return nil, err
+		}
+	}
+
+	return topic, nil
+}
+
+func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
+	filter := bson.D{primitive.E{Key: "_id", Value: topic.Name}}
+
+	now := time.Now()
+	topic.DateUpdated = &now
+
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "description", Value: topic.Description},
+			primitive.E{Key: "date_updated", Value: topic.DateUpdated},
+		}},
+	}
+
+	_, err := sa.db.topics.UpdateOne(filter, &update, nil)
+	if err != nil {
+		fmt.Println("warning: error while update topic (%s) - %s", topic, err)
+		return nil, err
+	}
+
+	return topic, err
 }

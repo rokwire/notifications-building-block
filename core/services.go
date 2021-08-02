@@ -64,3 +64,15 @@ func (app *Application) unsubscribeToTopic(token string, user *model.User, topic
 	}
 	return err
 }
+
+func (app *Application) getTopics() ([]model.Topic, error) {
+	return app.storage.GetTopics()
+}
+
+func (app *Application) appendTopic(topic *model.Topic) (*model.Topic, error) {
+	return app.storage.AppendTopic(topic)
+}
+
+func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
+	return app.storage.UpdateTopic(topic)
+}

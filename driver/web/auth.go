@@ -43,10 +43,9 @@ type cacheUser struct {
 
 //Auth handler
 type Auth struct {
-	apiKeysAuth   *APIKeysAuth
-	userAuth      *UserAuth
-	adminAuth     *AdminAuth
-	providersAuth *ProvidersAuth
+	apiKeysAuth *APIKeysAuth
+	userAuth    *UserAuth
+	adminAuth   *AdminAuth
 }
 
 //Start starts the auth module
@@ -257,20 +256,6 @@ func newAdminAuth(app *core.Application, oidcProvider string, appClientID string
 }
 
 /////////////////////////////////////
-
-//ProvidersAuth entity
-type ProvidersAuth struct {
-	appKeys []string
-}
-
-func newProviderAuth(appKeys []string) *ProvidersAuth {
-	auth := ProvidersAuth{appKeys}
-	return &auth
-}
-
-type shData struct {
-	UIuceduUIN *string `json:"uiucedu_uin"`
-}
 
 type tokenData struct {
 	UID      string

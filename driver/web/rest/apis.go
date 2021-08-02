@@ -38,11 +38,6 @@ func NewApisHandler(app *core.Application) ApisHandler {
 	return ApisHandler{app: app}
 }
 
-// NewAdminApisHandler creates new rest Handler instance
-func NewAdminApisHandler(app *core.Application) AdminApisHandler {
-	return AdminApisHandler{app: app}
-}
-
 // Version gives the service version
 // @Description Gives the service version.
 // @Tags Client
@@ -97,8 +92,40 @@ func (h ApisHandler) StoreFirebaseToken(user *model.User, w http.ResponseWriter,
 // @Produce plain
 // @Success 200
 // @Router /subscribe [post]
-func (h ApisHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Subscribe(user *model.User, w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on reading message data - %s\n", err.Error())
+		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
+		return
+	}
 
+	var body subscribeTopicBody
+	err = json.Unmarshal(data, &body)
+	if err != nil {
+		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(*body.Token) == 0 || len(*body.Topic) == 0 {
+		log.Printf("Missing token or topic within the json body")
+		http.Error(w, "Missing token or topic within the json body", http.StatusBadRequest)
+	}
+
+	err = h.app.Services.SubscribeToTopic(*body.Token, user, *body.Topic)
+	if err != nil {
+		log.Printf("Error on subscribe to topic (%s): %s\n", *body.Topic, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+type subscribeTopicBody struct {
+	Token *string `json:"token"`
+	Topic *string `json:"topic"`
 }
 
 // Unsubscribe Unsubscribes the current user to a topic
@@ -108,39 +135,38 @@ func (h ApisHandler) Subscribe(w http.ResponseWriter, r *http.Request) {
 // @Produce plain
 // @Success 200
 // @Router /unsubscribe [post]
-func (h ApisHandler) Unsubscribe(w http.ResponseWriter, r *http.Request) {
-
-}
-
-// SendMessage Sends a message to a user, list of users or a topic
-// @Description Sends a message to a user, list of users or a topic
-// @Tags Client
-// @ID SendMessage
-// @Produce plain
-// @Success 200
-// @Router /message [post]
-func (h ApisHandler) SendMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Error on reading body data - %s\n", err.Error()), http.StatusBadRequest)
 		return
 	}
 
-	var message model.Message
-	err = json.Unmarshal(data, &message)
+	var body unsubscribeTopicBody
+	err = json.Unmarshal(data, &body)
 	if err != nil {
-		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
+		log.Printf("Error on unmarshal the body request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = h.app.Services.SendMessage(message)
+	if len(*body.Token) == 0 || len(*body.Topic) == 0 {
+		log.Printf("Missing token or topic within the json body")
+		http.Error(w, "Missing token or topic within the json body", http.StatusBadRequest)
+	}
+
+	err = h.app.Services.UnsubscribeToTopic(*body.Token, user, *body.Topic)
 	if err != nil {
-		log.Printf("Error on sending message: %s\n", err)
+		log.Printf("Error on unsubscribe to topic (%s): %s\n", *body.Topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+type unsubscribeTopicBody struct {
+	Token *string `json:"token"`
+	Topic *string `json:"topic"`
 }

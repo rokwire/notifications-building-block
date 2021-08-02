@@ -17,7 +17,16 @@ func (t *FirebaseTokenMapping) AddTopic(topic string) {
 	if t.Topics == nil {
 		t.Topics = []string{}
 	}
-	t.Topics = append(t.Topics, topic)
+	exists := false
+	for _, entry := range t.Topics {
+		if topic == entry {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		t.Topics = append(t.Topics, topic)
+	}
 }
 
 func (t *FirebaseTokenMapping) RemoveTopic(topic string) {

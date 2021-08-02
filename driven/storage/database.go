@@ -35,6 +35,7 @@ type database struct {
 	dbClient *mongo.Client
 
 	tokens *collectionWrapper
+	topics *collectionWrapper
 }
 
 func (m *database) start() error {
@@ -66,11 +67,17 @@ func (m *database) start() error {
 		return err
 	}
 
+	topics := &collectionWrapper{database: m, coll: db.Collection("topics")}
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
 
 	m.tokens = tokens
+	m.topics = topics
 
 	return nil
 }

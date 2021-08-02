@@ -80,9 +80,13 @@ func (we Adapter) Start() {
 
 	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
 
-	mainRouter.HandleFunc("/subscribe", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
-	mainRouter.HandleFunc("/unsubscribe", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
-	mainRouter.HandleFunc("/message", we.apiKeyOrTokenWrapFunc(we.apisHandler.SendMessage)).Methods("POST")
+	mainRouter.HandleFunc("/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
+	mainRouter.HandleFunc("/unsubscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
+
+	// Admin APIs
+	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
+	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.SendMessage)).Methods("POST")
+	adminRouter.HandleFunc("/topic", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -135,7 +139,7 @@ func (we Adapter) userAuthWrapFunc(handler userAuthFunc) http.HandlerFunc {
 	}
 }
 
-type adminAuthFunc = func(http.ResponseWriter, *http.Request)
+type adminAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -163,7 +167,7 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 			return
 		}
 
-		handler(w, req)
+		handler(shiboUser, w, req)
 	}
 }
 
