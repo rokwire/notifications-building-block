@@ -11,11 +11,96 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.4.0"
+        "version": "0.1.0"
     },
     "host": "localhost",
-    "basePath": "/content",
+    "basePath": "/notifications",
     "paths": {
+        "/admin/topic": {
+            "put": {
+                "description": "Updated the topic",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "UpdateTopic",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/admin/topics": {
+            "get": {
+                "description": "Gets all topics",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "GetTopics",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/message": {
+            "post": {
+                "description": "Stores a firebase token and maps it to a idToken if presents",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "SendMessage",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/subscribe": {
+            "post": {
+                "description": "Subscribes the current user to a topic",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "Subscribe",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/unsubscribe": {
+            "post": {
+                "description": "Unsubscribes the current user to a topic",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "Unsubscribe",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",

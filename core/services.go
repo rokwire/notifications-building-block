@@ -17,7 +17,10 @@
 
 package core
 
-import "notifications/core/model"
+import (
+	"fmt"
+	"notifications/core/model"
+)
 
 func (app *Application) getVersion() string {
 	return app.version
@@ -25,28 +28,6 @@ func (app *Application) getVersion() string {
 
 func (app *Application) storeFirebaseToken(token string, user *model.User) error {
 	return app.storage.StoreFirebaseToken(token, user)
-}
-
-func (app *Application) sendMessage(message model.Message) error {
-	if len(message.Recipients) > 0 {
-		tokens, err := app.storage.GetFirebaseTokensBy(message.Recipients)
-		if err != nil {
-			return err
-		}
-		if len(tokens) > 0 {
-			for _, token := range tokens {
-				err = app.firebase.SendNotificationToToken(token, message.Subject, message.Body)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	} else {
-		if message.Topic != nil {
-			return app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
-		}
-	}
-	return nil
 }
 
 func (app *Application) subscribeToTopic(token string, user *model.User, topic string) error {
@@ -75,4 +56,74 @@ func (app *Application) appendTopic(topic *model.Topic) (*model.Topic, error) {
 
 func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
+}
+
+func (app *Application) sendMessage(user *model.User, message *model.Message) (*model.Message, error) {
+	var persistedMessage *model.Message
+	var err error
+	if message.ID != nil {
+		persistedMessage, err = app.getMessage(*message.ID)
+		if err != nil || persistedMessage == nil {
+			return nil, fmt.Errorf("error while retriving stored message with id (%s): %w", *message.ID, err)
+		}
+		if persistedMessage.Sent {
+			return nil, fmt.Errorf("message with id (%s): is already sent", *message.ID)
+		}
+	}
+	if len(message.Recipients) > 0 {
+		tokens, err := app.storage.GetFirebaseTokensBy(message.Recipients)
+		if err != nil {
+			return nil, err
+		}
+		if len(tokens) > 0 {
+			for _, token := range tokens {
+				err = app.firebase.SendNotificationToToken(token, message.Subject, message.Body)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	} else {
+		if message.Topic != nil {
+			err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
+		}
+	}
+	if err == nil {
+		message.Sent = true
+		if user != nil {
+			message.Sender = &model.Sender{Type: "user", User: &model.User{Uin: user.Uin, Email: user.Email, Phone: user.Phone}}
+		} else {
+			message.Sender = &model.Sender{Type: "system"}
+		}
+		if message.ID != nil {
+			persistedMessage, err = app.storage.UpdateMessage(message)
+		} else {
+			persistedMessage, err = app.storage.CreateMessage(message)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return persistedMessage, err
+}
+
+func (app *Application) getMessages(uinFilter *string, emailFilter *string, phoneFilter *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return app.storage.GetMessages(uinFilter, emailFilter, phoneFilter, filterTopic, offset, limit, order)
+}
+
+func (app *Application) getMessage(ID string) (*model.Message, error) {
+	return app.storage.GetMessage(ID)
+}
+
+func (app *Application) createMessage(message *model.Message) (*model.Message, error) {
+	return app.storage.CreateMessage(message)
+}
+
+func (app *Application) updateMessage(message *model.Message) (*model.Message, error) {
+	return app.storage.UpdateMessage(message)
+}
+
+func (app *Application) deleteMessage(ID string) error {
+	return app.storage.DeleteMessage(ID)
 }

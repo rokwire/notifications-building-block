@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+// FirebaseTokenMapping mapped token to a Shibboleth user
 type FirebaseTokenMapping struct {
 	Token       string    `json:"firebase_token" bson:"_id"`
 	DeviceID    *string   `json:"device_id" bson:"device_id"`
@@ -11,8 +12,9 @@ type FirebaseTokenMapping struct {
 	Topics      []string  `json:"topics" bson:"topics"`
 	DateCreated time.Time `json:"date_created" bson:"date_created"`
 	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
-}
+} //@name FirebaseTokenMapping
 
+// AddTopic adds topic to the list
 func (t *FirebaseTokenMapping) AddTopic(topic string) {
 	if t.Topics == nil {
 		t.Topics = []string{}
@@ -29,6 +31,7 @@ func (t *FirebaseTokenMapping) AddTopic(topic string) {
 	}
 }
 
+// RemoveTopic removes a topic
 func (t *FirebaseTokenMapping) RemoveTopic(topic string) {
 	if t.Topics != nil {
 		topics := []string{}

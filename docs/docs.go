@@ -28,6 +28,91 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/topic": {
+            "put": {
+                "description": "Updated the topic",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "UpdateTopic",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/admin/topics": {
+            "get": {
+                "description": "Gets all topics",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "GetTopics",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/message": {
+            "post": {
+                "description": "Stores a firebase token and maps it to a idToken if presents",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "SendMessage",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/subscribe": {
+            "post": {
+                "description": "Subscribes the current user to a topic",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "Subscribe",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/unsubscribe": {
+            "post": {
+                "description": "Unsubscribes the current user to a topic",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "Unsubscribe",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",
@@ -76,7 +161,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "0.4.0",
+	Version:     "0.1.0",
 	Host:        "localhost",
 	BasePath:    "/notifications",
 	Schemes:     []string{"https"},

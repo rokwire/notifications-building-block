@@ -19,8 +19,10 @@ package storage
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"notifications/core/model"
 	"strconv"
@@ -86,7 +88,7 @@ func (sa Adapter) storeFirebaseToken(token string, user *model.User) (*model.Fir
 	var result *model.FirebaseTokenMapping
 	err := sa.db.tokens.FindOne(filter, &result, nil)
 	if err != nil {
-		fmt.Println("warning: error while retriving token (%s) - %s", token, err)
+		fmt.Printf("warning: error while retriving token (%s) - %s\n", token, err)
 	}
 
 	if result == nil {
@@ -147,6 +149,7 @@ func (sa Adapter) updateFirebaseToken(token string, user *model.User) (*model.Fi
 	return record, err
 }
 
+// GetFirebaseTokensBy Gets all tokens mapped to the recipients input list
 func (sa Adapter) GetFirebaseTokensBy(recipients []model.Recipient) ([]string, error) {
 	if len(recipients) > 0 {
 		innerFilter := []interface{}{}
@@ -182,6 +185,7 @@ func (sa Adapter) GetFirebaseTokensBy(recipients []model.Recipient) ([]string, e
 	return nil, fmt.Errorf("empty recient information")
 }
 
+// SubscribeToTopic subscribes the token to a topic
 func (sa Adapter) SubscribeToTopic(token string, user *model.User, topic string) error {
 	record, err := sa.FindFirebaseToken(token)
 	if err == nil {
@@ -205,6 +209,7 @@ func (sa Adapter) SubscribeToTopic(token string, user *model.User, topic string)
 	return err
 }
 
+// UnsubscribeToTopic unsubscribes the token from a topic
 func (sa Adapter) UnsubscribeToTopic(token string, user *model.User, topic string) error {
 	record, err := sa.FindFirebaseToken(token)
 	if err == nil {
@@ -226,6 +231,7 @@ func (sa Adapter) UnsubscribeToTopic(token string, user *model.User, topic strin
 	return err
 }
 
+// GetTopics gets all topics
 func (sa Adapter) GetTopics() ([]model.Topic, error) {
 	filter := bson.D{}
 	var result []model.Topic
@@ -238,6 +244,7 @@ func (sa Adapter) GetTopics() ([]model.Topic, error) {
 	return result, nil
 }
 
+// AppendTopic appends a new topic within the topics collection
 func (sa Adapter) AppendTopic(topic *model.Topic) (*model.Topic, error) {
 	if topic.Name != nil {
 		now := time.Now()
@@ -246,7 +253,7 @@ func (sa Adapter) AppendTopic(topic *model.Topic) (*model.Topic, error) {
 
 		_, err := sa.db.topics.InsertOne(&topic)
 		if err != nil {
-			fmt.Println("warning: error while store topic (%s) - %s", topic, err)
+			fmt.Printf("warning: error while store topic (%s) - %s\n", *topic.Name, err)
 			return nil, err
 		}
 	}
@@ -254,6 +261,7 @@ func (sa Adapter) AppendTopic(topic *model.Topic) (*model.Topic, error) {
 	return topic, nil
 }
 
+// UpdateTopic updates a topic (for now only description is updatable)
 func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: topic.Name}}
 
@@ -269,9 +277,146 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 
 	_, err := sa.db.topics.UpdateOne(filter, &update, nil)
 	if err != nil {
-		fmt.Println("warning: error while update topic (%s) - %s", topic, err)
+		fmt.Printf("warning: error while update topic (%s) - %s\n", *topic.Name, err)
 		return nil, err
 	}
 
 	return topic, err
+}
+
+// GetMessages Gets all messages according to the filter
+func (sa Adapter) GetMessages(uinFilter *string, emailFilter *string, phoneFilter *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	filter := bson.D{}
+	innerFilter := []interface{}{}
+	if uinFilter != nil {
+		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "uin", Value: uinFilter}})
+	}
+	if emailFilter != nil {
+		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "email", Value: emailFilter}})
+	}
+	if phoneFilter != nil {
+		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "phone", Value: phoneFilter}})
+	}
+	if len(innerFilter) > 0 {
+		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
+	}
+	if filterTopic != nil {
+		filter = append(filter, primitive.E{Key: "topic", Value: filterTopic})
+	}
+
+	findOptions := options.Find()
+	if order != nil && *order == "asc" {
+		findOptions.SetSort(bson.D{{"date_created", 1}})
+	} else {
+		findOptions.SetSort(bson.D{{"date_created", -1}})
+	}
+	if limit != nil {
+		findOptions.SetLimit(*limit)
+	}
+	if offset != nil {
+		findOptions.SetSkip(*offset)
+	}
+
+	var list []model.Message
+	err := sa.db.messages.Find(filter, &list, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+// GetMessage gets a message by id
+func (sa Adapter) GetMessage(ID string) (*model.Message, error) {
+	filter := bson.D{primitive.E{Key: "_id", Value: ID}}
+
+	var message *model.Message
+	err := sa.db.messages.FindOne(filter, &message, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return message, nil
+}
+
+// CreateMessage creates a new message.
+func (sa Adapter) CreateMessage(message *model.Message) (*model.Message, error) {
+	if message.ID == nil {
+		id := uuid.New().String()
+		message.ID = &id
+	}
+	now := time.Now()
+	message.DateUpdated = &now
+	message.DateCreated = &now
+
+	if message.Sent {
+		message.DateSent = &now
+	}
+
+	_, err := sa.db.messages.InsertOne(&message)
+	if err != nil {
+		fmt.Printf("warning: error while store message (%s) - %s", *message.ID, err)
+		return nil, err
+	}
+
+	return message, nil
+}
+
+// UpdateMessage updates a message
+func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) {
+	if message != nil && message.ID != nil {
+		persistedMessage, err := sa.GetMessage(*message.ID)
+		if err != nil || persistedMessage == nil {
+			return nil, fmt.Errorf("Message with id (%s) not found: %w", *message.ID, err)
+		}
+		if persistedMessage.Sent {
+			return nil, fmt.Errorf("attempt to update already sent message")
+		}
+		if message.Sent && !persistedMessage.Sent {
+			now := time.Now()
+			message.DateSent = &now
+		}
+
+		filter := bson.D{primitive.E{Key: "_id", Value: message.ID}}
+
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "recipients", Value: message.Recipients},
+				primitive.E{Key: "topic", Value: message.Topic},
+				primitive.E{Key: "subject", Value: message.Subject},
+				primitive.E{Key: "body", Value: message.Body},
+				primitive.E{Key: "sender", Value: message.Sender},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+				primitive.E{Key: "date_sent", Value: message.DateSent},
+			}},
+		}
+
+		_, err = sa.db.messages.UpdateOne(filter, update, nil)
+		if err != nil {
+			fmt.Printf("warning: error while update message (%s) - %s", *message.ID, err)
+			return nil, err
+		}
+	}
+
+	return message, nil
+}
+
+// DeleteMessage deletes a message by id
+func (sa Adapter) DeleteMessage(ID string) error {
+	persistedMessage, err := sa.GetMessage(ID)
+	if err != nil || persistedMessage == nil {
+		return fmt.Errorf("message with id (%s) not found: %s", ID, err)
+	}
+	if persistedMessage.Sent {
+		return fmt.Errorf("unable to delete message which is already sent")
+	}
+
+	filter := bson.D{primitive.E{Key: "_id", Value: ID}}
+	_, err = sa.db.messages.DeleteOne(filter, nil)
+	if err != nil {
+		fmt.Printf("warning: error while delete message (%s) - %s", ID, err)
+		return err
+	}
+
+	return nil
 }

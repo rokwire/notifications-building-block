@@ -13,7 +13,7 @@ require (
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.3 // indirect
 	github.com/go-openapi/swag v0.19.15 // indirect
-	github.com/google/uuid v1.2.0 // indirect
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/lestrrat-go/jwx v1.2.1
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -27,6 +27,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect
 	golang.org/x/tools v0.1.3 // indirect
+	google.golang.org/api v0.40.0
 	gopkg.in/ericchiang/go-oidc.v2 v2.2.1
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 )

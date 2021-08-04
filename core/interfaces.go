@@ -23,12 +23,18 @@ import "notifications/core/model"
 type Services interface {
 	GetVersion() string
 	StoreFirebaseToken(token string, user *model.User) error
-	SendMessage(message model.Message) error
 	SubscribeToTopic(token string, user *model.User, topic string) error
 	UnsubscribeToTopic(token string, user *model.User, topic string) error
 	GetTopics() ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
+
+	SendMessage(user *model.User, message *model.Message) (*model.Message, error)
+	GetMessages(uinFilter *string, emailFilter *string, phoneFilter *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetMessage(ID string) (*model.Message, error)
+	CreateMessage(message *model.Message) (*model.Message, error)
+	UpdateMessage(message *model.Message) (*model.Message, error)
+	DeleteMessage(ID string) error
 }
 
 type servicesImpl struct {
@@ -41,10 +47,6 @@ func (s *servicesImpl) GetVersion() string {
 
 func (s *servicesImpl) StoreFirebaseToken(token string, user *model.User) error {
 	return s.app.storeFirebaseToken(token, user)
-}
-
-func (s *servicesImpl) SendMessage(message model.Message) error {
-	return s.app.sendMessage(message)
 }
 
 func (s *servicesImpl) SubscribeToTopic(token string, user *model.User, topic string) error {
@@ -67,6 +69,30 @@ func (s *servicesImpl) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return s.app.updateTopic(topic)
 }
 
+func (s *servicesImpl) SendMessage(user *model.User, message *model.Message) (*model.Message, error) {
+	return s.app.sendMessage(user, message)
+}
+
+func (s *servicesImpl) GetMessages(uinFilter *string, emailFilter *string, phoneFilter *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return s.app.getMessages(uinFilter, emailFilter, phoneFilter, filterTopic, offset, limit, order)
+}
+
+func (s *servicesImpl) GetMessage(ID string) (*model.Message, error) {
+	return s.app.getMessage(ID)
+}
+
+func (s *servicesImpl) CreateMessage(message *model.Message) (*model.Message, error) {
+	return s.app.createMessage(message)
+}
+
+func (s *servicesImpl) UpdateMessage(message *model.Message) (*model.Message, error) {
+	return s.app.updateMessage(message)
+}
+
+func (s *servicesImpl) DeleteMessage(ID string) error {
+	return s.app.deleteMessage(ID)
+}
+
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	StoreFirebaseToken(token string, user *model.User) error
@@ -76,8 +102,15 @@ type Storage interface {
 	GetTopics() ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
+
+	GetMessages(uinFilter *string, emailFilter *string, phoneFilter *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetMessage(ID string) (*model.Message, error)
+	CreateMessage(message *model.Message) (*model.Message, error)
+	UpdateMessage(message *model.Message) (*model.Message, error)
+	DeleteMessage(ID string) error
 }
 
+// Firebase is used to wrap all Firebase Messaging API functions
 type Firebase interface {
 	SendNotificationToToken(token string, title string, body string) error
 	SendNotificationToTopic(topic string, title string, body string) error

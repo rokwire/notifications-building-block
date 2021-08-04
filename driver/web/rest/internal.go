@@ -7,7 +7,7 @@ type InternalApisHandler struct {
 	app *core.Application
 }
 
-// NewAdminApisHandler creates new rest Handler instance
+// NewInternalApisHandler creates new rest Handler instance
 func NewInternalApisHandler(app *core.Application) *InternalApisHandler {
 	return &InternalApisHandler{app: app}
 }

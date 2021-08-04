@@ -65,7 +65,7 @@ type Adapter struct {
 // @in header
 // @name GROUP
 
-//Start starts the module
+// Start starts the module
 func (we Adapter) Start() {
 
 	we.auth.Start()
@@ -78,15 +78,21 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/doc", we.serveDoc)
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
 
+	// Client APIs
 	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
-
 	mainRouter.HandleFunc("/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
 	mainRouter.HandleFunc("/unsubscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
-	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.SendMessage)).Methods("POST")
+	adminRouter.HandleFunc("/topics", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
 	adminRouter.HandleFunc("/topic", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
+	adminRouter.HandleFunc("/messages", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")
+	adminRouter.HandleFunc("/message_send", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.SendMessage)).Methods("POST")
+	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.CreateMessage)).Methods("POST")
+	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMessage)).Methods("PUT")
+	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
+	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -162,7 +168,7 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 		}
 
 		if !HasAccess {
-			log.Printf("Access control error - UIN: %s is trying to apply %s operation for %s\n", shiboUser.Uin, act, obj)
+			log.Printf("Access control error - UIN: %s is trying to apply %s operation for %s\n", *shiboUser.Uin, act, obj)
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
 		}

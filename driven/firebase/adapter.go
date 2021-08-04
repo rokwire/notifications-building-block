@@ -10,11 +10,12 @@ import (
 	"log"
 )
 
-// FirebaseAdapter entity
+// Adapter entity
 type Adapter struct {
 	firebase *firebase.App
 }
 
+// NewFirebaseAdapter instance a new Firebase adapter
 func NewFirebaseAdapter(authFile string, projectID string) *Adapter {
 	conf, err := google.JWTConfigFromJSON([]byte(authFile),
 		"https://www.googleapis.com/auth/firebase",
@@ -36,10 +37,13 @@ func NewFirebaseAdapter(authFile string, projectID string) *Adapter {
 	return &Adapter{firebase: firebaseApp}
 }
 
+// Start starts the firebase adapter
 func (fa *Adapter) Start() error {
+	// empty impl
 	return nil
 }
 
+// SendNotificationToToken sends a notification to token
 func (fa *Adapter) SendNotificationToToken(token string, title string, body string) error {
 	ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
@@ -53,12 +57,13 @@ func (fa *Adapter) SendNotificationToToken(token string, title string, body stri
 		}
 		_, err = client.Send(ctx, message)
 		if err != nil {
-			err = fmt.Errorf("error while sending notification to token (%s): %w", token, err.Error())
+			err = fmt.Errorf("error while sending notification to token (%s): %s", token, err)
 		}
 	}
 	return err
 }
 
+// SendNotificationToTopic sends a notification to a topic
 func (fa *Adapter) SendNotificationToTopic(topic string, title string, body string) error {
 	ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
@@ -72,31 +77,33 @@ func (fa *Adapter) SendNotificationToTopic(topic string, title string, body stri
 		}
 		_, err = client.Send(ctx, message)
 		if err != nil {
-			err = fmt.Errorf("error while sending notification to topic (%s): %s", topic, err.Error())
+			err = fmt.Errorf("error while sending notification to topic (%s): %s", topic, err)
 		}
 	}
 	return err
 }
 
+// SubscribeToTopic subscribes to a topic
 func (fa *Adapter) SubscribeToTopic(token string, topic string) error {
 	ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
 	if err == nil {
 		_, err = client.SubscribeToTopic(ctx, []string{token}, topic)
 		if err != nil {
-			err = fmt.Errorf("error while subscribing to topic (%s): %w", topic, err.Error())
+			err = fmt.Errorf("error while subscribing to topic (%s): %s", topic, err)
 		}
 	}
 	return err
 }
 
+// UnsubscribeToTopic unsubscribes from a topic
 func (fa *Adapter) UnsubscribeToTopic(token string, topic string) error {
 	ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
 	if err == nil {
 		_, err = client.UnsubscribeFromTopic(ctx, []string{token}, topic)
 		if err != nil {
-			err = fmt.Errorf("error while unsubscribing from topic (%s): %w", topic, err.Error())
+			err = fmt.Errorf("error while unsubscribing from topic (%s): %s", topic, err)
 		}
 	}
 	return err

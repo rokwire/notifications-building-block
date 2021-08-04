@@ -1,4 +1,4 @@
-basePath: /content
+basePath: /notifications
 host: localhost
 info:
   contact: {}
@@ -7,8 +7,63 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Rokwire Content Building Block API
-  version: 0.4.0
+  version: 0.1.0
 paths:
+  /admin/topic:
+    put:
+      description: Updated the topic
+      operationId: UpdateTopic
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      tags:
+      - Admin
+  /admin/topics:
+    get:
+      description: Gets all topics
+      operationId: GetTopics
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      tags:
+      - Admin
+  /message:
+    post:
+      description: Stores a firebase token and maps it to a idToken if presents
+      operationId: SendMessage
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      tags:
+      - Client
+  /subscribe:
+    post:
+      description: Subscribes the current user to a topic
+      operationId: Subscribe
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      tags:
+      - Client
+  /unsubscribe:
+    post:
+      description: Unsubscribes the current user to a topic
+      operationId: Unsubscribe
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      tags:
+      - Client
   /version:
     get:
       description: Gives the service version.
