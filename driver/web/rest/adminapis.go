@@ -204,7 +204,6 @@ func (h AdminApisHandler) GetMessages(user *model.User, w http.ResponseWriter, r
 // @Description Creates a message
 // @Tags Admin
 // @ID CreateMessage
-// @Param data body Message true "body data"
 // @Accept  json
 // @Produce plain
 // @Success 200
@@ -249,7 +248,6 @@ func (h AdminApisHandler) CreateMessage(user *model.User, w http.ResponseWriter,
 // @Description Updates a message
 // @Tags Admin
 // @ID UpdateMessage
-// @Param data body Message true "body data"
 // @Accept  json
 // @Produce plain
 // @Success 200

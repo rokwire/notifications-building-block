@@ -9,6 +9,76 @@ info:
   title: Rokwire Content Building Block API
   version: 0.1.0
 paths:
+  /admin/message:
+    post:
+      consumes:
+      - application/json
+      description: Creates a message
+      operationId: CreateMessage
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
+    put:
+      consumes:
+      - application/json
+      description: Updates a message
+      operationId: UpdateMessage
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
+  /admin/message/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a message with id
+      operationId: DeleteMessage
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a message by id
+      operationId: GetMessage
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
   /admin/topic:
     put:
       description: Updated the topic
@@ -18,28 +88,59 @@ paths:
       responses:
         "200":
           description: ""
+      security:
+      - AdminUserAuth: []
       tags:
       - Admin
   /admin/topics:
     get:
       description: Gets all topics
       operationId: GetTopics
+      parameters:
+      - description: uin - filter by uin
+        in: query
+        name: uin
+        type: string
+      - description: email - filter by email
+        in: query
+        name: email
+        type: string
+      - description: phone - filter by phone
+        in: query
+        name: phone
+        type: string
+      - description: offset
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      - description: 'order - Pissible values: asc, desc. Default: desc'
+        in: query
+        name: order
+        type: string
       produces:
       - text/plain
       responses:
         "200":
           description: ""
+      security:
+      - AdminUserAuth: []
       tags:
       - Admin
   /message:
     post:
-      description: Stores a firebase token and maps it to a idToken if presents
+      description: Sends a message to a user, list of users or a topic
       operationId: SendMessage
       produces:
       - text/plain
       responses:
         "200":
           description: ""
+      security:
+      - AdminUserAuth: []
       tags:
       - Client
   /subscribe:

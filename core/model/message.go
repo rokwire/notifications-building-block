@@ -5,6 +5,8 @@ import (
 )
 
 // Message wraps all needed information for the notification
+// @Description wraps all needed information for the notification
+// @ID Message
 type Message struct {
 	ID          *string     `json:"id" bson:"_id"`
 	DateCreated *time.Time  `json:"date_created" bson:"date_created"`
@@ -16,10 +18,12 @@ type Message struct {
 	Subject     string      `json:"subject" bson:"subject"`
 	Sender      *Sender     `json:"sender,omitempty" bson:"sender,omitempty"`
 	Body        string      `json:"body" bson:"body"`
-} //@name Message
+}
 
 // Sender is a system generated fingerprint for the originator of the message. It may be a user from the admin app or an external system
+// @name Sender
+// @ID Sender
 type Sender struct {
 	Type string `json:"type" bson:"type"` // user or system
 	User *User  `json:"user,omitempty" bson:"user,omitempty"`
-} //@name Sender
+}
