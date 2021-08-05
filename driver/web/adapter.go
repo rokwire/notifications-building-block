@@ -19,16 +19,15 @@ package web
 
 import (
 	"fmt"
+	"github.com/casbin/casbin"
+	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
 	"notifications/driver/web/rest"
 	"notifications/utils"
-
-	"github.com/casbin/casbin"
-	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 //Adapter entity
@@ -40,6 +39,7 @@ type Adapter struct {
 
 	apisHandler      rest.ApisHandler
 	adminApisHandler rest.AdminApisHandler
+	internalApisHandler rest.InternalApisHandler
 
 	app *core.Application
 }
@@ -78,10 +78,16 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/doc", we.serveDoc)
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
 
+	// Internal APIs
+	mainRouter.HandleFunc("/int/message_send", we.internalApiKeyWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
+
 	// Client APIs
 	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
 	mainRouter.HandleFunc("/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
 	mainRouter.HandleFunc("/unsubscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
+	mainRouter.HandleFunc("/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
+	mainRouter.HandleFunc("/topics", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
+	mainRouter.HandleFunc("/topic/{topic}/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
@@ -112,6 +118,20 @@ func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 		utils.LogRequest(req)
 
 		handler(w, req)
+	}
+}
+
+type internalApiKeyAuthFunc = func(http.ResponseWriter, *http.Request)
+
+func (we Adapter) internalApiKeyWrapFunc(handler internalApiKeyAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		apiKeyAuthenticated := we.auth.internalAuth.check(w, req)
+
+		if apiKeyAuthenticated {
+			handler(w, req)
+		}
 	}
 }
 
@@ -223,14 +243,16 @@ func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *mod
 //NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(host string, port string, app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, adminAppClientID string, adminWebAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string, firebaseAuth string, firebaseProjectID string) Adapter {
+	authKeys string, authIssuer string, firebaseAuth string, firebaseProjectID string, internalApiKey string) Adapter {
 	auth := NewAuth(app, appKeys, oidcProvider, oidcAppClientID, adminAppClientID, adminWebAppClientID,
-		phoneAuthSecret, authKeys, authIssuer)
+		phoneAuthSecret, authKeys, authIssuer, internalApiKey)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
-	return Adapter{host: host, port: port, auth: auth, authorization: authorization, apisHandler: apisHandler, adminApisHandler: adminApisHandler, app: app}
+	internalApisHandler := rest.NewInternalApisHandler(app)
+	return Adapter{host: host, port: port, auth: auth, authorization: authorization,
+		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
 }
 
 //AppListener implements core.ApplicationListener interface

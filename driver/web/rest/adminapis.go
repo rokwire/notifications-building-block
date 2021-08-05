@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
-	"strconv"
 )
 
 // AdminApisHandler handles the rest Admin APIs implementation
@@ -138,26 +137,6 @@ func (h AdminApisHandler) SendMessage(user *model.User, w http.ResponseWriter, r
 
 }
 
-func getStringQueryParam(r *http.Request, paramName string) *string {
-	params, ok := r.URL.Query()[paramName]
-	if ok && len(params[0]) > 0 {
-		value := params[0]
-		return &value
-	}
-	return nil
-}
-
-func getInt64QueryParam(r *http.Request, paramName string) *int64 {
-	params, ok := r.URL.Query()[paramName]
-	if ok && len(params[0]) > 0 {
-		val, err := strconv.ParseInt(params[0], 0, 64)
-		if err == nil {
-			return &val
-		}
-	}
-	return nil
-}
-
 // GetMessages Gets all messages. This api may be invoked with different filters in the query string
 // @Description Gets all topics
 // @Tags Admin
@@ -165,6 +144,7 @@ func getInt64QueryParam(r *http.Request, paramName string) *int64 {
 // @Param uin query string false "uin - filter by uin"
 // @Param email query string false "email - filter by email"
 // @Param phone query string false "phone - filter by phone"
+// @Param topic query string false "topic - filter by topic"
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Pissible values: asc, desc. Default: desc"

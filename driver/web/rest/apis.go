@@ -20,6 +20,7 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"io/ioutil"
 	"log"
@@ -169,4 +170,114 @@ func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *htt
 type unsubscribeTopicBody struct {
 	Token *string `json:"token"`
 	Topic *string `json:"topic"`
+}
+
+// GetUserMessages Gets all messages for the user
+// @Description Gets all topics
+// @Tags Client
+// @ID GetUserMessages
+// @Param offset query string false "offset"
+// @Param limit query string false "limit - limit the result"
+// @Param order query string false "order - Possible values: asc, desc. Default: desc"
+// @Produce plain
+// @Success 200
+// @Security AdminUserAuth
+// @Router /messages [get]
+func (h ApisHandler) GetUserMessages(user *model.User, w http.ResponseWriter, r *http.Request) {
+	offsetFilter := getInt64QueryParam(r, "offset")
+	limitFilter := getInt64QueryParam(r, "limit")
+	orderFilter := getStringQueryParam(r, "order")
+
+	var messages []model.Message
+	var err error
+	if user != nil {
+		messages, err = h.app.Services.GetMessages(user.Uin, user.Email, user.Phone, nil, offsetFilter, limitFilter, orderFilter)
+		if err != nil {
+			log.Printf("Error on getting user messages: %s", err)
+			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		messages = []model.Message{}
+	}
+
+	data, err := json.Marshal(messages)
+	if err != nil {
+		log.Printf("Error on marshal messages: %s\n", err)
+		http.Error(w, fmt.Sprintf("Error on marshal messages: %s\n", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// GetTopics Gets all topics
+// @Description Gets all topics
+// @Tags Admin
+// @ID GetTopics
+// @Produce plain
+// @Success 200
+// @Security AdminUserAuth
+// @Router /topics [get]
+func (h ApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *http.Request) {
+
+	topics, err := h.app.Services.GetTopics()
+	if err != nil {
+		log.Printf("Error on retrieving all topics: %s\n", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	data, err := json.Marshal(topics)
+	if err != nil {
+		log.Println("Error on marshal topics")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// GetTopicMessages Gets all messages for topic
+// @Description Gets all messages for topic
+// @Tags Client
+// @ID GetTopicMessages
+// @Produce plain
+// @Success 200
+// @Security AdminUserAuth
+// @Router /topic/{topic}/messages [get]
+func (h ApisHandler) GetTopicMessages(user *model.User, w http.ResponseWriter, r *http.Request) {
+	offsetFilter := getInt64QueryParam(r, "offset")
+	limitFilter := getInt64QueryParam(r, "limit")
+	orderFilter := getStringQueryParam(r, "order")
+
+	params := mux.Vars(r)
+	topic := params["topic"]
+	if len(topic) <= 0 {
+		log.Println("topic is required")
+		http.Error(w, "topic is required", http.StatusBadRequest)
+		return
+	}
+
+	messages, err := h.app.Services.GetMessages(nil, nil, nil, &topic, offsetFilter, limitFilter, orderFilter)
+	if err != nil {
+		log.Printf("Error on getting messages: %s", err)
+		http.Error(w, fmt.Sprintf("Error on getting messages: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(messages)
+	if err != nil {
+		log.Printf("Error on marshal messages: %s\n", err)
+		http.Error(w, fmt.Sprintf("Error on marshal messages: %s\n", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }

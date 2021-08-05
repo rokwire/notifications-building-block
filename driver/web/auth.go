@@ -43,9 +43,10 @@ type cacheUser struct {
 
 //Auth handler
 type Auth struct {
-	apiKeysAuth *APIKeysAuth
-	userAuth    *UserAuth
-	adminAuth   *AdminAuth
+	apiKeysAuth  *APIKeysAuth
+	userAuth     *UserAuth
+	adminAuth    *AdminAuth
+	internalAuth *InternalAuth
 }
 
 //Start starts the auth module
@@ -79,12 +80,13 @@ func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *mode
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, appClientID string, webAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string) *Auth {
+	authKeys string, authIssuer string, internalApiKey string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	userAuth2 := newUserAuth(app, oidcProvider, oidcAppClientID, phoneAuthSecret, authKeys, authIssuer)
 	adminAuth := newAdminAuth(app, oidcProvider, appClientID, webAppClientID)
+	internalAuth := newInternalAuth(internalApiKey)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, userAuth: userAuth2, adminAuth: adminAuth}
+	auth := Auth{apiKeysAuth: apiKeysAuth, userAuth: userAuth2, adminAuth: adminAuth, internalAuth: internalAuth}
 	return &auth
 }
 
@@ -134,9 +136,38 @@ func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
 
 ////////////////////////////////////
 
-//ExternalAuth entity
-type ExternalAuth struct {
-	appKeys []string
+type InternalAuth struct {
+	internalAPIKey string
+}
+
+func newInternalAuth(internalAPIKey string) *InternalAuth {
+	auth := InternalAuth{internalAPIKey: internalAPIKey}
+	return &auth
+}
+
+func (auth *InternalAuth) check(w http.ResponseWriter, r *http.Request) bool {
+	apiKey := r.Header.Get("INTERNAL-API-KEY")
+	//check if there is api key in the header
+	if len(apiKey) == 0 {
+		//no key, so return 400
+		log.Println(fmt.Sprintf("400 - Bad Request"))
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad Request"))
+		return false
+	}
+
+	exist := auth.internalAPIKey == apiKey
+
+	if !exist {
+		//not exist, so return 401
+		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", apiKey))
+
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return false
+	}
+	return true
 }
 
 ////////////////////////////////////
