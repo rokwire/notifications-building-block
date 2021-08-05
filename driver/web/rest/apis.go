@@ -197,7 +197,8 @@ func (h ApisHandler) GetUserMessages(user *model.User, w http.ResponseWriter, r 
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
 			return
 		}
-	} else {
+	}
+	if messages == nil{
 		messages = []model.Message{}
 	}
 

@@ -298,7 +298,7 @@ func (sa Adapter) GetMessages(uinFilter *string, emailFilter *string, phoneFilte
 		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "phone", Value: phoneFilter}})
 	}
 	if len(innerFilter) > 0 {
-		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
+		filter = append(filter, primitive.E{Key: "recipients", Value: bson.D{primitive.E{ Key: "$elemMatch", Value: bson.D{primitive.E{Key: "$or", Value: innerFilter}}}}})
 	}
 	if filterTopic != nil {
 		filter = append(filter, primitive.E{Key: "topic", Value: filterTopic})
