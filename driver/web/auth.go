@@ -80,11 +80,11 @@ func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *mode
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, appClientID string, webAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string, internalApiKey string) *Auth {
+	authKeys string, authIssuer string, internalAPIKey string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	userAuth2 := newUserAuth(app, oidcProvider, oidcAppClientID, phoneAuthSecret, authKeys, authIssuer)
 	adminAuth := newAdminAuth(app, oidcProvider, appClientID, webAppClientID)
-	internalAuth := newInternalAuth(internalApiKey)
+	internalAuth := newInternalAuth(internalAPIKey)
 
 	auth := Auth{apiKeysAuth: apiKeysAuth, userAuth: userAuth2, adminAuth: adminAuth, internalAuth: internalAuth}
 	return &auth
@@ -134,8 +134,9 @@ func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
 	return &auth
 }
 
-////////////////////////////////////
+///////
 
+//InternalAuth handling the internal calls fromother BBs
 type InternalAuth struct {
 	internalAPIKey string
 }

@@ -74,10 +74,10 @@ func main() {
 	phoneSecret := getEnvKey("PHONE_SECRET", true)
 	authKeys := getEnvKey("AUTH_KEYS", true)
 	authIssuer := getEnvKey("AUTH_ISSUER", true)
-	internalApiKey := getEnvKey("INTERNAL_API_KEY", true)
+	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
 
 	webAdapter := driver.NewWebAdapter(host, port, application, apiKeys, oidcProvider, oidcAppClientID, adminAppClientID,
-		adminWebAppClientID, phoneSecret, authKeys, authIssuer, firebaseAuth, firebaseProjectID, internalApiKey)
+		adminWebAppClientID, phoneSecret, authKeys, authIssuer, firebaseAuth, firebaseProjectID, internalAPIKey)
 
 	webAdapter.Start()
 }

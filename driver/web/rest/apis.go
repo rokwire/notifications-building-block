@@ -198,7 +198,7 @@ func (h ApisHandler) GetUserMessages(user *model.User, w http.ResponseWriter, r 
 			return
 		}
 	}
-	if messages == nil{
+	if messages == nil {
 		messages = []model.Message{}
 	}
 

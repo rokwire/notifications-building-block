@@ -37,8 +37,8 @@ type Adapter struct {
 	auth          *Auth
 	authorization *casbin.Enforcer
 
-	apisHandler      rest.ApisHandler
-	adminApisHandler rest.AdminApisHandler
+	apisHandler         rest.ApisHandler
+	adminApisHandler    rest.AdminApisHandler
 	internalApisHandler rest.InternalApisHandler
 
 	app *core.Application
@@ -79,7 +79,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
 
 	// Internal APIs
-	mainRouter.HandleFunc("/int/message_send", we.internalApiKeyWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
+	mainRouter.HandleFunc("/int/message_send", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
 
 	// Client APIs
 	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
@@ -121,9 +121,9 @@ func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-type internalApiKeyAuthFunc = func(http.ResponseWriter, *http.Request)
+type internalAPIKeyAuthFunc = func(http.ResponseWriter, *http.Request)
 
-func (we Adapter) internalApiKeyWrapFunc(handler internalApiKeyAuthFunc) http.HandlerFunc {
+func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
@@ -243,9 +243,9 @@ func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *mod
 //NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(host string, port string, app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, adminAppClientID string, adminWebAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string, firebaseAuth string, firebaseProjectID string, internalApiKey string) Adapter {
+	authKeys string, authIssuer string, firebaseAuth string, firebaseProjectID string, internalAPIKey string) Adapter {
 	auth := NewAuth(app, appKeys, oidcProvider, oidcAppClientID, adminAppClientID, adminWebAppClientID,
-		phoneAuthSecret, authKeys, authIssuer, internalApiKey)
+		phoneAuthSecret, authKeys, authIssuer, internalAPIKey)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
