@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -39,12 +38,17 @@ func NewApisHandler(app *core.Application) ApisHandler {
 	return ApisHandler{app: app}
 }
 
+type tokenBody struct {
+	Token *string `json:"token"`
+} //@name tokenBody
+
 // Version gives the service version
 // @Description Gives the service version.
 // @Tags Client
 // @ID Version
 // @Produce plain
 // @Success 200
+// @Security RokwireAuth
 // @Router /version [get]
 func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
@@ -53,10 +57,12 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 // StoreFirebaseToken Sends a message to a user, list of users or a topic
 // @Description Stores a firebase token and maps it to a idToken if presents
 // @Tags Client
-// @ID SendMessage
-// @Produce plain
+// @ID Token
+// @Param data body tokenBody true "body json"
+// @Accept  json
 // @Success 200
-// @Router /message [post]
+// @Security RokwireAuth
+// @Router /token [post]
 func (h ApisHandler) StoreFirebaseToken(user *model.User, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -65,18 +71,21 @@ func (h ApisHandler) StoreFirebaseToken(user *model.User, w http.ResponseWriter,
 		return
 	}
 
-	var tokenData bson.M
-	err = json.Unmarshal(data, &tokenData)
+	var tokenBody tokenBody
+	err = json.Unmarshal(data, &tokenBody)
 	if err != nil {
 		log.Printf("Error on unmarshal the create student guide request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	var token string
-	token = tokenData["token"].(string)
+	if tokenBody.Token == nil || len(*tokenBody.Token) == 0 {
+		log.Printf("token is empty or null")
+		http.Error(w, fmt.Sprintf("token is empty or null\n"), http.StatusBadRequest)
+		return
+	}
 
-	err = h.app.Services.StoreFirebaseToken(token, user)
+	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, user)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -90,10 +99,21 @@ func (h ApisHandler) StoreFirebaseToken(user *model.User, w http.ResponseWriter,
 // @Description Subscribes the current user to a topic
 // @Tags Client
 // @ID Subscribe
-// @Produce plain
+// @Param topic path string true "topic"
+// @Param data body tokenBody true "body json"
+// @Accept  json
 // @Success 200
-// @Router /subscribe [post]
+// @Security RokwireAuth
+// @Router /topic/{topic}/subscribe [post]
 func (h ApisHandler) Subscribe(user *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	topic := params["topic"]
+	if len(topic) <= 0 {
+		log.Println("topic is required")
+		http.Error(w, "topic is required", http.StatusBadRequest)
+		return
+	}
+
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -101,7 +121,7 @@ func (h ApisHandler) Subscribe(user *model.User, w http.ResponseWriter, r *http.
 		return
 	}
 
-	var body subscribeTopicBody
+	var body tokenBody
 	err = json.Unmarshal(data, &body)
 	if err != nil {
 		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
@@ -109,14 +129,14 @@ func (h ApisHandler) Subscribe(user *model.User, w http.ResponseWriter, r *http.
 		return
 	}
 
-	if len(*body.Token) == 0 || len(*body.Topic) == 0 {
-		log.Printf("Missing token or topic within the json body")
-		http.Error(w, "Missing token or topic within the json body", http.StatusBadRequest)
+	if len(*body.Token) == 0 {
+		log.Printf("Missing token in the body")
+		http.Error(w, "Missing token in the body", http.StatusBadRequest)
 	}
 
-	err = h.app.Services.SubscribeToTopic(*body.Token, user, *body.Topic)
+	err = h.app.Services.SubscribeToTopic(*body.Token, user, topic)
 	if err != nil {
-		log.Printf("Error on subscribe to topic (%s): %s\n", *body.Topic, err)
+		log.Printf("Error on subscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -124,19 +144,24 @@ func (h ApisHandler) Subscribe(user *model.User, w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusOK)
 }
 
-type subscribeTopicBody struct {
-	Token *string `json:"token"`
-	Topic *string `json:"topic"`
-}
-
 // Unsubscribe Unsubscribes the current user to a topic
 // @Description Unsubscribes the current user to a topic
 // @Tags Client
 // @ID Unsubscribe
-// @Produce plain
+// @Param topic path string true "topic"
+// @Param data body tokenBody true "body json"
 // @Success 200
-// @Router /unsubscribe [post]
+// @Security RokwireAuth
+// @Router /topic/{topic}/unsubscribe [post]
 func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	topic := params["topic"]
+	if len(topic) <= 0 {
+		log.Println("topic is required")
+		http.Error(w, "topic is required", http.StatusBadRequest)
+		return
+	}
+
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -144,7 +169,7 @@ func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *htt
 		return
 	}
 
-	var body unsubscribeTopicBody
+	var body tokenBody
 	err = json.Unmarshal(data, &body)
 	if err != nil {
 		log.Printf("Error on unmarshal the body request data - %s\n", err.Error())
@@ -152,14 +177,14 @@ func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *htt
 		return
 	}
 
-	if len(*body.Token) == 0 || len(*body.Topic) == 0 {
-		log.Printf("Missing token or topic within the json body")
-		http.Error(w, "Missing token or topic within the json body", http.StatusBadRequest)
+	if len(*body.Token) == 0 {
+		log.Printf("Missing token in the json body")
+		http.Error(w, "Missing token in the json body", http.StatusBadRequest)
 	}
 
-	err = h.app.Services.UnsubscribeToTopic(*body.Token, user, *body.Topic)
+	err = h.app.Services.UnsubscribeToTopic(*body.Token, user, topic)
 	if err != nil {
-		log.Printf("Error on unsubscribe to topic (%s): %s\n", *body.Topic, err)
+		log.Printf("Error on unsubscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -167,21 +192,15 @@ func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *htt
 	w.WriteHeader(http.StatusOK)
 }
 
-type unsubscribeTopicBody struct {
-	Token *string `json:"token"`
-	Topic *string `json:"topic"`
-}
-
 // GetUserMessages Gets all messages for the user
-// @Description Gets all topics
+// @Description Gets all messages to the authenticated user.
 // @Tags Client
 // @ID GetUserMessages
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Possible values: asc, desc. Default: desc"
-// @Produce plain
-// @Success 200
-// @Security AdminUserAuth
+// @Success 200 {array} model.Message
+// @Security RokwireAuth
 // @Router /messages [get]
 func (h ApisHandler) GetUserMessages(user *model.User, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
@@ -216,11 +235,10 @@ func (h ApisHandler) GetUserMessages(user *model.User, w http.ResponseWriter, r 
 
 // GetTopics Gets all topics
 // @Description Gets all topics
-// @Tags Admin
+// @Tags Client
 // @ID GetTopics
-// @Produce plain
-// @Success 200
-// @Security AdminUserAuth
+// @Success 200 {array} model.Topic
+// @Security RokwireAuth
 // @Router /topics [get]
 func (h ApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *http.Request) {
 
@@ -247,9 +265,10 @@ func (h ApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *http.
 // @Description Gets all messages for topic
 // @Tags Client
 // @ID GetTopicMessages
+// @Param topic path string true "topic"
 // @Produce plain
-// @Success 200
-// @Security AdminUserAuth
+// @Success 200 {array} model.Message
+// @Security RokwireAuth
 // @Router /topic/{topic}/messages [get]
 func (h ApisHandler) GetTopicMessages(user *model.User, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")

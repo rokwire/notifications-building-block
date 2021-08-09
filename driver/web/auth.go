@@ -331,20 +331,16 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 	token, tokenSourceType, csrfToken, err := auth.getTokens(r)
 	if err != nil {
 		log.Printf("error gettings tokens - %s", err)
-
-		auth.responseInternalServerError(w)
 		return false, nil, nil
 	}
 
 	//check if all input data is available
 	if token == nil || len(*token) == 0 {
-		auth.responseBadRequest(w)
 		return false, nil, nil
 	}
 	rawToken := *token //we have token
 	if *tokenSourceType == "cookie" && (csrfToken == nil || len(*csrfToken) == 0) {
 		//if the token is sent via cookie then we must have csrf token as well
-		auth.responseBadRequest(w)
 		return false, nil, nil
 	}
 
@@ -352,11 +348,9 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 	// 1 & 2 are deprecated but we support them for back compatability
 	tokenType, err := auth.getTokenType(rawToken)
 	if err != nil {
-		auth.responseUnauthorized(err.Error(), w)
 		return false, nil, nil
 	}
 	if !(*tokenType == 1 || *tokenType == 2 || *tokenType == 3) {
-		auth.responseUnauthorized("not supported token type", w)
 		return false, nil, nil
 	}
 
@@ -370,7 +364,6 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 		//support this for back compatability
 		shibboData, err := auth.processShibbolethToken(rawToken)
 		if err != nil {
-			auth.responseUnauthorized(err.Error(), w)
 			return false, nil, nil
 		}
 		user.Uin = shibboData.UIuceduUIN
@@ -381,7 +374,6 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 		//support this for back compatability
 		phone, err := auth.processPhoneToken(rawToken)
 		if err != nil {
-			auth.responseUnauthorized(err.Error(), w)
 			return false, nil, nil
 		}
 		user.Phone = phone
@@ -396,7 +388,6 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 
 		tokenData, err := auth.processAccessToken(rawToken, csrfCheck, csrfToken)
 		if err != nil {
-			auth.responseUnauthorized(err.Error(), w)
 			return false, nil, nil
 		}
 
@@ -408,7 +399,6 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 			externalID = tokenData.UID
 			authType = "phone"
 		} else {
-			auth.responseUnauthorized("not supported token auth type", w)
 			return false, nil, nil
 		}
 	}
@@ -419,7 +409,6 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 		foundedUIN := auth.findUINByPhone(externalID)
 		if foundedUIN == nil {
 			//not found, it means that this phone is not added, so return unauthorized
-			auth.responseUnauthorized(fmt.Sprintf("%s phone is not added in the system", externalID), w)
 			return false, nil, nil
 		}
 		//it was found

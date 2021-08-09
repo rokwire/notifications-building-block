@@ -57,13 +57,13 @@ type Adapter struct {
 // @in header
 // @name ROKWIRE-API-KEY
 
+// @securityDefinitions.apikey InternalAuth
+// @in header
+// @name INTERNAL-API-KEY
+
 // @securityDefinitions.apikey AdminUserAuth
 // @in header (add Bearer prefix to the Authorization value)
 // @name Authorization
-
-// @securityDefinitions.apikey AdminGroupAuth
-// @in header
-// @name GROUP
 
 // Start starts the module
 func (we Adapter) Start() {
@@ -83,11 +83,11 @@ func (we Adapter) Start() {
 
 	// Client APIs
 	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
-	mainRouter.HandleFunc("/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
-	mainRouter.HandleFunc("/unsubscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
 	mainRouter.HandleFunc("/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
 	mainRouter.HandleFunc("/topics", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
+	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
+	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()

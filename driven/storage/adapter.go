@@ -65,7 +65,7 @@ func (sa Adapter) FindFirebaseToken(token string) (*model.FirebaseTokenMapping, 
 	var result *model.FirebaseTokenMapping
 	err := sa.db.tokens.FindOne(filter, &result, nil)
 	if err != nil {
-		log.Fatalf("warning: error while retriving token (%s) - %s", token, err)
+		log.Printf("warning: error while retriving token (%s) - %s", token, err)
 	}
 
 	return result, err
@@ -188,10 +188,10 @@ func (sa Adapter) GetFirebaseTokensBy(recipients []model.Recipient) ([]string, e
 // SubscribeToTopic subscribes the token to a topic
 func (sa Adapter) SubscribeToTopic(token string, user *model.User, topic string) error {
 	record, err := sa.FindFirebaseToken(token)
-	if err == nil {
-		if record == nil {
-			record, err = sa.storeFirebaseToken(token, user)
-		}
+	if err != nil || record == nil {
+		record, err = sa.storeFirebaseToken(token, user)
+	}
+	if err == nil && record != nil {
 		if err == nil && record != nil {
 			record.DateUpdated = time.Now()
 			record.AddTopic(topic)
@@ -199,7 +199,7 @@ func (sa Adapter) SubscribeToTopic(token string, user *model.User, topic string)
 			filter := bson.D{primitive.E{Key: "_id", Value: record.Token}}
 			err = sa.db.tokens.ReplaceOne(filter, record, nil)
 			if err != nil {
-				log.Fatalf("warning: error while subscribe (%s) to topic (%s) - %s\n", token, topic, err)
+				log.Printf("warning: error while subscribe (%s) to topic (%s) - %s\n", token, topic, err)
 			} else {
 				_, _ = sa.AppendTopic(&model.Topic{Name: &topic}) // just try to append within the topics collection
 			}
@@ -212,10 +212,10 @@ func (sa Adapter) SubscribeToTopic(token string, user *model.User, topic string)
 // UnsubscribeToTopic unsubscribes the token from a topic
 func (sa Adapter) UnsubscribeToTopic(token string, user *model.User, topic string) error {
 	record, err := sa.FindFirebaseToken(token)
-	if err == nil {
-		if record == nil {
-			record, err = sa.storeFirebaseToken(token, user)
-		}
+	if err != nil || record == nil {
+		record, err = sa.storeFirebaseToken(token, user)
+	}
+	if err == nil && record != nil {
 		if err == nil && record != nil {
 			record.DateUpdated = time.Now()
 			record.RemoveTopic(topic)
@@ -223,7 +223,7 @@ func (sa Adapter) UnsubscribeToTopic(token string, user *model.User, topic strin
 			filter := bson.D{primitive.E{Key: "_id", Value: record.Token}}
 			err = sa.db.tokens.ReplaceOne(filter, record, nil)
 			if err != nil {
-				log.Fatalf("warning: error while subscribe (%s) to topic (%s) - %s\n", token, topic, err)
+				log.Printf("warning: error while subscribe (%s) to topic (%s) - %s\n", token, topic, err)
 			}
 		}
 	}

@@ -24,9 +24,8 @@ func NewAdminApisHandler(app *core.Application) AdminApisHandler {
 // GetTopics Gets all topics
 // @Description Gets all topics
 // @Tags Admin
-// @ID GetTopics
-// @Produce plain
-// @Success 200
+// @ID AdminGetTopics
+// @Success 200 {array} model.Topic
 // @Security AdminUserAuth
 // @Router /admin/topics [get]
 func (h AdminApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *http.Request) {
@@ -51,11 +50,11 @@ func (h AdminApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *
 }
 
 // UpdateTopic Updated the topic
-// @Description Updated the topic
+// @Description Updated the topic.
 // @Tags Admin
 // @ID UpdateTopic
-// @Produce plain
-// @Success 200
+// @Param data body model.Topic true "body json"
+// @Success 200 {object} model.Topic
 // @Security AdminUserAuth
 // @Router /admin/topic [put]
 func (h AdminApisHandler) UpdateTopic(user *model.User, w http.ResponseWriter, r *http.Request) {
@@ -97,8 +96,9 @@ func (h AdminApisHandler) UpdateTopic(user *model.User, w http.ResponseWriter, r
 // @Description Sends a message to a user, list of users or a topic
 // @Tags Client
 // @ID SendMessage
-// @Produce plain
-// @Success 200
+// @Accept  json
+// @Param data body model.Message true "body json"
+// @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /message [post]
 func (h AdminApisHandler) SendMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
@@ -138,20 +138,19 @@ func (h AdminApisHandler) SendMessage(user *model.User, w http.ResponseWriter, r
 }
 
 // GetMessages Gets all messages. This api may be invoked with different filters in the query string
-// @Description Gets all topics
+// @Description Gets all messages
 // @Tags Admin
-// @ID GetTopics
+// @ID GetMessages
 // @Param uin query string false "uin - filter by uin"
 // @Param email query string false "email - filter by email"
 // @Param phone query string false "phone - filter by phone"
 // @Param topic query string false "topic - filter by topic"
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
-// @Param order query string false "order - Pissible values: asc, desc. Default: desc"
-// @Produce plain
-// @Success 200
+// @Param order query string false "order - Possible values: asc, desc. Default: desc"
+// @Success 200 {array} model.Message
 // @Security AdminUserAuth
-// @Router /admin/topics [get]
+// @Router /admin/messages [get]
 func (h AdminApisHandler) GetMessages(user *model.User, w http.ResponseWriter, r *http.Request) {
 	uinFilter := getStringQueryParam(r, "uin")
 	emailFilter := getStringQueryParam(r, "email")
@@ -185,8 +184,8 @@ func (h AdminApisHandler) GetMessages(user *model.User, w http.ResponseWriter, r
 // @Tags Admin
 // @ID CreateMessage
 // @Accept  json
-// @Produce plain
-// @Success 200
+// @Param data body model.Message true "body json"
+// @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message [post]
 func (h AdminApisHandler) CreateMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
@@ -229,8 +228,8 @@ func (h AdminApisHandler) CreateMessage(user *model.User, w http.ResponseWriter,
 // @Tags Admin
 // @ID UpdateMessage
 // @Accept  json
-// @Produce plain
-// @Success 200
+// @Param data body model.Message true "body json"
+// @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message [put]
 func (h AdminApisHandler) UpdateMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
@@ -281,7 +280,7 @@ func (h AdminApisHandler) UpdateMessage(user *model.User, w http.ResponseWriter,
 // @Param id path string true "id"
 // @Accept  json
 // @Produce plain
-// @Success 200
+// @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message/{id} [get]
 func (h AdminApisHandler) GetMessage(user *model.User, w http.ResponseWriter, r *http.Request) {

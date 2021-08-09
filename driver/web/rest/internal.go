@@ -22,12 +22,13 @@ func NewInternalApisHandler(app *core.Application) InternalApisHandler {
 
 // SendMessage Sends a message to a user, list of users or a topic
 // @Description Sends a message to a user, list of users or a topic
-// @Tags Client
-// @ID SendMessage
+// @Tags Internal
+// @ID InternalSendMessage
+// @Param data body model.Message true "body json"
 // @Produce plain
-// @Success 200
-// @Security AdminUserAuth
-// @Router /message [post]
+// @Success 200 {object} model.Message
+// @Security InternalAuth
+// @Router /int/message [post]
 func (h InternalApisHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {

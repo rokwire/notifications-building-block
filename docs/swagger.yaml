@@ -1,4 +1,76 @@
 basePath: /notifications
+definitions:
+  Recipient:
+    properties:
+      email:
+        type: string
+      phone:
+        type: string
+      uin:
+        type: string
+    type: object
+  Topic:
+    properties:
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  User:
+    properties:
+      email:
+        type: string
+      phone:
+        type: string
+      uiucedu_is_member_of:
+        items:
+          type: string
+        type: array
+      uiucedu_uin:
+        type: string
+    type: object
+  model.Message:
+    properties:
+      body:
+        type: string
+      date_created:
+        type: string
+      date_sent:
+        type: string
+      date_updated:
+        type: string
+      id:
+        type: string
+      recipients:
+        items:
+          $ref: '#/definitions/Recipient'
+        type: array
+      sender:
+        $ref: '#/definitions/model.Sender'
+      sent:
+        type: boolean
+      subject:
+        type: string
+      topic:
+        type: string
+    type: object
+  model.Sender:
+    properties:
+      type:
+        description: user or system
+        type: string
+      user:
+        $ref: '#/definitions/User'
+    type: object
+  tokenBody:
+    properties:
+      token:
+        type: string
+    type: object
 host: localhost
 info:
   contact: {}
@@ -15,11 +87,18 @@ paths:
       - application/json
       description: Creates a message
       operationId: CreateMessage
-      produces:
-      - text/plain
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Message'
       responses:
         "200":
-          description: ""
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
       security:
       - AdminUserAuth: []
       tags:
@@ -29,11 +108,18 @@ paths:
       - application/json
       description: Updates a message
       operationId: UpdateMessage
-      produces:
-      - text/plain
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Message'
       responses:
         "200":
-          description: ""
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
       security:
       - AdminUserAuth: []
       tags:
@@ -74,28 +160,17 @@ paths:
       - text/plain
       responses:
         "200":
-          description: ""
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
       security:
       - AdminUserAuth: []
       tags:
       - Admin
-  /admin/topic:
-    put:
-      description: Updated the topic
-      operationId: UpdateTopic
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: ""
-      security:
-      - AdminUserAuth: []
-      tags:
-      - Admin
-  /admin/topics:
+  /admin/messages:
     get:
-      description: Gets all topics
-      operationId: GetTopics
+      description: Gets all messages
+      operationId: GetMessages
       parameters:
       - description: uin - filter by uin
         in: query
@@ -109,6 +184,10 @@ paths:
         in: query
         name: phone
         type: string
+      - description: topic - filter by topic
+        in: query
+        name: topic
+        type: string
       - description: offset
         in: query
         name: offset
@@ -117,52 +196,232 @@ paths:
         in: query
         name: limit
         type: string
-      - description: 'order - Pissible values: asc, desc. Default: desc'
+      - description: 'order - Possible values: asc, desc. Default: desc'
         in: query
         name: order
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Message'
+            type: array
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
+  /admin/topic:
+    put:
+      description: Updated the topic.
+      operationId: UpdateTopic
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/Topic'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Topic'
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
+  /admin/topics:
+    get:
+      description: Gets all topics
+      operationId: AdminGetTopics
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Topic'
+            type: array
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
+  /int/message:
+    post:
+      description: Sends a message to a user, list of users or a topic
+      operationId: InternalSendMessage
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Message'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
+      security:
+      - InternalAuth: []
+      tags:
+      - Internal
+  /message:
+    post:
+      consumes:
+      - application/json
+      description: Sends a message to a user, list of users or a topic
+      operationId: SendMessage
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Message'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Client
+  /messages:
+    get:
+      description: Gets all messages to the authenticated user.
+      operationId: GetUserMessages
+      parameters:
+      - description: offset
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      - description: 'order - Possible values: asc, desc. Default: desc'
+        in: query
+        name: order
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Message'
+            type: array
+      security:
+      - RokwireAuth: []
+      tags:
+      - Client
+  /token:
+    post:
+      consumes:
+      - application/json
+      description: Stores a firebase token and maps it to a idToken if presents
+      operationId: Token
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/tokenBody'
+      responses:
+        "200":
+          description: ""
+      security:
+      - RokwireAuth: []
+      tags:
+      - Client
+  /topic/{topic}/messages:
+    get:
+      description: Gets all messages for topic
+      operationId: GetTopicMessages
+      parameters:
+      - description: topic
+        in: path
+        name: topic
+        required: true
         type: string
       produces:
       - text/plain
       responses:
         "200":
-          description: ""
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Message'
+            type: array
       security:
-      - AdminUserAuth: []
-      tags:
-      - Admin
-  /message:
-    post:
-      description: Sends a message to a user, list of users or a topic
-      operationId: SendMessage
-      produces:
-      - text/plain
-      responses:
-        "200":
-          description: ""
-      security:
-      - AdminUserAuth: []
+      - RokwireAuth: []
       tags:
       - Client
-  /subscribe:
+  /topic/{topic}/subscribe:
     post:
+      consumes:
+      - application/json
       description: Subscribes the current user to a topic
       operationId: Subscribe
-      produces:
-      - text/plain
+      parameters:
+      - description: topic
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/tokenBody'
       responses:
         "200":
           description: ""
+      security:
+      - RokwireAuth: []
       tags:
       - Client
-  /unsubscribe:
+  /topic/{topic}/unsubscribe:
     post:
       description: Unsubscribes the current user to a topic
       operationId: Unsubscribe
-      produces:
-      - text/plain
+      parameters:
+      - description: topic
+        in: path
+        name: topic
+        required: true
+        type: string
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/tokenBody'
       responses:
         "200":
           description: ""
+      security:
+      - RokwireAuth: []
+      tags:
+      - Client
+  /topics:
+    get:
+      description: Gets all topics
+      operationId: GetTopics
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Topic'
+            type: array
+      security:
+      - RokwireAuth: []
       tags:
       - Client
   /version:
@@ -174,18 +433,20 @@ paths:
       responses:
         "200":
           description: ""
+      security:
+      - RokwireAuth: []
       tags:
       - Client
 schemes:
 - https
 securityDefinitions:
-  AdminGroupAuth:
-    in: header
-    name: GROUP
-    type: apiKey
   AdminUserAuth:
     in: header (add Bearer prefix to the Authorization value)
     name: Authorization
+    type: apiKey
+  InternalAuth:
+    in: header
+    name: INTERNAL-API-KEY
     type: apiKey
   RokwireAuth:
     in: header
