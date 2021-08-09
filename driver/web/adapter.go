@@ -109,7 +109,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/notifications/doc", we.host)
+	url := fmt.Sprintf("%s/notifications/api/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
