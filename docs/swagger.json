@@ -4,8 +4,8 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "Rokwire Content Building Block API Documentation.",
-        "title": "Rokwire Content Building Block API",
+        "description": "Rokwire Notifications Building Block API Documentation.",
+        "title": "Rokwire Notifications Building Block API",
         "contact": {},
         "license": {
             "name": "Apache 2.0",
@@ -14,7 +14,7 @@
         "version": "0.1.0"
     },
     "host": "localhost",
-    "basePath": "/notifications",
+    "basePath": "/notifications/api",
     "paths": {
         "/admin/message": {
             "put": {

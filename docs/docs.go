@@ -749,10 +749,10 @@ type swaggerInfo struct {
 var SwaggerInfo = swaggerInfo{
 	Version:     "0.1.0",
 	Host:        "localhost",
-	BasePath:    "/notifications",
+	BasePath:    "/notifications/api",
 	Schemes:     []string{"https"},
-	Title:       "Rokwire Content Building Block API",
-	Description: "Rokwire Content Building Block API Documentation.",
+	Title:       "Rokwire Notifications Building Block API",
+	Description: "Rokwire Notifications Building Block API Documentation.",
 }
 
 type s struct{}

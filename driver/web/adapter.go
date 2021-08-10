@@ -44,13 +44,13 @@ type Adapter struct {
 	app *core.Application
 }
 
-// @title Rokwire Content Building Block API
-// @description Rokwire Content Building Block API Documentation.
+// @title Rokwire Notifications Building Block API
+// @description Rokwire Notifications Building Block API Documentation.
 // @version 0.1.0
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost
-// @BasePath /notifications
+// @BasePath /notifications/api
 // @schemes https
 
 // @securityDefinitions.apikey RokwireAuth
@@ -109,7 +109,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/notifications/api/doc", we.host)
+	url := fmt.Sprintf("%s/notifications/api/doc", "http://0.0.0.0")
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
