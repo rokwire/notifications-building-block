@@ -1,4 +1,4 @@
-# Content building block
+# Notifications building block
 
 Go project to provide rest service for rokwire notifications building block.
 
@@ -45,7 +45,7 @@ $ make
 
 4. Run the executable
 ```
-$ ./bin/health
+$ ./bin/notifications
 ```
 
 #### Run locally as Docker container
@@ -111,11 +111,11 @@ Verify the service is running as calling the get version API.
 
 #### Call get version API
 
-curl -X GET -i http://localhost/notifications/version
+curl -X GET -i https://api-dev.rokwire.illinois.edu/notifications/api/version
 
 Response
 ```
-1.9.0
+0.1.2
 ```
 
 ## Documentation

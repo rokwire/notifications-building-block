@@ -55,6 +55,22 @@ func (collWrapper *collectionWrapper) FindWithContext(ctx context.Context, filte
 	return err
 }
 
+func (collWrapper *collectionWrapper) Distinct(fieldName string, filter interface{}, distinctOptions *options.DistinctOptions) ([]interface{}, error) {
+	return collWrapper.DistinctWithContext(context.Background(), fieldName, filter, distinctOptions)
+}
+
+func (collWrapper *collectionWrapper) DistinctWithContext(ctx context.Context, fieldName string, filter interface{}, distinctOptions *options.DistinctOptions) ([]interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
+	defer cancel()
+
+	if filter == nil {
+		// Passing bson.D{} as the filter matches all documents in the collection
+		filter = bson.D{}
+	}
+
+	return collWrapper.coll.Distinct(ctx, fieldName, filter, distinctOptions)
+}
+
 func (collWrapper *collectionWrapper) FindOne(filter interface{}, result interface{}, findOptions *options.FindOneOptions) error {
 	return collWrapper.FindOneWithContext(context.Background(), filter, result, findOptions)
 }

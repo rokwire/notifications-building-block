@@ -19,6 +19,8 @@ package storage
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"time"
 
@@ -34,7 +36,9 @@ type database struct {
 	db       *mongo.Database
 	dbClient *mongo.Client
 
-	tokens *collectionWrapper
+	tokens   *collectionWrapper
+	topics   *collectionWrapper
+	messages *collectionWrapper
 }
 
 func (m *database) start() error {
@@ -62,6 +66,19 @@ func (m *database) start() error {
 	db := client.Database(m.mongoDBName)
 
 	tokens := &collectionWrapper{database: m, coll: db.Collection("tokens")}
+	err = m.applyTokensChecks(tokens)
+	if err != nil {
+		return err
+	}
+
+	topics := &collectionWrapper{database: m, coll: db.Collection("topics")}
+	err = m.applyTopicsChecks(topics)
+	if err != nil {
+		return err
+	}
+
+	messages := &collectionWrapper{database: m, coll: db.Collection("messages")}
+	err = m.applyMessagesChecks(messages)
 	if err != nil {
 		return err
 	}
@@ -71,7 +88,186 @@ func (m *database) start() error {
 	m.dbClient = client
 
 	m.tokens = tokens
+	m.topics = topics
+	m.messages = messages
 
+	return nil
+}
+
+func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
+	log.Println("apply messages checks.....")
+
+	indexes, _ := messages.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
+	}
+	if indexMapping["recipients.email_1"] == nil {
+		err := messages.AddIndex(
+			bson.D{
+				primitive.E{Key: "recipients.email", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["recipients.phone_1"] == nil {
+		err := messages.AddIndex(
+			bson.D{
+				primitive.E{Key: "recipients.phone", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["recipients.uin_1"] == nil {
+		err := messages.AddIndex(
+			bson.D{
+				primitive.E{Key: "recipients.uin", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["date_created_1"] == nil {
+		err := messages.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_created", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["date_updated_1"] == nil {
+		err := messages.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_updated", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["date_sent_1"] == nil {
+		err := messages.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_sent", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["sent_1"] == nil {
+		err := messages.AddIndex(
+			bson.D{
+				primitive.E{Key: "sent", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("apply messages passed")
+	return nil
+}
+
+func (m *database) applyTokensChecks(tokens *collectionWrapper) error {
+	log.Println("apply tokens checks.....")
+
+	indexes, _ := tokens.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
+	}
+	if indexMapping["device_id_1"] == nil {
+		err := tokens.AddIndex(
+			bson.D{
+				primitive.E{Key: "device_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["uin_1"] == nil {
+		err := tokens.AddIndex(
+			bson.D{
+				primitive.E{Key: "uin", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["email_1"] == nil {
+		err := tokens.AddIndex(
+			bson.D{
+				primitive.E{Key: "email", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["phone_1"] == nil {
+		err := tokens.AddIndex(
+			bson.D{
+				primitive.E{Key: "phone", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["topics_1"] == nil {
+		err := tokens.AddIndex(
+			bson.D{
+				primitive.E{Key: "topics", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["date_created_1"] == nil {
+		err := tokens.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_created", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["date_updated_1"] == nil {
+		err := tokens.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_updated", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("apply tokens passed")
+	return nil
+}
+
+func (m *database) applyTopicsChecks(topics *collectionWrapper) error {
+	log.Println("apply topics checks.....")
+
+	log.Println("apply topics passed")
 	return nil
 }
 

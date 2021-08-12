@@ -26,6 +26,7 @@ import (
 	"log"
 	"net/http"
 	"notifications/core"
+	"notifications/core/model"
 	"strings"
 	"sync"
 	"time"
@@ -42,10 +43,10 @@ type cacheUser struct {
 
 //Auth handler
 type Auth struct {
-	apiKeysAuth   *APIKeysAuth
-	userAuth      *UserAuth
-	adminAuth     *AdminAuth
-	providersAuth *ProvidersAuth
+	apiKeysAuth  *APIKeysAuth
+	userAuth     *UserAuth
+	adminAuth    *AdminAuth
+	internalAuth *InternalAuth
 }
 
 //Start starts the auth module
@@ -72,19 +73,20 @@ func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) bool {
 	return auth.apiKeysAuth.check(w, r)
 }
 
-func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *string, *string) {
+func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
 	return auth.userAuth.userCheck(w, r)
 }
 
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, appClientID string, webAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string) *Auth {
+	authKeys string, authIssuer string, internalAPIKey string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	userAuth2 := newUserAuth(app, oidcProvider, oidcAppClientID, phoneAuthSecret, authKeys, authIssuer)
 	adminAuth := newAdminAuth(app, oidcProvider, appClientID, webAppClientID)
+	internalAuth := newInternalAuth(internalAPIKey)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, userAuth: userAuth2, adminAuth: adminAuth}
+	auth := Auth{apiKeysAuth: apiKeysAuth, userAuth: userAuth2, adminAuth: adminAuth, internalAuth: internalAuth}
 	return &auth
 }
 
@@ -132,11 +134,41 @@ func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
 	return &auth
 }
 
-////////////////////////////////////
+///////
 
-//ExternalAuth entity
-type ExternalAuth struct {
-	appKeys []string
+//InternalAuth handling the internal calls fromother BBs
+type InternalAuth struct {
+	internalAPIKey string
+}
+
+func newInternalAuth(internalAPIKey string) *InternalAuth {
+	auth := InternalAuth{internalAPIKey: internalAPIKey}
+	return &auth
+}
+
+func (auth *InternalAuth) check(w http.ResponseWriter, r *http.Request) bool {
+	apiKey := r.Header.Get("INTERNAL-API-KEY")
+	//check if there is api key in the header
+	if len(apiKey) == 0 {
+		//no key, so return 400
+		log.Println(fmt.Sprintf("400 - Bad Request"))
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad Request"))
+		return false
+	}
+
+	exist := auth.internalAPIKey == apiKey
+
+	if !exist {
+		//not exist, so return 401
+		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", apiKey))
+
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return false
+	}
+	return true
 }
 
 ////////////////////////////////////
@@ -257,20 +289,6 @@ func newAdminAuth(app *core.Application, oidcProvider string, appClientID string
 
 /////////////////////////////////////
 
-//ProvidersAuth entity
-type ProvidersAuth struct {
-	appKeys []string
-}
-
-func newProviderAuth(appKeys []string) *ProvidersAuth {
-	auth := ProvidersAuth{appKeys}
-	return &auth
-}
-
-type shData struct {
-	UIuceduUIN *string `json:"uiucedu_uin"`
-}
-
 type tokenData struct {
 	UID      string
 	Name     string
@@ -308,25 +326,21 @@ func (auth *UserAuth) start() {
 
 }
 
-func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *string, *string) {
+func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
 	//get the tokens
 	token, tokenSourceType, csrfToken, err := auth.getTokens(r)
 	if err != nil {
 		log.Printf("error gettings tokens - %s", err)
-
-		auth.responseInternalServerError(w)
 		return false, nil, nil
 	}
 
 	//check if all input data is available
 	if token == nil || len(*token) == 0 {
-		auth.responseBadRequest(w)
 		return false, nil, nil
 	}
 	rawToken := *token //we have token
 	if *tokenSourceType == "cookie" && (csrfToken == nil || len(*csrfToken) == 0) {
 		//if the token is sent via cookie then we must have csrf token as well
-		auth.responseBadRequest(w)
 		return false, nil, nil
 	}
 
@@ -334,36 +348,35 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 	// 1 & 2 are deprecated but we support them for back compatability
 	tokenType, err := auth.getTokenType(rawToken)
 	if err != nil {
-		auth.responseUnauthorized(err.Error(), w)
 		return false, nil, nil
 	}
 	if !(*tokenType == 1 || *tokenType == 2 || *tokenType == 3) {
-		auth.responseUnauthorized("not supported token type", w)
 		return false, nil, nil
 	}
 
 	// process the token - validate it, extract the user identifier
 	var externalID string
 	var authType string
+	user := &model.User{}
 
 	switch *tokenType {
 	case 1:
 		//support this for back compatability
-		uin, err := auth.processShibbolethToken(rawToken)
+		shibboData, err := auth.processShibbolethToken(rawToken)
 		if err != nil {
-			auth.responseUnauthorized(err.Error(), w)
 			return false, nil, nil
 		}
-		externalID = *uin
+		user.Uin = shibboData.UIuceduUIN
+		user.Email = shibboData.Email
+		user.Membership = shibboData.UIuceduIsMemberOf
 		authType = "shibboleth"
 	case 2:
 		//support this for back compatability
 		phone, err := auth.processPhoneToken(rawToken)
 		if err != nil {
-			auth.responseUnauthorized(err.Error(), w)
 			return false, nil, nil
 		}
-		externalID = *phone
+		user.Phone = phone
 		authType = "phone"
 	case 3:
 		//mobile app sends just token, the browser sends token + csrf token
@@ -375,7 +388,6 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 
 		tokenData, err := auth.processAccessToken(rawToken, csrfCheck, csrfToken)
 		if err != nil {
-			auth.responseUnauthorized(err.Error(), w)
 			return false, nil, nil
 		}
 
@@ -387,7 +399,6 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 			externalID = tokenData.UID
 			authType = "phone"
 		} else {
-			auth.responseUnauthorized("not supported token auth type", w)
 			return false, nil, nil
 		}
 	}
@@ -398,7 +409,6 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 		foundedUIN := auth.findUINByPhone(externalID)
 		if foundedUIN == nil {
 			//not found, it means that this phone is not added, so return unauthorized
-			auth.responseUnauthorized(fmt.Sprintf("%s phone is not added in the system", externalID), w)
 			return false, nil, nil
 		}
 		//it was found
@@ -406,7 +416,7 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 		authType = "shibboleth"
 	}
 
-	return true, &externalID, &authType
+	return true, user, &authType
 }
 
 //token source type - cookie and header
@@ -442,14 +452,14 @@ func (auth *UserAuth) getTokens(r *http.Request) (*string, *string, *string, err
 	return &token, &tokenSourceType, nil, nil
 }
 
-func (auth *UserAuth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *string, *string) {
+func (auth *UserAuth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
 	//apply main check
-	ok, externalID, authType := auth.mainCheck(w, r)
+	ok, user, authType := auth.mainCheck(w, r)
 	if !ok {
 		return false, nil, nil
 	}
 
-	return true, externalID, authType
+	return true, user, authType
 }
 
 //mobile app sends just token, the browser sends token + csrf token
@@ -569,7 +579,7 @@ func (auth *UserAuth) validateToken(token string, tokenType string) (*tokenData,
 	return tokenData, nil
 }
 
-func (auth *UserAuth) processShibbolethToken(token string) (*string, error) {
+func (auth *UserAuth) processShibbolethToken(token string) (*userData, error) {
 	// Validate the token
 	idToken, err := auth.appIDTokenVerifier.Verify(context.Background(), token)
 	if err != nil {
@@ -578,7 +588,7 @@ func (auth *UserAuth) processShibbolethToken(token string) (*string, error) {
 	}
 
 	// Get the user data from the token
-	var userData shData
+	var userData *userData
 	if err := idToken.Claims(&userData); err != nil {
 		log.Printf("error getting user data from token - %s\n", err)
 		return nil, err
@@ -588,7 +598,7 @@ func (auth *UserAuth) processShibbolethToken(token string) (*string, error) {
 		log.Printf("missing uiuceuin data in the token - %s\n", token)
 		return nil, errors.New("missing uiuceuin data in the token")
 	}
-	return userData.UIuceduUIN, nil
+	return userData, nil
 }
 
 func (auth *UserAuth) findUINByPhone(phone string) *string {

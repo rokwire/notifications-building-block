@@ -17,24 +17,25 @@
 
 package core
 
-//Application represents the core application code based on hexagonal architecture
+// Application represents the core application code based on hexagonal architecture
 type Application struct {
 	version string
 	build   string
 
-	Services Services //expose to the drivers adapters
+	Services Services // expose to the drivers adapters
 
-	storage Storage
+	storage  Storage
+	firebase Firebase
 }
 
-//Start starts the core part of the application
+// Start starts the core part of the application
 func (app *Application) Start() {
 }
 
-//NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage) *Application {
+// NewApplication creates new Application
+func NewApplication(version string, build string, storage Storage, firebase Firebase) *Application {
 
-	application := Application{version: version, build: build, storage: storage}
+	application := Application{version: version, build: build, storage: storage, firebase: firebase}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

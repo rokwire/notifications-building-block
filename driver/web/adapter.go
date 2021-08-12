@@ -19,16 +19,15 @@ package web
 
 import (
 	"fmt"
+	"github.com/casbin/casbin"
+	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
 	"notifications/driver/web/rest"
 	"notifications/utils"
-
-	"github.com/casbin/casbin"
-	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 //Adapter entity
@@ -38,34 +37,35 @@ type Adapter struct {
 	auth          *Auth
 	authorization *casbin.Enforcer
 
-	apisHandler      rest.ApisHandler
-	adminApisHandler rest.AdminApisHandler
+	apisHandler         rest.ApisHandler
+	adminApisHandler    rest.AdminApisHandler
+	internalApisHandler rest.InternalApisHandler
 
 	app *core.Application
 }
 
-// @title Rokwire Content Building Block API
-// @description Rokwire Content Building Block API Documentation.
+// @title Rokwire Notifications Building Block API
+// @description Rokwire Notifications Building Block API Documentation.
 // @version 0.1.0
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost
-// @BasePath /notifications
+// @BasePath /notifications/api
 // @schemes https
 
 // @securityDefinitions.apikey RokwireAuth
 // @in header
 // @name ROKWIRE-API-KEY
 
+// @securityDefinitions.apikey InternalAuth
+// @in header
+// @name INTERNAL-API-KEY
+
 // @securityDefinitions.apikey AdminUserAuth
 // @in header (add Bearer prefix to the Authorization value)
 // @name Authorization
 
-// @securityDefinitions.apikey AdminGroupAuth
-// @in header
-// @name GROUP
-
-//Start starts the module
+// Start starts the module
 func (we Adapter) Start() {
 
 	we.auth.Start()
@@ -73,14 +73,32 @@ func (we Adapter) Start() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// handle apis
-	mainRouter := router.PathPrefix("/notifications").Subrouter()
+	mainRouter := router.PathPrefix("/notifications/api").Subrouter()
 	mainRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	mainRouter.HandleFunc("/doc", we.serveDoc)
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
 
-	mainRouter.HandleFunc("/subscribe", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
-	mainRouter.HandleFunc("/unsubscribe", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
-	mainRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.SendMessage)).Methods("POST")
+	// Internal APIs
+	mainRouter.HandleFunc("/int/message_send", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
+
+	// Client APIs
+	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
+	mainRouter.HandleFunc("/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
+	mainRouter.HandleFunc("/topics", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
+	mainRouter.HandleFunc("/topic/{topic}/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
+	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
+	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
+
+	// Admin APIs
+	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
+	adminRouter.HandleFunc("/topics", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
+	adminRouter.HandleFunc("/topic", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
+	adminRouter.HandleFunc("/messages", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")
+	adminRouter.HandleFunc("/message_send", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.SendMessage)).Methods("POST")
+	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.CreateMessage)).Methods("POST")
+	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMessage)).Methods("PUT")
+	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
+	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -91,7 +109,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/notifications/doc", we.host)
+	url := fmt.Sprintf("%s/notifications/api/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
@@ -103,30 +121,31 @@ func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-type apiKeysAuthFunc = func(http.ResponseWriter, *http.Request)
+type internalAPIKeyAuthFunc = func(http.ResponseWriter, *http.Request)
+
+func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		apiKeyAuthenticated := we.auth.internalAuth.check(w, req)
+
+		if apiKeyAuthenticated {
+			handler(w, req)
+		}
+	}
+}
+
+type apiKeysAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeyOrTokenWrapFunc(handler apiKeysAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		apiKey := req.Header.Get("ROKWIRE-API-KEY")
-		//apply api key check
-		if len(apiKey) > 0 {
-			authenticated := we.auth.apiKeyCheck(w, req)
-			if !authenticated {
-				return
-			}
+		apiKeyAuthenticated := we.auth.apiKeyCheck(w, req)
+		userAuthenticated, user, _ := we.auth.userCheck(w, req)
 
-			handler(w, req)
-
-			return
-		}
-
-		//apply token check
-		authenticated, _, _ := we.auth.userCheck(w, req)
-		if authenticated {
-			handler(w, req)
-			return
+		if apiKeyAuthenticated || userAuthenticated {
+			handler(user, w, req)
 		}
 	}
 }
@@ -146,7 +165,7 @@ func (we Adapter) userAuthWrapFunc(handler userAuthFunc) http.HandlerFunc {
 	}
 }
 
-type adminAuthFunc = func(http.ResponseWriter, *http.Request)
+type adminAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -161,7 +180,7 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 		act := req.Method   // the operation that the user performs on the resource.
 
 		var HasAccess bool = false
-		for _, s := range *shiboUser.IsMemberOf {
+		for _, s := range *shiboUser.Membership {
 			HasAccess = we.authorization.Enforce(s, obj, act)
 			if HasAccess {
 				break
@@ -169,20 +188,20 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 		}
 
 		if !HasAccess {
-			log.Printf("Access control error - UIN: %s is trying to apply %s operation for %s\n", shiboUser.Uin, act, obj)
+			log.Printf("Access control error - UIN: %s is trying to apply %s operation for %s\n", *shiboUser.Uin, act, obj)
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
 		}
 
-		handler(w, req)
+		handler(shiboUser, w, req)
 	}
 }
 
-func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethAuth) {
+func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User) {
 	return auth.adminAuth.check(w, r)
 }
 
-func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethAuth) {
+func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *model.User) {
 	//1. Get the token from the request
 	rawIDToken, tokenType, err := auth.getIDToken(r)
 	if err != nil {
@@ -215,8 +234,8 @@ func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *mod
 		return false, nil
 	}
 
-	shibboAuth := &model.ShibbolethAuth{Uin: *userData.UIuceduUIN, Email: *userData.Email,
-		IsMemberOf: userData.UIuceduIsMemberOf}
+	shibboAuth := &model.User{Uin: userData.UIuceduUIN, Email: userData.Email,
+		Membership: userData.UIuceduIsMemberOf}
 
 	return true, shibboAuth
 }
@@ -224,14 +243,16 @@ func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *mod
 //NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(host string, port string, app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, adminAppClientID string, adminWebAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string) Adapter {
+	authKeys string, authIssuer string, firebaseAuth string, firebaseProjectID string, internalAPIKey string) Adapter {
 	auth := NewAuth(app, appKeys, oidcProvider, oidcAppClientID, adminAppClientID, adminWebAppClientID,
-		phoneAuthSecret, authKeys, authIssuer)
+		phoneAuthSecret, authKeys, authIssuer, internalAPIKey)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
-	return Adapter{host: host, port: port, auth: auth, authorization: authorization, apisHandler: apisHandler, adminApisHandler: adminApisHandler, app: app}
+	internalApisHandler := rest.NewInternalApisHandler(app)
+	return Adapter{host: host, port: port, auth: auth, authorization: authorization,
+		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
 }
 
 //AppListener implements core.ApplicationListener interface
