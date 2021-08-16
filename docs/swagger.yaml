@@ -45,6 +45,8 @@ definitions:
         type: string
       id:
         type: string
+      priority:
+        type: integer
       recipients:
         items:
           $ref: '#/definitions/Recipient'

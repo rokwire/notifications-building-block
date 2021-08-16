@@ -381,6 +381,7 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "priority", Value: message.Priority},
 				primitive.E{Key: "recipients", Value: message.Recipients},
 				primitive.E{Key: "topic", Value: message.Topic},
 				primitive.E{Key: "subject", Value: message.Subject},
