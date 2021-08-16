@@ -676,6 +676,9 @@ var doc = `{
                 "id": {
                     "type": "string"
                 },
+                "priority": {
+                    "type": "integer"
+                },
                 "recipients": {
                     "type": "array",
                     "items": {

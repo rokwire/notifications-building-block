@@ -12,6 +12,7 @@ type Message struct {
 	DateCreated *time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time  `json:"date_updated" bson:"date_updated"`
 	DateSent    *time.Time  `json:"date_sent" bson:"date_sent"`
+	Priority    int         `json:"priority" bson:"priority"`
 	Sent        bool        `json:"sent" bson:"sent"`
 	Recipients  []Recipient `json:"recipients" bson:"recipients"`
 	Topic       *string     `json:"topic" bson:"topic"`
