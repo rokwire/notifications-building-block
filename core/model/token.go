@@ -4,11 +4,9 @@ import "time"
 
 // FirebaseTokenMapping mapped token to a Shibboleth user
 type FirebaseTokenMapping struct {
-	Token       string    `json:"firebase_token" bson:"_id"`
-	DeviceID    *string   `json:"device_id" bson:"device_id"`
-	Uin         *string   `json:"uin" bson:"uin"`
-	Email       *string   `json:"email" bson:"email"`
-	Phone       *string   `json:"phone" bson:"phone"`
+	ID          string    `json:"id" bson:"_id"`
+	Tokens      []string  `json:"firebase_tokens" bson:"firebase_tokens"`
+	UserID      *string   `json:"user_id" bson:"user_id"`
 	Topics      []string  `json:"topics" bson:"topics"`
 	DateCreated time.Time `json:"date_created" bson:"date_created"`
 	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
@@ -43,3 +41,5 @@ func (t *FirebaseTokenMapping) RemoveTopic(topic string) {
 		t.Topics = topics
 	}
 }
+
+

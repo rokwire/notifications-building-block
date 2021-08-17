@@ -2,11 +2,7 @@ basePath: /notifications/api
 definitions:
   Recipient:
     properties:
-      email:
-        type: string
-      phone:
-        type: string
-      uin:
+      user_id:
         type: string
     type: object
   Topic:
@@ -174,17 +170,9 @@ paths:
       description: Gets all messages
       operationId: GetMessages
       parameters:
-      - description: uin - filter by uin
+      - description: user - filter by user
         in: query
-        name: uin
-        type: string
-      - description: email - filter by email
-        in: query
-        name: email
-        type: string
-      - description: phone - filter by phone
-        in: query
-        name: phone
+        name: user
         type: string
       - description: topic - filter by topic
         in: query

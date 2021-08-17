@@ -135,7 +135,7 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 	}
 }
 
-type apiKeysAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
+type apiKeysAuthFunc = func(*string, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeyOrTokenWrapFunc(handler apiKeysAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -144,8 +144,12 @@ func (we Adapter) apiKeyOrTokenWrapFunc(handler apiKeysAuthFunc) http.HandlerFun
 		apiKeyAuthenticated := we.auth.apiKeyCheck(w, req)
 		userAuthenticated, user, _ := we.auth.userCheck(w, req)
 
+		var userID *string
+		if user != nil {
+			userID = user.Email
+		}
 		if apiKeyAuthenticated || userAuthenticated {
-			handler(user, w, req)
+			handler(userID, w, req)
 		}
 	}
 }
@@ -165,7 +169,7 @@ func (we Adapter) userAuthWrapFunc(handler userAuthFunc) http.HandlerFunc {
 	}
 }
 
-type adminAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
+type adminAuthFunc = func(*model.ShibbolethUser, http.ResponseWriter, *http.Request)
 
 func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -197,11 +201,11 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 	}
 }
 
-func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User) {
+func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser) {
 	return auth.adminAuth.check(w, r)
 }
 
-func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *model.User) {
+func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser) {
 	//1. Get the token from the request
 	rawIDToken, tokenType, err := auth.getIDToken(r)
 	if err != nil {
@@ -234,7 +238,7 @@ func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *mod
 		return false, nil
 	}
 
-	shibboAuth := &model.User{Uin: userData.UIuceduUIN, Email: userData.Email,
+	shibboAuth := &model.ShibbolethUser{Uin: userData.UIuceduUIN, Email: userData.Email,
 		Membership: userData.UIuceduIsMemberOf}
 
 	return true, shibboAuth

@@ -26,5 +26,5 @@ type Message struct {
 // @ID Sender
 type Sender struct {
 	Type string `json:"type" bson:"type"` // user or system
-	User *User  `json:"user,omitempty" bson:"user,omitempty"`
+	User *ShibbolethUser `json:"user,omitempty" bson:"user,omitempty"`
 }

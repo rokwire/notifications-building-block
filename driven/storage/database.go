@@ -36,7 +36,7 @@ type database struct {
 	db       *mongo.Database
 	dbClient *mongo.Client
 
-	tokens   *collectionWrapper
+	users    *collectionWrapper
 	topics   *collectionWrapper
 	messages *collectionWrapper
 }
@@ -65,8 +65,8 @@ func (m *database) start() error {
 	//apply checks
 	db := client.Database(m.mongoDBName)
 
-	tokens := &collectionWrapper{database: m, coll: db.Collection("tokens")}
-	err = m.applyTokensChecks(tokens)
+	users := &collectionWrapper{database: m, coll: db.Collection("users")}
+	err = m.applyTokensChecks(users)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (m *database) start() error {
 	m.db = db
 	m.dbClient = client
 
-	m.tokens = tokens
+	m.users = users
 	m.topics = topics
 	m.messages = messages
 
@@ -179,10 +179,10 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	return nil
 }
 
-func (m *database) applyTokensChecks(tokens *collectionWrapper) error {
-	log.Println("apply tokens checks.....")
+func (m *database) applyTokensChecks(users *collectionWrapper) error {
+	log.Println("apply users checks.....")
 
-	indexes, _ := tokens.ListIndexes()
+	indexes, _ := users.ListIndexes()
 	indexMapping := map[string]interface{}{}
 	if indexes != nil {
 		for _, index := range indexes {
@@ -190,48 +190,29 @@ func (m *database) applyTokensChecks(tokens *collectionWrapper) error {
 			indexMapping[name] = index
 		}
 	}
-	if indexMapping["device_id_1"] == nil {
-		err := tokens.AddIndex(
+
+	if indexMapping["user_id_1"] == nil {
+		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "device_id", Value: 1},
-			}, false)
+				primitive.E{Key: "user_id", Value: 1},
+			}, true)
 		if err != nil {
 			return err
 		}
 	}
 
-	if indexMapping["uin_1"] == nil {
-		err := tokens.AddIndex(
+	if indexMapping["firebase_tokens_1"] == nil {
+		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "uin", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["email_1"] == nil {
-		err := tokens.AddIndex(
-			bson.D{
-				primitive.E{Key: "email", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["phone_1"] == nil {
-		err := tokens.AddIndex(
-			bson.D{
-				primitive.E{Key: "phone", Value: 1},
-			}, false)
+				primitive.E{Key: "firebase_tokens", Value: 1},
+			}, true)
 		if err != nil {
 			return err
 		}
 	}
 
 	if indexMapping["topics_1"] == nil {
-		err := tokens.AddIndex(
+		err := users.AddIndex(
 			bson.D{
 				primitive.E{Key: "topics", Value: 1},
 			}, false)
@@ -241,7 +222,7 @@ func (m *database) applyTokensChecks(tokens *collectionWrapper) error {
 	}
 
 	if indexMapping["date_created_1"] == nil {
-		err := tokens.AddIndex(
+		err := users.AddIndex(
 			bson.D{
 				primitive.E{Key: "date_created", Value: 1},
 			}, false)
@@ -251,7 +232,7 @@ func (m *database) applyTokensChecks(tokens *collectionWrapper) error {
 	}
 
 	if indexMapping["date_updated_1"] == nil {
-		err := tokens.AddIndex(
+		err := users.AddIndex(
 			bson.D{
 				primitive.E{Key: "date_updated", Value: 1},
 			}, false)
@@ -260,7 +241,7 @@ func (m *database) applyTokensChecks(tokens *collectionWrapper) error {
 		}
 	}
 
-	log.Println("apply tokens passed")
+	log.Println("apply users passed")
 	return nil
 }
 

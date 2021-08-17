@@ -182,20 +182,8 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "uin - filter by uin",
-                        "name": "uin",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "email - filter by email",
-                        "name": "email",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "phone - filter by phone",
-                        "name": "phone",
+                        "description": "user - filter by user",
+                        "name": "user",
                         "in": "query"
                     },
                     {
@@ -610,13 +598,7 @@ var doc = `{
         "Recipient": {
             "type": "object",
             "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "uin": {
+                "user_id": {
                     "type": "string"
                 }
             }

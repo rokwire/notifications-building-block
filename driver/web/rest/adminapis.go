@@ -28,7 +28,7 @@ func NewAdminApisHandler(app *core.Application) AdminApisHandler {
 // @Success 200 {array} model.Topic
 // @Security AdminUserAuth
 // @Router /admin/topics [get]
-func (h AdminApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) GetTopics(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 
 	topics, err := h.app.Services.GetTopics()
 	if err != nil {
@@ -57,7 +57,7 @@ func (h AdminApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *
 // @Success 200 {object} model.Topic
 // @Security AdminUserAuth
 // @Router /admin/topic [put]
-func (h AdminApisHandler) UpdateTopic(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) UpdateTopic(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -101,7 +101,7 @@ func (h AdminApisHandler) UpdateTopic(user *model.User, w http.ResponseWriter, r
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /message [post]
-func (h AdminApisHandler) SendMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) SendMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -141,9 +141,7 @@ func (h AdminApisHandler) SendMessage(user *model.User, w http.ResponseWriter, r
 // @Description Gets all messages
 // @Tags Admin
 // @ID GetMessages
-// @Param uin query string false "uin - filter by uin"
-// @Param email query string false "email - filter by email"
-// @Param phone query string false "phone - filter by phone"
+// @Param user query string false "user - filter by user"
 // @Param topic query string false "topic - filter by topic"
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
@@ -151,16 +149,14 @@ func (h AdminApisHandler) SendMessage(user *model.User, w http.ResponseWriter, r
 // @Success 200 {array} model.Message
 // @Security AdminUserAuth
 // @Router /admin/messages [get]
-func (h AdminApisHandler) GetMessages(user *model.User, w http.ResponseWriter, r *http.Request) {
-	uinFilter := getStringQueryParam(r, "uin")
-	emailFilter := getStringQueryParam(r, "email")
-	phoneFilter := getStringQueryParam(r, "phone")
+func (h AdminApisHandler) GetMessages(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+	userIDFilter := getStringQueryParam(r, "user")
 	topicFilter := getStringQueryParam(r, "topic")
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
 
-	messages, err := h.app.Services.GetMessages(uinFilter, emailFilter, phoneFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(userIDFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -188,7 +184,7 @@ func (h AdminApisHandler) GetMessages(user *model.User, w http.ResponseWriter, r
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message [post]
-func (h AdminApisHandler) CreateMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) CreateMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -232,7 +228,7 @@ func (h AdminApisHandler) CreateMessage(user *model.User, w http.ResponseWriter,
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message [put]
-func (h AdminApisHandler) UpdateMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) UpdateMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -283,7 +279,7 @@ func (h AdminApisHandler) UpdateMessage(user *model.User, w http.ResponseWriter,
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message/{id} [get]
-func (h AdminApisHandler) GetMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
@@ -321,7 +317,7 @@ func (h AdminApisHandler) GetMessage(user *model.User, w http.ResponseWriter, r 
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/message/{id} [delete]
-func (h AdminApisHandler) DeleteMessage(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) DeleteMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
