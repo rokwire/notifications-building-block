@@ -5,18 +5,7 @@ definitions:
       user_id:
         type: string
     type: object
-  Topic:
-    properties:
-      date_created:
-        type: string
-      date_updated:
-        type: string
-      description:
-        type: string
-      name:
-        type: string
-    type: object
-  User:
+  ShibbolethUser:
     properties:
       email:
         type: string
@@ -28,6 +17,21 @@ definitions:
         type: array
       uiucedu_uin:
         type: string
+    type: object
+  Topic:
+    properties:
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      user_ids:
+        items:
+          type: string
+        type: array
     type: object
   model.Message:
     properties:
@@ -62,7 +66,7 @@ definitions:
         description: user or system
         type: string
       user:
-        $ref: '#/definitions/User'
+        $ref: '#/definitions/ShibbolethUser'
     type: object
   tokenBody:
     properties:

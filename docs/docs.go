@@ -603,24 +603,7 @@ var doc = `{
                 }
             }
         },
-        "Topic": {
-            "type": "object",
-            "properties": {
-                "date_created": {
-                    "type": "string"
-                },
-                "date_updated": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "User": {
+        "ShibbolethUser": {
             "type": "object",
             "properties": {
                 "email": {
@@ -637,6 +620,29 @@ var doc = `{
                 },
                 "uiucedu_uin": {
                     "type": "string"
+                }
+            }
+        },
+        "Topic": {
+            "type": "object",
+            "properties": {
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -689,7 +695,7 @@ var doc = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/User"
+                    "$ref": "#/definitions/ShibbolethUser"
                 }
             }
         },

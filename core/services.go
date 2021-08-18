@@ -30,28 +30,30 @@ func (app *Application) storeFirebaseToken(token string, userID *string) error {
 	return app.storage.StoreFirebaseToken(token, userID)
 }
 
-func (app *Application) subscribeToTopic(token *string, userID *string, topic string) error {
+func (app *Application) subscribeToTopic(token string, userID *string, topic string) error {
 	var err error
 	if userID != nil {
-
-	} else {
-		if token != nil {
-			// Treat this user as anonymous.
-			err = app.firebase.SubscribeToTopic(*token, topic)
+		err = app.storage.SubscribeToTopic(token, userID, topic)
+		if err == nil {
+			err = app.firebase.SubscribeToTopic(token, topic)
 		}
+	} else if token != "" {
+		// Treat this user as anonymous.
+		err = app.firebase.SubscribeToTopic(token, topic)
 	}
 	return err
 }
 
-func (app *Application) unsubscribeToTopic(token *string, userID *string, topic string) error {
+func (app *Application) unsubscribeToTopic(token string, userID *string, topic string) error {
 	var err error
 	if userID != nil {
-
-	} else {
-		if token != nil {
-			// Treat this user as anonymous.
-			err = app.firebase.UnsubscribeToTopic(*token, topic)
+		err = app.storage.UnsubscribeToTopic(token, userID, topic)
+		if err == nil {
+			err = app.firebase.UnsubscribeToTopic(token, topic)
 		}
+	} else if token != "" {
+		// Treat this user as anonymous.
+		err = app.firebase.UnsubscribeToTopic(token, topic)
 	}
 	return err
 }
@@ -61,7 +63,7 @@ func (app *Application) getTopics() ([]model.Topic, error) {
 }
 
 func (app *Application) appendTopic(topic *model.Topic) (*model.Topic, error) {
-	return app.storage.AppendTopic(topic)
+	return app.storage.InsertTopic(topic)
 }
 
 func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
@@ -93,10 +95,8 @@ func (app *Application) sendMessage(user *model.ShibbolethUser, message *model.M
 				}
 			}
 		}
-	} else {
-		if message.Topic != nil {
-			err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
-		}
+	} else if message.Topic != nil {
+		err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
 	}
 	if err == nil {
 		message.Sent = true

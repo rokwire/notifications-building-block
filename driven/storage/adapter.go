@@ -56,11 +56,11 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 }
 
 // FindUserByToken finds firebase token
-func (sa Adapter) FindUserByToken(token string) (*model.FirebaseTokenMapping, error) {
+func (sa Adapter) FindUserByToken(token string) (*model.User, error) {
 	return sa.findUserByTokenWithContext(context.Background(), token)
 }
 
-func (sa Adapter) findUserByTokenWithContext(context context.Context, token string) (*model.FirebaseTokenMapping, error) {
+func (sa Adapter) findUserByTokenWithContext(context context.Context, token string) (*model.User, error) {
 	filter := bson.D{}
 	if len(token) > 0 {
 		filter = bson.D{
@@ -68,7 +68,7 @@ func (sa Adapter) findUserByTokenWithContext(context context.Context, token stri
 		}
 	}
 
-	var result *model.FirebaseTokenMapping
+	var result *model.User
 	err := sa.db.users.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
 		log.Printf("warning: error while retriving token (%s) - %s", token, err)
@@ -78,11 +78,11 @@ func (sa Adapter) findUserByTokenWithContext(context context.Context, token stri
 }
 
 // FindUserByID finds user by id
-func (sa Adapter) FindUserByID(userID string) (*model.FirebaseTokenMapping, error) {
+func (sa Adapter) FindUserByID(userID string) (*model.User, error) {
 	return sa.findUserByIDWithContext(context.Background(), userID)
 }
 
-func (sa Adapter) findUserByIDWithContext(context context.Context, userID string) (*model.FirebaseTokenMapping, error) {
+func (sa Adapter) findUserByIDWithContext(context context.Context, userID string) (*model.User, error) {
 	filter := bson.D{}
 	if len(userID) > 0 {
 		filter = bson.D{
@@ -90,7 +90,7 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 		}
 	}
 
-	var result *model.FirebaseTokenMapping
+	var result *model.User
 	err := sa.db.users.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
 		log.Printf("warning: error while retriving user (%s) - %s", userID, err)
@@ -155,16 +155,17 @@ func (sa Adapter) storeFirebaseToken(token string, userID *string) error {
 	return err
 }
 
-func (sa Adapter) createUserWithContext(context context.Context, token string, userID *string) (*model.FirebaseTokenMapping, error) {
-	record := &model.FirebaseTokenMapping{
-		Tokens: []string{token},
-		UserID: userID,
-		ID:     uuid.NewString(),
-	}
+func (sa Adapter) createUserWithContext(context context.Context, token string, userID *string) (*model.User, error) {
 
 	now := time.Now()
-	record.DateCreated = now
-	record.DateUpdated = now
+	record := &model.User{
+		ID:          uuid.NewString(),
+		UserID:      userID,
+		Tokens:      []string{token},
+		Topics:      []string{},
+		DateCreated: now,
+		DateUpdated: now,
+	}
 
 	_, err := sa.db.users.InsertOneWithContext(context, &record)
 	if err != nil {
@@ -256,23 +257,6 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 	return nil
 }
 
-/*func (sa Adapter) findToken(token string) (*model.FirebaseTokenMapping){
-	filter := bson.D{}
-	if len(token) > 0 {
-		filter = bson.D{
-			primitive.E{Key: "firebase_tokens", Value: token},
-		}
-	}
-
-	var result *model.FirebaseTokenMapping
-	err := sa.db.users.FindOne(filter, &result, nil)
-	if err != nil {
-		fmt.Printf("warning: error while retriving token (%s) - %s\n", token, err)
-	}
-
-	return result
-}*/
-
 // GetFirebaseTokensBy Gets all users mapped to the recipients input list
 func (sa Adapter) GetFirebaseTokensBy(recipients []model.Recipient) ([]string, error) {
 	if len(recipients) > 0 {
@@ -287,7 +271,7 @@ func (sa Adapter) GetFirebaseTokensBy(recipients []model.Recipient) ([]string, e
 			primitive.E{Key: "$or", Value: innerFilter},
 		}
 
-		var tokenMappings []model.FirebaseTokenMapping
+		var tokenMappings []model.User
 		err := sa.db.users.Find(filter, &tokenMappings, nil)
 		if err != nil {
 			return nil, err
@@ -307,50 +291,77 @@ func (sa Adapter) GetFirebaseTokensBy(recipients []model.Recipient) ([]string, e
 
 // SubscribeToTopic subscribes the token to a topic
 func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) error {
-	/*record, err := sa.FindFirebaseToken(token)
-	if err != nil || record == nil {
-		record, err = sa.storeFirebaseToken(token, user)
-	}
-	if err == nil && record != nil {
+	var err error
+	if userID != nil {
+		record, err := sa.FindUserByID(*userID)
 		if err == nil && record != nil {
-			record.DateUpdated = time.Now()
-			record.AddTopic(topic)
+			if err == nil && record != nil {
+				record.DateUpdated = time.Now()
+				record.AddTopic(topic)
 
-			filter := bson.D{primitive.E{Key: "_id", Value: record.Token}}
-			err = sa.db.tokens.ReplaceOne(filter, record, nil)
-			if err != nil {
-				log.Printf("warning: error while subscribe (%s) to topic (%s) - %s\n", token, topic, err)
-			} else {
-				_, _ = sa.AppendTopic(&model.Topic{Name: &topic}) // just try to append within the topics collection
+				filter := bson.D{primitive.E{Key: "_id", Value: record.ID}}
+				update := bson.D{
+					primitive.E{Key: "$set", Value: bson.D{
+						primitive.E{Key: "date_updated", Value: time.Now()},
+					}},
+					primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "topics", Value: topic}}},
+				}
+				_, err = sa.db.users.UpdateOne(filter, update, nil)
+				if err == nil {
+					var topicRecord *model.Topic
+					topicRecord, err = sa.GetTopicByName(topic)
+					if err == nil {
+						if topicRecord == nil {
+							_, err = sa.InsertTopic(&model.Topic{Name: topic, UserIDs: []string{*userID}}) // just try to append within the topics collection
+						} else {
+							err = sa.AddUserIDToTopic(*userID, topic)
+						}
+					}
+
+				}
 			}
 		}
+	} else {
+		return fmt.Errorf("user id is nil")
 	}
 
-	return err*/
-	return nil
+	return err
 }
 
 // UnsubscribeToTopic unsubscribes the token from a topic
 func (sa Adapter) UnsubscribeToTopic(token string, userID *string, topic string) error {
-	/*record, err := sa.FindFirebaseToken(token)
-	if err != nil || record == nil {
-		record, err = sa.storeFirebaseToken(token, user)
-	}
-	if err == nil && record != nil {
+	var err error
+	if userID != nil {
+		record, err := sa.FindUserByID(*userID)
 		if err == nil && record != nil {
-			record.DateUpdated = time.Now()
-			record.RemoveTopic(topic)
+			if err == nil && record != nil {
+				record.DateUpdated = time.Now()
+				record.AddTopic(topic)
 
-			filter := bson.D{primitive.E{Key: "_id", Value: record.Token}}
-			err = sa.db.tokens.ReplaceOne(filter, record, nil)
-			if err != nil {
-				log.Printf("warning: error while subscribe (%s) to topic (%s) - %s\n", token, topic, err)
+				filter := bson.D{primitive.E{Key: "_id", Value: record.ID}}
+				update := bson.D{
+					primitive.E{Key: "$set", Value: bson.D{
+						primitive.E{Key: "date_updated", Value: time.Now()},
+					}},
+					primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "topics", Value: topic}}},
+				}
+				_, err = sa.db.users.UpdateOne(filter, update, nil)
+				if err == nil {
+					var topicRecord *model.Topic
+					topicRecord, _ = sa.GetTopicByName(topic)
+					if topicRecord == nil {
+						_, err = sa.InsertTopic(&model.Topic{Name: topic, UserIDs: []string{}}) // just try to append within the topics collection
+					} else {
+						err = sa.RemoveUserIDFromTopic(*userID, topic)
+					}
+				}
 			}
 		}
+	} else {
+		return fmt.Errorf("user id is nil")
 	}
 
-	return err*/
-	return nil
+	return err
 }
 
 // GetTopics gets all topics
@@ -366,8 +377,23 @@ func (sa Adapter) GetTopics() ([]model.Topic, error) {
 	return result, nil
 }
 
-// AppendTopic appends a new topic within the topics collection
-func (sa Adapter) AppendTopic(topic *model.Topic) (*model.Topic, error) {
+// GetTopicByName appends a new topic within the topics collection
+func (sa Adapter) GetTopicByName(name string) (*model.Topic, error) {
+	if name != "" {
+		filter := bson.D{primitive.E{Key: "_id", Value: name}}
+		var topic model.Topic
+		err := sa.db.topics.FindOne(filter, &topic, nil)
+		if err == nil {
+			return &topic, nil
+		}
+		fmt.Printf("warning: error while retriving topic (%s) - %s\n", name, err)
+		return nil, err
+	}
+	return nil, nil
+}
+
+// InsertTopic appends a new topic within the topics collection
+func (sa Adapter) InsertTopic(topic *model.Topic) (*model.Topic, error) {
 	if topic.Name != "" {
 		now := time.Now()
 		topic.DateUpdated = now
@@ -383,6 +409,40 @@ func (sa Adapter) AppendTopic(topic *model.Topic) (*model.Topic, error) {
 	return topic, nil
 }
 
+// AddUserIDToTopic removes a user to a topic
+func (sa Adapter) AddUserIDToTopic(userID string, topic string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: topic}}
+
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		}},
+		primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "user_ids", Value: userID}}},
+	}
+	_, err := sa.db.topics.UpdateOne(filter, &update, nil)
+	if err != nil {
+		fmt.Printf("warning: error while add user (%s) topic (%s) - %s\n", userID, topic, err)
+	}
+	return err
+}
+
+// RemoveUserIDFromTopic removes a user from a topic
+func (sa Adapter) RemoveUserIDFromTopic(userID string, topic string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: topic}}
+
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		}},
+		primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "user_ids", Value: userID}}},
+	}
+	_, err := sa.db.topics.UpdateOne(filter, &update, nil)
+	if err != nil {
+		fmt.Printf("warning: error while add user (%s) topic (%s) - %s\n", userID, topic, err)
+	}
+	return err
+}
+
 // UpdateTopic updates a topic (for now only description is updatable)
 func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: topic.Name}}
@@ -394,6 +454,7 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "description", Value: topic.Description},
 			primitive.E{Key: "date_updated", Value: topic.DateUpdated},
+			primitive.E{Key: "user_ids", Value: topic.UserIDs},
 		}},
 	}
 

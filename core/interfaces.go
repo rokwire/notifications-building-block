@@ -23,8 +23,8 @@ import "notifications/core/model"
 type Services interface {
 	GetVersion() string
 	StoreFirebaseToken(token string, userID *string) error
-	SubscribeToTopic(token *string, userID *string, topic string) error
-	UnsubscribeToTopic(token *string, userID *string, topic string) error
+	SubscribeToTopic(token string, userID *string, topic string) error
+	UnsubscribeToTopic(token string, userID *string, topic string) error
 	GetTopics() ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
@@ -49,11 +49,11 @@ func (s *servicesImpl) StoreFirebaseToken(token string, userID *string) error {
 	return s.app.storeFirebaseToken(token, userID)
 }
 
-func (s *servicesImpl) SubscribeToTopic(token *string, userID *string, topic string) error {
+func (s *servicesImpl) SubscribeToTopic(token string, userID *string, topic string) error {
 	return s.app.subscribeToTopic(token, userID, topic)
 }
 
-func (s *servicesImpl) UnsubscribeToTopic(token *string, userID *string, topic string) error {
+func (s *servicesImpl) UnsubscribeToTopic(token string, userID *string, topic string) error {
 	return s.app.unsubscribeToTopic(token, userID, topic)
 }
 
@@ -95,14 +95,14 @@ func (s *servicesImpl) DeleteMessage(ID string) error {
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
-	FindUserByID(userID string) (*model.FirebaseTokenMapping, error)
-	FindUserByToken(token string) (*model.FirebaseTokenMapping, error)
+	FindUserByID(userID string) (*model.User, error)
+	FindUserByToken(token string) (*model.User, error)
 	StoreFirebaseToken(token string, userID *string) error
 	GetFirebaseTokensBy(recipient []model.Recipient) ([]string, error)
 	SubscribeToTopic(token string, userID *string, topic string) error
 	UnsubscribeToTopic(token string, userID *string, topic string) error
 	GetTopics() ([]model.Topic, error)
-	AppendTopic(*model.Topic) (*model.Topic, error)
+	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
 	GetMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)

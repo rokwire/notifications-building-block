@@ -17,6 +17,80 @@
 
 package model
 
+import "time"
+
+// User represents user entity and all its relationship with firebase tokens and topics
+type User struct {
+	ID          string    `json:"id" bson:"_id"`
+	Tokens      []string  `json:"firebase_tokens" bson:"firebase_tokens"`
+	UserID      *string   `json:"user_id" bson:"user_id"`
+	Topics      []string  `json:"topics" bson:"topics"`
+	DateCreated time.Time `json:"date_created" bson:"date_created"`
+	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
+} //@name User
+
+// AddToken adds topic to the list
+func (t *User) AddToken(token string) {
+	if t.Tokens == nil {
+		t.Tokens = []string{}
+	}
+	exists := false
+	for _, entry := range t.Tokens {
+		if token == entry {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		t.Tokens = append(t.Tokens, token)
+	}
+}
+
+// RemoveToken removes a topic
+func (t *User) RemoveToken(token string) {
+	if t.Tokens != nil {
+		tokens := []string{}
+		for _, entry := range t.Tokens {
+			if entry != token {
+				tokens = append(tokens, entry)
+			}
+		}
+		t.Tokens = tokens
+	}
+}
+
+// AddTopic adds topic to the list
+func (t *User) AddTopic(topic string) {
+	if t.Topics == nil {
+		t.Topics = []string{}
+	}
+	exists := false
+	for _, entry := range t.Topics {
+		if topic == entry {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		t.Topics = append(t.Topics, topic)
+	}
+}
+
+// RemoveTopic removes a topic
+func (t *User) RemoveTopic(topic string) {
+	if t.Topics != nil {
+		topics := []string{}
+		for _, entry := range t.Topics {
+			if entry != topic {
+				topics = append(topics, entry)
+			}
+		}
+		t.Topics = topics
+	}
+}
+
+//////////////////////////
+
 // ShibbolethUser represents shibboleth auth entity
 type ShibbolethUser struct {
 	Uin        *string   `json:"uiucedu_uin" bson:"uin"`
