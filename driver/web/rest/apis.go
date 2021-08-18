@@ -134,7 +134,7 @@ func (h ApisHandler) Subscribe(userID *string, w http.ResponseWriter, r *http.Re
 		http.Error(w, "Missing token in the body", http.StatusBadRequest)
 	}
 
-	err = h.app.Services.SubscribeToTopic(*body.Token, userID, topic)
+	err = h.app.Services.SubscribeToTopic(body.Token, userID, topic)
 	if err != nil {
 		log.Printf("Error on subscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -182,7 +182,7 @@ func (h ApisHandler) Unsubscribe(user *string, w http.ResponseWriter, r *http.Re
 		http.Error(w, "Missing token in the json body", http.StatusBadRequest)
 	}
 
-	err = h.app.Services.UnsubscribeToTopic(*body.Token, user, topic)
+	err = h.app.Services.UnsubscribeToTopic(body.Token, user, topic)
 	if err != nil {
 		log.Printf("Error on unsubscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

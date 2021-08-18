@@ -99,23 +99,6 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 	return result, err
 }
 
-func (sa Adapter) FindUser(user string) (*model.FirebaseTokenMapping, error) {
-	filter := bson.D{}
-	if len(user) > 0 {
-		filter = bson.D{
-			primitive.E{Key: "user_id", Value: user},
-		}
-	}
-
-	var result *model.FirebaseTokenMapping
-	err := sa.db.users.FindOne(filter, &result, nil)
-	if err != nil {
-		log.Printf("warning: error while retriving user (%s) - %s", user, err)
-	}
-
-	return result, err
-}
-
 // StoreFirebaseToken stores firebase token and links it to the user
 func (sa Adapter) StoreFirebaseToken(token string, userID *string) error {
 	err := sa.storeFirebaseToken(token, userID)
@@ -144,18 +127,18 @@ func (sa Adapter) storeFirebaseToken(token string, userID *string) error {
 		} else if tokenRecord.UserID != nil && tokenRecord.UserID != userID {
 			err = sa.removeTokenFromUserWithContext(sessionContext, token, tokenRecord.UserID)
 			if err != nil {
-				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, tokenRecord.UserID, err)
+				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, *tokenRecord.UserID, err)
 				return err
 			}
 			err = sa.addTokenToUserWithContext(sessionContext, token, userID)
 			if err != nil {
-				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", token, userID, err)
+				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", token, *userID, err)
 				return err
 			}
 		}
 
 		if err != nil {
-			fmt.Printf("error while storing token (%s) to user (%s) %s\n", token, userID, err)
+			fmt.Printf("error while storing token (%s) to user (%s) %s\n", token, *userID, err)
 			abortTransaction(sessionContext)
 			return err
 		}
@@ -212,7 +195,7 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, u
 
 			_, err = sa.db.users.UpdateOneWithContext(sessionContext, filter, &update, nil)
 			if err != nil {
-				fmt.Printf("warning: error while adding token (%s) to user (%s) %s\n", token, userID, err)
+				fmt.Printf("warning: error while adding token (%s) to user (%s) %s\n", token, *userID, err)
 				abortTransaction(sessionContext)
 				return err
 			}
@@ -226,7 +209,7 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, u
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("error while adding token (%s) to user (%s) %s\n", token, userID, err)
+			return fmt.Errorf("error while adding token (%s) to user (%s) %s", token, *userID, err)
 		}
 	}
 	return nil
@@ -253,7 +236,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 
 			_, err = sa.db.users.UpdateOne(filter, &update, nil)
 			if err != nil {
-				fmt.Printf("warning: error while removing token (%s) from user (%s) %s\n", token, userID, err)
+				fmt.Printf("warning: error while removing token (%s) from user (%s) %s\n", token, *userID, err)
 				abortTransaction(sessionContext)
 				return err
 			}
@@ -267,7 +250,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 			return nil
 		})
 		if err != nil {
-			return fmt.Errorf("error while adding token (%s) to user (%s) %s\n", token, userID, err)
+			return fmt.Errorf("error while adding token (%s) to user (%s) %s", token, *userID, err)
 		}
 	}
 	return nil
@@ -385,14 +368,14 @@ func (sa Adapter) GetTopics() ([]model.Topic, error) {
 
 // AppendTopic appends a new topic within the topics collection
 func (sa Adapter) AppendTopic(topic *model.Topic) (*model.Topic, error) {
-	if topic.Name != nil {
+	if topic.Name != "" {
 		now := time.Now()
-		topic.DateUpdated = &now
-		topic.DateCreated = &now
+		topic.DateUpdated = now
+		topic.DateCreated = now
 
 		_, err := sa.db.topics.InsertOne(&topic)
 		if err != nil {
-			fmt.Printf("warning: error while store topic (%s) - %s\n", *topic.Name, err)
+			fmt.Printf("warning: error while store topic (%s) - %s\n", topic.Name, err)
 			return nil, err
 		}
 	}
@@ -405,7 +388,7 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: topic.Name}}
 
 	now := time.Now()
-	topic.DateUpdated = &now
+	topic.DateUpdated = now
 
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
@@ -416,7 +399,7 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 
 	_, err := sa.db.topics.UpdateOne(filter, &update, nil)
 	if err != nil {
-		fmt.Printf("warning: error while update topic (%s) - %s\n", *topic.Name, err)
+		fmt.Printf("warning: error while update topic (%s) - %s\n", topic.Name, err)
 		return nil, err
 	}
 

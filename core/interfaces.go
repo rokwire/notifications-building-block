@@ -23,8 +23,8 @@ import "notifications/core/model"
 type Services interface {
 	GetVersion() string
 	StoreFirebaseToken(token string, userID *string) error
-	SubscribeToTopic(token string, userID *string, topic string) error
-	UnsubscribeToTopic(token string, userID *string, topic string) error
+	SubscribeToTopic(token *string, userID *string, topic string) error
+	UnsubscribeToTopic(token *string, userID *string, topic string) error
 	GetTopics() ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
@@ -49,11 +49,11 @@ func (s *servicesImpl) StoreFirebaseToken(token string, userID *string) error {
 	return s.app.storeFirebaseToken(token, userID)
 }
 
-func (s *servicesImpl) SubscribeToTopic(token string, userID *string, topic string) error {
+func (s *servicesImpl) SubscribeToTopic(token *string, userID *string, topic string) error {
 	return s.app.subscribeToTopic(token, userID, topic)
 }
 
-func (s *servicesImpl) UnsubscribeToTopic(token string, userID *string, topic string) error {
+func (s *servicesImpl) UnsubscribeToTopic(token *string, userID *string, topic string) error {
 	return s.app.unsubscribeToTopic(token, userID, topic)
 }
 

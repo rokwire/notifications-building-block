@@ -30,22 +30,30 @@ func (app *Application) storeFirebaseToken(token string, userID *string) error {
 	return app.storage.StoreFirebaseToken(token, userID)
 }
 
-func (app *Application) subscribeToTopic(token string, userID *string, topic string) error {
-	/*err := app.storage.SubscribeToTopic(token, user, topic)
-	if err == nil {
-		err = app.firebase.SubscribeToTopic(token, topic)
+func (app *Application) subscribeToTopic(token *string, userID *string, topic string) error {
+	var err error
+	if userID != nil {
+
+	} else {
+		if token != nil {
+			// Treat this user as anonymous.
+			err = app.firebase.SubscribeToTopic(*token, topic)
+		}
 	}
-	return err*/
-	return nil
+	return err
 }
 
-func (app *Application) unsubscribeToTopic(token string, userID *string, topic string) error {
-	/*err := app.storage.UnsubscribeToTopic(token, user, topic)
-	if err == nil {
-		err = app.firebase.UnsubscribeToTopic(token, topic)
+func (app *Application) unsubscribeToTopic(token *string, userID *string, topic string) error {
+	var err error
+	if userID != nil {
+
+	} else {
+		if token != nil {
+			// Treat this user as anonymous.
+			err = app.firebase.UnsubscribeToTopic(*token, topic)
+		}
 	}
-	return err*/
-	return nil
+	return err
 }
 
 func (app *Application) getTopics() ([]model.Topic, error) {

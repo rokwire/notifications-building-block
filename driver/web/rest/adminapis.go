@@ -75,7 +75,7 @@ func (h AdminApisHandler) UpdateTopic(user *model.ShibbolethUser, w http.Respons
 
 	_, err = h.app.Services.UpdateTopic(topic)
 	if err != nil {
-		log.Printf("Error on update topic (%s): %s\n", *topic.Name, err)
+		log.Printf("Error on update topic (%s): %s\n", topic.Name, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

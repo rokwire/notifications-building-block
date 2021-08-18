@@ -41,5 +41,3 @@ func (t *FirebaseTokenMapping) RemoveTopic(topic string) {
 		t.Topics = topics
 	}
 }
-
-
