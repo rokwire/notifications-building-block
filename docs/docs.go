@@ -182,20 +182,8 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "uin - filter by uin",
-                        "name": "uin",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "email - filter by email",
-                        "name": "email",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "phone - filter by phone",
-                        "name": "phone",
+                        "description": "user - filter by user",
+                        "name": "user",
                         "in": "query"
                     },
                     {
@@ -610,13 +598,27 @@ var doc = `{
         "Recipient": {
             "type": "object",
             "properties": {
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "ShibbolethUser": {
+            "type": "object",
+            "properties": {
                 "email": {
                     "type": "string"
                 },
                 "phone": {
                     "type": "string"
                 },
-                "uin": {
+                "uiucedu_is_member_of": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "uiucedu_uin": {
                     "type": "string"
                 }
             }
@@ -635,26 +637,12 @@ var doc = `{
                 },
                 "name": {
                     "type": "string"
-                }
-            }
-        },
-        "User": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
                 },
-                "phone": {
-                    "type": "string"
-                },
-                "uiucedu_is_member_of": {
+                "user_ids": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
-                },
-                "uiucedu_uin": {
-                    "type": "string"
                 }
             }
         },
@@ -707,7 +695,7 @@ var doc = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/User"
+                    "$ref": "#/definitions/ShibbolethUser"
                 }
             }
         },
@@ -750,7 +738,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "0.1.0",
+	Version:     "0.1.3",
 	Host:        "localhost",
 	BasePath:    "/notifications/api",
 	Schemes:     []string{"https"},

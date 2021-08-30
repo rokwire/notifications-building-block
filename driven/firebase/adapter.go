@@ -90,7 +90,7 @@ func (fa *Adapter) SubscribeToTopic(token string, topic string) error {
 	if err == nil {
 		_, err = client.SubscribeToTopic(ctx, []string{token}, topic)
 		if err != nil {
-			err = fmt.Errorf("error while subscribing to topic (%s): %s", topic, err)
+			err = fmt.Errorf("error while subscribing to Firebase topic (%s): %s", topic, err)
 		}
 	}
 	return err

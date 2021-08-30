@@ -2,7 +2,5 @@ package model
 
 // Recipient represent recipient of a message
 type Recipient struct {
-	Uin   *string `json:"uin" bson:"uin"`
-	Email *string `json:"email" bson:"email"`
-	Phone *string `json:"phone" bson:"phone"`
+	UserID *string `json:"user_id" bson:"user_id"`
 } //@name Recipient

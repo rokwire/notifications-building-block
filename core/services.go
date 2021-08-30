@@ -26,21 +26,33 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) storeFirebaseToken(token string, user *model.User) error {
-	return app.storage.StoreFirebaseToken(token, user)
+func (app *Application) storeFirebaseToken(token string, userID *string) error {
+	return app.storage.StoreFirebaseToken(token, userID)
 }
 
-func (app *Application) subscribeToTopic(token string, user *model.User, topic string) error {
-	err := app.storage.SubscribeToTopic(token, user, topic)
-	if err == nil {
+func (app *Application) subscribeToTopic(token string, userID *string, topic string) error {
+	var err error
+	if userID != nil {
+		err = app.storage.SubscribeToTopic(token, userID, topic)
+		if err == nil {
+			err = app.firebase.SubscribeToTopic(token, topic)
+		}
+	} else if token != "" {
+		// Treat this user as anonymous.
 		err = app.firebase.SubscribeToTopic(token, topic)
 	}
 	return err
 }
 
-func (app *Application) unsubscribeToTopic(token string, user *model.User, topic string) error {
-	err := app.storage.UnsubscribeToTopic(token, user, topic)
-	if err == nil {
+func (app *Application) unsubscribeToTopic(token string, userID *string, topic string) error {
+	var err error
+	if userID != nil {
+		err = app.storage.UnsubscribeToTopic(token, userID, topic)
+		if err == nil {
+			err = app.firebase.UnsubscribeToTopic(token, topic)
+		}
+	} else if token != "" {
+		// Treat this user as anonymous.
 		err = app.firebase.UnsubscribeToTopic(token, topic)
 	}
 	return err
@@ -51,14 +63,14 @@ func (app *Application) getTopics() ([]model.Topic, error) {
 }
 
 func (app *Application) appendTopic(topic *model.Topic) (*model.Topic, error) {
-	return app.storage.AppendTopic(topic)
+	return app.storage.InsertTopic(topic)
 }
 
 func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) sendMessage(user *model.User, message *model.Message) (*model.Message, error) {
+func (app *Application) sendMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
 	var persistedMessage *model.Message
 	var err error
 	if message.ID != nil {
@@ -83,15 +95,13 @@ func (app *Application) sendMessage(user *model.User, message *model.Message) (*
 				}
 			}
 		}
-	} else {
-		if message.Topic != nil {
-			err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
-		}
+	} else if message.Topic != nil {
+		err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
 	}
 	if err == nil {
 		message.Sent = true
 		if user != nil {
-			message.Sender = &model.Sender{Type: "user", User: &model.User{Uin: user.Uin, Email: user.Email, Phone: user.Phone}}
+			message.Sender = &model.Sender{Type: "user", User: &model.ShibbolethUser{Uin: user.Uin, Email: user.Email, Phone: user.Phone}}
 		} else {
 			message.Sender = &model.Sender{Type: "system"}
 		}
@@ -108,8 +118,8 @@ func (app *Application) sendMessage(user *model.User, message *model.Message) (*
 	return persistedMessage, err
 }
 
-func (app *Application) getMessages(uinFilter *string, emailFilter *string, phoneFilter *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return app.storage.GetMessages(uinFilter, emailFilter, phoneFilter, filterTopic, offset, limit, order)
+func (app *Application) getMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return app.storage.GetMessages(userID, filterTopic, offset, limit, order)
 }
 
 func (app *Application) getMessage(ID string) (*model.Message, error) {

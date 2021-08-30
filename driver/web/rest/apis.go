@@ -63,7 +63,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 // @Success 200
 // @Security RokwireAuth
 // @Router /token [post]
-func (h ApisHandler) StoreFirebaseToken(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) StoreFirebaseToken(user *string, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal token data - %s\n", err.Error())
@@ -105,7 +105,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.User, w http.ResponseWriter,
 // @Success 200
 // @Security RokwireAuth
 // @Router /topic/{topic}/subscribe [post]
-func (h ApisHandler) Subscribe(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Subscribe(userID *string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	topic := params["topic"]
 	if len(topic) <= 0 {
@@ -132,9 +132,10 @@ func (h ApisHandler) Subscribe(user *model.User, w http.ResponseWriter, r *http.
 	if len(*body.Token) == 0 {
 		log.Printf("Missing token in the body")
 		http.Error(w, "Missing token in the body", http.StatusBadRequest)
+		return
 	}
 
-	err = h.app.Services.SubscribeToTopic(*body.Token, user, topic)
+	err = h.app.Services.SubscribeToTopic(*body.Token, userID, topic)
 	if err != nil {
 		log.Printf("Error on subscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -153,7 +154,7 @@ func (h ApisHandler) Subscribe(user *model.User, w http.ResponseWriter, r *http.
 // @Success 200
 // @Security RokwireAuth
 // @Router /topic/{topic}/unsubscribe [post]
-func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Unsubscribe(user *string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	topic := params["topic"]
 	if len(topic) <= 0 {
@@ -180,6 +181,7 @@ func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *htt
 	if len(*body.Token) == 0 {
 		log.Printf("Missing token in the json body")
 		http.Error(w, "Missing token in the json body", http.StatusBadRequest)
+		return
 	}
 
 	err = h.app.Services.UnsubscribeToTopic(*body.Token, user, topic)
@@ -202,15 +204,15 @@ func (h ApisHandler) Unsubscribe(user *model.User, w http.ResponseWriter, r *htt
 // @Success 200 {array} model.Message
 // @Security RokwireAuth
 // @Router /messages [get]
-func (h ApisHandler) GetUserMessages(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetUserMessages(userID *string, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
 
 	var messages []model.Message
 	var err error
-	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.Uin, user.Email, user.Phone, nil, offsetFilter, limitFilter, orderFilter)
+	if userID != nil {
+		messages, err = h.app.Services.GetMessages(userID, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -240,7 +242,7 @@ func (h ApisHandler) GetUserMessages(user *model.User, w http.ResponseWriter, r 
 // @Success 200 {array} model.Topic
 // @Security RokwireAuth
 // @Router /topics [get]
-func (h ApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopics(userID *string, w http.ResponseWriter, r *http.Request) {
 
 	topics, err := h.app.Services.GetTopics()
 	if err != nil {
@@ -270,7 +272,7 @@ func (h ApisHandler) GetTopics(user *model.User, w http.ResponseWriter, r *http.
 // @Success 200 {array} model.Message
 // @Security RokwireAuth
 // @Router /topic/{topic}/messages [get]
-func (h ApisHandler) GetTopicMessages(user *model.User, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopicMessages(userID *string, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
@@ -283,7 +285,7 @@ func (h ApisHandler) GetTopicMessages(user *model.User, w http.ResponseWriter, r
 		return
 	}
 
-	messages, err := h.app.Services.GetMessages(nil, nil, nil, &topic, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(nil, &topic, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, fmt.Sprintf("Error on getting messages: %s", err), http.StatusInternalServerError)

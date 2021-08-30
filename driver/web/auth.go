@@ -73,7 +73,7 @@ func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) bool {
 	return auth.apiKeysAuth.check(w, r)
 }
 
-func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
+func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser, *string) {
 	return auth.userAuth.userCheck(w, r)
 }
 
@@ -326,7 +326,7 @@ func (auth *UserAuth) start() {
 
 }
 
-func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
+func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser, *string) {
 	//get the tokens
 	token, tokenSourceType, csrfToken, err := auth.getTokens(r)
 	if err != nil {
@@ -357,7 +357,7 @@ func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *
 	// process the token - validate it, extract the user identifier
 	var externalID string
 	var authType string
-	user := &model.User{}
+	user := &model.ShibbolethUser{}
 
 	switch *tokenType {
 	case 1:
@@ -452,7 +452,7 @@ func (auth *UserAuth) getTokens(r *http.Request) (*string, *string, *string, err
 	return &token, &tokenSourceType, nil, nil
 }
 
-func (auth *UserAuth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, *string) {
+func (auth *UserAuth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser, *string) {
 	//apply main check
 	ok, user, authType := auth.mainCheck(w, r)
 	if !ok {

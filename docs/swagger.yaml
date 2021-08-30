@@ -2,11 +2,20 @@ basePath: /notifications/api
 definitions:
   Recipient:
     properties:
+      user_id:
+        type: string
+    type: object
+  ShibbolethUser:
+    properties:
       email:
         type: string
       phone:
         type: string
-      uin:
+      uiucedu_is_member_of:
+        items:
+          type: string
+        type: array
+      uiucedu_uin:
         type: string
     type: object
   Topic:
@@ -19,19 +28,10 @@ definitions:
         type: string
       name:
         type: string
-    type: object
-  User:
-    properties:
-      email:
-        type: string
-      phone:
-        type: string
-      uiucedu_is_member_of:
+      user_ids:
         items:
           type: string
         type: array
-      uiucedu_uin:
-        type: string
     type: object
   model.Message:
     properties:
@@ -66,7 +66,7 @@ definitions:
         description: user or system
         type: string
       user:
-        $ref: '#/definitions/User'
+        $ref: '#/definitions/ShibbolethUser'
     type: object
   tokenBody:
     properties:
@@ -81,7 +81,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Rokwire Notifications Building Block API
-  version: 0.1.0
+  version: 0.1.3
 paths:
   /admin/message:
     post:
@@ -174,17 +174,9 @@ paths:
       description: Gets all messages
       operationId: GetMessages
       parameters:
-      - description: uin - filter by uin
+      - description: user - filter by user
         in: query
-        name: uin
-        type: string
-      - description: email - filter by email
-        in: query
-        name: email
-        type: string
-      - description: phone - filter by phone
-        in: query
-        name: phone
+        name: user
         type: string
       - description: topic - filter by topic
         in: query
