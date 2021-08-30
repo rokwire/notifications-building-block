@@ -309,17 +309,17 @@ func (h ApisHandler) GetTopicMessages(_ *model.ShibbolethUser, w http.ResponseWr
 	w.Write(data)
 }
 
-// GetMessage Retrieves a message by id
+// GetUserMessage Retrieves a message by id
 // @Description Retrieves a message by id
 // @Tags Client
-// @ID GetMessage
+// @ID GetUserMessage
 // @Param id path string true "id"
 // @Accept  json
 // @Produce plain
 // @Success 200 {object} model.Message
 // @Security UserAuth
 // @Router /message/{id} [get]
-func (h ApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetUserMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {

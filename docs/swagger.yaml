@@ -70,7 +70,7 @@ definitions:
       user:
         $ref: '#/definitions/ShibbolethUser'
     type: object
-  tokenBody:
+  storeTokenBody:
     properties:
       previous_token:
         type: string
@@ -85,7 +85,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Rokwire Notifications Building Block API
-  version: 0.1.3
+  version: 0.1.4.2
 paths:
   /admin/message:
     post:
@@ -284,7 +284,29 @@ paths:
       security:
       - UserAuth: []
       tags:
-      - Admin
+      - Client
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a message by id
+      operationId: GetUserMessage
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
+      security:
+      - UserAuth: []
+      tags:
+      - Client
   /messages:
     get:
       description: Gets all messages to the authenticated user.
@@ -325,7 +347,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/tokenBody'
+          $ref: '#/definitions/storeTokenBody'
       responses:
         "200":
           description: ""
@@ -373,7 +395,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/tokenBody'
+          $ref: '#/definitions/storeTokenBody'
       responses:
         "200":
           description: ""
@@ -396,7 +418,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/tokenBody'
+          $ref: '#/definitions/storeTokenBody'
       responses:
         "200":
           description: ""
