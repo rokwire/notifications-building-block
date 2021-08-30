@@ -44,7 +44,7 @@ type storeTokenBody struct {
 } //@name storeTokenBody
 
 type tokenBody struct {
-	Token         *string `json:"token"`
+	Token *string `json:"token"`
 } //@name tokenBody
 
 // Version gives the service version
@@ -311,14 +311,14 @@ func (h ApisHandler) GetTopicMessages(_ *model.ShibbolethUser, w http.ResponseWr
 
 // GetMessage Retrieves a message by id
 // @Description Retrieves a message by id
-// @Tags Admin
+// @Tags Client
 // @ID GetMessage
 // @Param id path string true "id"
 // @Accept  json
 // @Produce plain
 // @Success 200 {object} model.Message
-// @Security AdminUserAuth
-// @Router /admin/message/{id} [get]
+// @Security UserAuth
+// @Router /message/{id} [get]
 func (h ApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
@@ -355,7 +355,7 @@ func (h ApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWrite
 
 // DeleteUserMessage Removes the current user from the recipient list of the message
 // @Description Removes the current user from the recipient list of the message
-// @Tags Admin
+// @Tags Client
 // @ID DeleteUserMessage
 // @Param id path string true "id"
 // @Produce plain
