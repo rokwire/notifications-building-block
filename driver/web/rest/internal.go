@@ -45,7 +45,7 @@ func (h InternalApisHandler) SendMessage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	message, err = h.app.Services.SendMessage(nil, message)
+	message, err = h.app.Services.CreateMessage(nil, message)
 	if err != nil {
 		log.Printf("Error on sending message: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

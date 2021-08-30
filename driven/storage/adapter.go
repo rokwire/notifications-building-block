@@ -257,8 +257,8 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 	return nil
 }
 
-// GetFirebaseTokensBy Gets all users mapped to the recipients input list
-func (sa Adapter) GetFirebaseTokensBy(recipients []model.Recipient) ([]string, error) {
+// GetFirebaseTokensByRecipients Gets all users mapped to the recipients input list
+func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient) ([]string, error) {
 	if len(recipients) > 0 {
 		innerFilter := []interface{}{}
 		for _, recipient := range recipients {
@@ -526,10 +526,6 @@ func (sa Adapter) CreateMessage(message *model.Message) (*model.Message, error) 
 	message.DateUpdated = &now
 	message.DateCreated = &now
 
-	if message.Sent {
-		message.DateSent = &now
-	}
-
 	_, err := sa.db.messages.InsertOne(&message)
 	if err != nil {
 		fmt.Printf("warning: error while store message (%s) - %s", *message.ID, err)
@@ -546,13 +542,6 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 		if err != nil || persistedMessage == nil {
 			return nil, fmt.Errorf("Message with id (%s) not found: %w", *message.ID, err)
 		}
-		if persistedMessage.Sent {
-			return nil, fmt.Errorf("attempt to update already sent message")
-		}
-		if message.Sent && !persistedMessage.Sent {
-			now := time.Now()
-			message.DateSent = &now
-		}
 
 		filter := bson.D{primitive.E{Key: "_id", Value: message.ID}}
 
@@ -563,9 +552,7 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 				primitive.E{Key: "topic", Value: message.Topic},
 				primitive.E{Key: "subject", Value: message.Subject},
 				primitive.E{Key: "body", Value: message.Body},
-				primitive.E{Key: "sender", Value: message.Sender},
 				primitive.E{Key: "date_updated", Value: time.Now()},
-				primitive.E{Key: "date_sent", Value: message.DateSent},
 			}},
 		}
 
@@ -579,14 +566,43 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 	return message, nil
 }
 
+// DeleteUserMessage removes the desired user from the recipients list
+func (sa Adapter) DeleteUserMessage(userID string, messageID string) error {
+	persistedMessage, err := sa.GetMessage(messageID)
+	if err != nil || persistedMessage == nil {
+		return fmt.Errorf("message with id (%s) not found: %s", messageID, err)
+	}
+
+	updatesRecipients := []model.Recipient{}
+	for _, recipient := range persistedMessage.Recipients {
+		if userID != *recipient.UserID {
+			updatesRecipients = append(updatesRecipients, recipient)
+		}
+	}
+
+	if len(updatesRecipients) != len(persistedMessage.Recipients) {
+		filter := bson.D{primitive.E{Key: "_id", Value: messageID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "recipients", Value: updatesRecipients},
+			}},
+		}
+
+		_, err = sa.db.messages.UpdateOne(filter, update, nil)
+		if err != nil {
+			fmt.Printf("warning: error while delete message (%s) for user (%s) %s", messageID, userID, err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 // DeleteMessage deletes a message by id
 func (sa Adapter) DeleteMessage(ID string) error {
 	persistedMessage, err := sa.GetMessage(ID)
 	if err != nil || persistedMessage == nil {
 		return fmt.Errorf("message with id (%s) not found: %s", ID, err)
-	}
-	if persistedMessage.Sent {
-		return fmt.Errorf("unable to delete message which is already sent")
 	}
 
 	filter := bson.D{primitive.E{Key: "_id", Value: ID}}

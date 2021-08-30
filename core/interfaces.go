@@ -23,17 +23,17 @@ import "notifications/core/model"
 type Services interface {
 	GetVersion() string
 	StoreFirebaseToken(token string, userID *string) error
-	SubscribeToTopic(token string, userID *string, topic string) error
-	UnsubscribeToTopic(token string, userID *string, topic string) error
+	SubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error
+	UnsubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error
 	GetTopics() ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
-	SendMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error)
 	GetMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(ID string) (*model.Message, error)
-	CreateMessage(message *model.Message) (*model.Message, error)
-	UpdateMessage(message *model.Message) (*model.Message, error)
+	CreateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error)
+	UpdateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error)
+	DeleteUserMessage(user *model.ShibbolethUser, messageID string) error
 	DeleteMessage(ID string) error
 }
 
@@ -49,12 +49,12 @@ func (s *servicesImpl) StoreFirebaseToken(token string, userID *string) error {
 	return s.app.storeFirebaseToken(token, userID)
 }
 
-func (s *servicesImpl) SubscribeToTopic(token string, userID *string, topic string) error {
-	return s.app.subscribeToTopic(token, userID, topic)
+func (s *servicesImpl) SubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
+	return s.app.subscribeToTopic(token, user, topic)
 }
 
-func (s *servicesImpl) UnsubscribeToTopic(token string, userID *string, topic string) error {
-	return s.app.unsubscribeToTopic(token, userID, topic)
+func (s *servicesImpl) UnsubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
+	return s.app.unsubscribeToTopic(token, user, topic)
 }
 
 func (s *servicesImpl) GetTopics() ([]model.Topic, error) {
@@ -69,10 +69,6 @@ func (s *servicesImpl) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return s.app.updateTopic(topic)
 }
 
-func (s *servicesImpl) SendMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
-	return s.app.sendMessage(user, message)
-}
-
 func (s *servicesImpl) GetMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
 	return s.app.getMessages(userID, filterTopic, offset, limit, order)
 }
@@ -81,16 +77,20 @@ func (s *servicesImpl) GetMessage(ID string) (*model.Message, error) {
 	return s.app.getMessage(ID)
 }
 
-func (s *servicesImpl) CreateMessage(message *model.Message) (*model.Message, error) {
-	return s.app.createMessage(message)
+func (s *servicesImpl) CreateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
+	return s.app.createMessage(user, message)
 }
 
-func (s *servicesImpl) UpdateMessage(message *model.Message) (*model.Message, error) {
-	return s.app.updateMessage(message)
+func (s *servicesImpl) UpdateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
+	return s.app.updateMessage(user, message)
 }
 
-func (s *servicesImpl) DeleteMessage(ID string) error {
-	return s.app.deleteMessage(ID)
+func (s *servicesImpl) DeleteUserMessage(user *model.ShibbolethUser, messageID string) error {
+	return s.app.deleteUserMessage(user, messageID)
+}
+
+func (s *servicesImpl) DeleteMessage(messageID string) error {
+	return s.app.deleteMessage(messageID)
 }
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
@@ -98,7 +98,7 @@ type Storage interface {
 	FindUserByID(userID string) (*model.User, error)
 	FindUserByToken(token string) (*model.User, error)
 	StoreFirebaseToken(token string, userID *string) error
-	GetFirebaseTokensBy(recipient []model.Recipient) ([]string, error)
+	GetFirebaseTokensByRecipients(recipient []model.Recipient) ([]string, error)
 	SubscribeToTopic(token string, userID *string, topic string) error
 	UnsubscribeToTopic(token string, userID *string, topic string) error
 	GetTopics() ([]model.Topic, error)
@@ -109,12 +109,13 @@ type Storage interface {
 	GetMessage(ID string) (*model.Message, error)
 	CreateMessage(message *model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)
+	DeleteUserMessage(userID string, messageID string) error
 	DeleteMessage(ID string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
 type Firebase interface {
-	SendNotificationToToken(token string, title string, body string) error
+	SendNotificationToToken(token string, title string, body string, data map[string]string) error
 	SendNotificationToTopic(topic string, title string, body string) error
 	SubscribeToTopic(token string, topic string) error
 	UnsubscribeToTopic(token string, topic string) error

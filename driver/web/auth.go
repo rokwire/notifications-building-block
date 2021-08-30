@@ -326,7 +326,7 @@ func (auth *UserAuth) start() {
 
 }
 
-func (auth *UserAuth) mainCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser, *string) {
+func (auth *UserAuth) mainCheck(r *http.Request) (bool, *model.ShibbolethUser, *string) {
 	//get the tokens
 	token, tokenSourceType, csrfToken, err := auth.getTokens(r)
 	if err != nil {
@@ -454,7 +454,7 @@ func (auth *UserAuth) getTokens(r *http.Request) (*string, *string, *string, err
 
 func (auth *UserAuth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser, *string) {
 	//apply main check
-	ok, user, authType := auth.mainCheck(w, r)
+	ok, user, authType := auth.mainCheck(r)
 	if !ok {
 		return false, nil, nil
 	}

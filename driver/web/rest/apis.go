@@ -38,8 +38,13 @@ func NewApisHandler(app *core.Application) ApisHandler {
 	return ApisHandler{app: app}
 }
 
+type storeTokenBody struct {
+	PreviousToken *string `json:"previous_token"`
+	Token         *string `json:"token"`
+} //@name storeTokenBody
+
 type tokenBody struct {
-	Token *string `json:"token"`
+	Token         *string `json:"token"`
 } //@name tokenBody
 
 // Version gives the service version
@@ -58,12 +63,12 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 // @Description Stores a firebase token and maps it to a idToken if presents
 // @Tags Client
 // @ID Token
-// @Param data body tokenBody true "body json"
+// @Param data body storeTokenBody true "body json"
 // @Accept  json
 // @Success 200
-// @Security RokwireAuth
+// @Security RokwireAuth UserAuth
 // @Router /token [post]
-func (h ApisHandler) StoreFirebaseToken(user *string, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) StoreFirebaseToken(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal token data - %s\n", err.Error())
@@ -71,7 +76,7 @@ func (h ApisHandler) StoreFirebaseToken(user *string, w http.ResponseWriter, r *
 		return
 	}
 
-	var tokenBody tokenBody
+	var tokenBody storeTokenBody
 	err = json.Unmarshal(data, &tokenBody)
 	if err != nil {
 		log.Printf("Error on unmarshal the create student guide request data - %s\n", err.Error())
@@ -85,7 +90,7 @@ func (h ApisHandler) StoreFirebaseToken(user *string, w http.ResponseWriter, r *
 		return
 	}
 
-	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, user)
+	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, user.Email)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -100,12 +105,12 @@ func (h ApisHandler) StoreFirebaseToken(user *string, w http.ResponseWriter, r *
 // @Tags Client
 // @ID Subscribe
 // @Param topic path string true "topic"
-// @Param data body tokenBody true "body json"
+// @Param data body storeTokenBody true "body json"
 // @Accept  json
 // @Success 200
-// @Security RokwireAuth
+// @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/subscribe [post]
-func (h ApisHandler) Subscribe(userID *string, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Subscribe(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	topic := params["topic"]
 	if len(topic) <= 0 {
@@ -135,7 +140,7 @@ func (h ApisHandler) Subscribe(userID *string, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = h.app.Services.SubscribeToTopic(*body.Token, userID, topic)
+	err = h.app.Services.SubscribeToTopic(*body.Token, user, topic)
 	if err != nil {
 		log.Printf("Error on subscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -150,11 +155,11 @@ func (h ApisHandler) Subscribe(userID *string, w http.ResponseWriter, r *http.Re
 // @Tags Client
 // @ID Unsubscribe
 // @Param topic path string true "topic"
-// @Param data body tokenBody true "body json"
+// @Param data body storeTokenBody true "body json"
 // @Success 200
-// @Security RokwireAuth
+// @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/unsubscribe [post]
-func (h ApisHandler) Unsubscribe(user *string, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Unsubscribe(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	topic := params["topic"]
 	if len(topic) <= 0 {
@@ -202,17 +207,17 @@ func (h ApisHandler) Unsubscribe(user *string, w http.ResponseWriter, r *http.Re
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Possible values: asc, desc. Default: desc"
 // @Success 200 {array} model.Message
-// @Security RokwireAuth
+// @Security UserAuth
 // @Router /messages [get]
-func (h ApisHandler) GetUserMessages(userID *string, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetUserMessages(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
 
 	var messages []model.Message
 	var err error
-	if userID != nil {
-		messages, err = h.app.Services.GetMessages(userID, nil, offsetFilter, limitFilter, orderFilter)
+	if user != nil {
+		messages, err = h.app.Services.GetMessages(user.Email, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -242,7 +247,7 @@ func (h ApisHandler) GetUserMessages(userID *string, w http.ResponseWriter, r *h
 // @Success 200 {array} model.Topic
 // @Security RokwireAuth
 // @Router /topics [get]
-func (h ApisHandler) GetTopics(userID *string, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopics(_ *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 
 	topics, err := h.app.Services.GetTopics()
 	if err != nil {
@@ -270,9 +275,9 @@ func (h ApisHandler) GetTopics(userID *string, w http.ResponseWriter, r *http.Re
 // @Param topic path string true "topic"
 // @Produce plain
 // @Success 200 {array} model.Message
-// @Security RokwireAuth
+// @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/messages [get]
-func (h ApisHandler) GetTopicMessages(userID *string, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopicMessages(_ *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
@@ -302,4 +307,76 @@ func (h ApisHandler) GetTopicMessages(userID *string, w http.ResponseWriter, r *
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+// GetMessage Retrieves a message by id
+// @Description Retrieves a message by id
+// @Tags Admin
+// @ID GetMessage
+// @Param id path string true "id"
+// @Accept  json
+// @Produce plain
+// @Success 200 {object} model.Message
+// @Security AdminUserAuth
+// @Router /admin/message/{id} [get]
+func (h ApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("Message id is required")
+		http.Error(w, "Message id is required", http.StatusBadRequest)
+		return
+	}
+
+	message, err := h.app.Services.GetMessage(id)
+	if err != nil {
+		log.Printf("Error on get message with id (%s): %s\n", id, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if message == nil || !message.HasUser(user) {
+		log.Printf("Error on get message with id (%s): %s\n", id, err)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Println("Error on marshal message")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// DeleteUserMessage Removes the current user from the recipient list of the message
+// @Description Removes the current user from the recipient list of the message
+// @Tags Admin
+// @ID DeleteUserMessage
+// @Param id path string true "id"
+// @Produce plain
+// @Success 200
+// @Security UserAuth
+// @Router /message/{id} [delete]
+func (h ApisHandler) DeleteUserMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("Message id is required")
+		http.Error(w, "Message id is required", http.StatusBadRequest)
+		return
+	}
+
+	err := h.app.Services.DeleteUserMessage(user, id)
+	if err != nil {
+		log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.Email, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

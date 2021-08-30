@@ -61,8 +61,12 @@ type Adapter struct {
 // @in header
 // @name INTERNAL-API-KEY
 
+// @securityDefinitions.apikey UserAuth
+// @in header (add client id token with Bearer prefix to the Authorization value)
+// @name Authorization
+
 // @securityDefinitions.apikey AdminUserAuth
-// @in header (add Bearer prefix to the Authorization value)
+// @in header (add admin id token with Bearer prefix to the Authorization value)
 // @name Authorization
 
 // Start starts the module
@@ -83,7 +87,9 @@ func (we Adapter) Start() {
 
 	// Client APIs
 	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
-	mainRouter.HandleFunc("/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
+	mainRouter.HandleFunc("/messages", we.tokenWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
+	mainRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.apisHandler.GetMessage)).Methods("GET")
+	mainRouter.HandleFunc("/message/{id}", we.tokenWrapFunc(we.apisHandler.DeleteUserMessage)).Methods("DELETE")
 	mainRouter.HandleFunc("/topics", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
@@ -94,7 +100,6 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/topics", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
 	adminRouter.HandleFunc("/topic", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
 	adminRouter.HandleFunc("/messages", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")
-	adminRouter.HandleFunc("/message_send", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.SendMessage)).Methods("POST")
 	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.CreateMessage)).Methods("POST")
 	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMessage)).Methods("PUT")
 	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
@@ -131,11 +136,13 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 
 		if apiKeyAuthenticated {
 			handler(w, req)
+		} else {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		}
 	}
 }
 
-type apiKeysAuthFunc = func(*string, http.ResponseWriter, *http.Request)
+type apiKeysAuthFunc = func(*model.ShibbolethUser, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeyOrTokenWrapFunc(handler apiKeysAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -144,28 +151,27 @@ func (we Adapter) apiKeyOrTokenWrapFunc(handler apiKeysAuthFunc) http.HandlerFun
 		apiKeyAuthenticated := we.auth.apiKeyCheck(w, req)
 		userAuthenticated, user, _ := we.auth.userCheck(w, req)
 
-		var userID *string
-		if user != nil {
-			userID = user.Email
-		}
 		if apiKeyAuthenticated || userAuthenticated {
-			handler(userID, w, req)
+			handler(user, w, req)
+		} else {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		}
 	}
 }
 
-type userAuthFunc = func(http.ResponseWriter, *http.Request)
+type tokenAuthFunc = func(*model.ShibbolethUser, http.ResponseWriter, *http.Request)
 
-func (we Adapter) userAuthWrapFunc(handler userAuthFunc) http.HandlerFunc {
+func (we Adapter) tokenWrapFunc(handler tokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		ok, _, _ := we.auth.userCheck(w, req)
-		if !ok {
-			return
-		}
+		userAuthenticated, user, _ := we.auth.userCheck(w, req)
 
-		handler(w, req)
+		if userAuthenticated {
+			handler(user, w, req)
+		} else {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		}
 	}
 }
 
@@ -177,13 +183,14 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 
 		ok, shiboUser := we.auth.adminCheck(w, req)
 		if !ok {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
 		obj := req.URL.Path // the resource that is going to be accessed.
 		act := req.Method   // the operation that the user performs on the resource.
 
-		var HasAccess bool = false
+		var HasAccess = false
 		for _, s := range *shiboUser.Membership {
 			HasAccess = we.authorization.Enforce(s, obj, act)
 			if HasAccess {
@@ -193,7 +200,7 @@ func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.Handle
 
 		if !HasAccess {
 			log.Printf("Access control error - UIN: %s is trying to apply %s operation for %s\n", *shiboUser.Uin, act, obj)
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 

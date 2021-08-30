@@ -318,38 +318,33 @@ var doc = `{
                 }
             }
         },
-        "/message": {
-            "post": {
+        "/message/{id}": {
+            "delete": {
                 "security": [
                     {
-                        "AdminUserAuth": []
+                        "UserAuth": []
                     }
                 ],
-                "description": "Sends a message to a user, list of users or a topic",
-                "consumes": [
-                    "application/json"
+                "description": "Removes the current user from the recipient list of the message",
+                "produces": [
+                    "text/plain"
                 ],
                 "tags": [
-                    "Client"
+                    "Admin"
                 ],
-                "operationId": "SendMessage",
+                "operationId": "DeleteUserMessage",
                 "parameters": [
                     {
-                        "description": "body json",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.Message"
-                        }
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.Message"
-                        }
+                        "description": ""
                     }
                 }
             }
@@ -358,7 +353,7 @@ var doc = `{
             "get": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "UserAuth": []
                     }
                 ],
                 "description": "Gets all messages to the authenticated user.",
@@ -403,7 +398,7 @@ var doc = `{
             "post": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "RokwireAuth UserAuth": []
                     }
                 ],
                 "description": "Stores a firebase token and maps it to a idToken if presents",
@@ -436,7 +431,7 @@ var doc = `{
             "get": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "RokwireAuth UserAuth": []
                     }
                 ],
                 "description": "Gets all messages for topic",
@@ -473,7 +468,7 @@ var doc = `{
             "post": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "RokwireAuth UserAuth": []
                     }
                 ],
                 "description": "Subscribes the current user to a topic",
@@ -513,7 +508,7 @@ var doc = `{
             "post": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "RokwireAuth UserAuth": []
                     }
                 ],
                 "description": "Unsubscribes the current user to a topic",
@@ -598,6 +593,9 @@ var doc = `{
         "Recipient": {
             "type": "object",
             "properties": {
+                "name": {
+                    "type": "string"
+                },
                 "user_id": {
                     "type": "string"
                 }
@@ -652,10 +650,13 @@ var doc = `{
                 "body": {
                     "type": "string"
                 },
-                "date_created": {
-                    "type": "string"
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
-                "date_sent": {
+                "date_created": {
                     "type": "string"
                 },
                 "date_updated": {
@@ -675,9 +676,6 @@ var doc = `{
                 },
                 "sender": {
                     "$ref": "#/definitions/model.Sender"
-                },
-                "sent": {
-                    "type": "boolean"
                 },
                 "subject": {
                     "type": "string"
@@ -702,6 +700,9 @@ var doc = `{
         "tokenBody": {
             "type": "object",
             "properties": {
+                "previous_token": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
                 }
@@ -712,7 +713,7 @@ var doc = `{
         "AdminUserAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header (add Bearer prefix to the Authorization value)"
+            "in": "header (add admin id token with Bearer prefix to the Authorization value)"
         },
         "InternalAuth": {
             "type": "apiKey",
@@ -723,6 +724,11 @@ var doc = `{
             "type": "apiKey",
             "name": "ROKWIRE-API-KEY",
             "in": "header"
+        },
+        "UserAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header (add client id token with Bearer prefix to the Authorization value)"
         }
     }
 }`

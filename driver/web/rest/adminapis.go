@@ -92,51 +92,6 @@ func (h AdminApisHandler) UpdateTopic(user *model.ShibbolethUser, w http.Respons
 	w.Write(data)
 }
 
-// SendMessage Sends a message to a user, list of users or a topic
-// @Description Sends a message to a user, list of users or a topic
-// @Tags Client
-// @ID SendMessage
-// @Accept  json
-// @Param data body model.Message true "body json"
-// @Success 200 {object} model.Message
-// @Security AdminUserAuth
-// @Router /message [post]
-func (h AdminApisHandler) SendMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
-		return
-	}
-
-	var message *model.Message
-	err = json.Unmarshal(data, &message)
-	if err != nil {
-		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	message, err = h.app.Services.SendMessage(user, message)
-	if err != nil {
-		log.Printf("Error on sending message: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	data, err = json.Marshal(message)
-	if err != nil {
-		log.Println("Error on marshal topic")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-
-}
-
 // GetMessages Gets all messages. This api may be invoked with different filters in the query string
 // @Description Gets all messages
 // @Tags Admin
@@ -161,6 +116,10 @@ func (h AdminApisHandler) GetMessages(user *model.ShibbolethUser, w http.Respons
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	if messages == nil {
+		messages = []model.Message{}
 	}
 
 	data, err := json.Marshal(messages)
@@ -200,7 +159,7 @@ func (h AdminApisHandler) CreateMessage(user *model.ShibbolethUser, w http.Respo
 		return
 	}
 
-	message, err = h.app.Services.CreateMessage(message)
+	message, err = h.app.Services.CreateMessage(user, message)
 	if err != nil {
 		log.Printf("Error on create message: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -250,7 +209,7 @@ func (h AdminApisHandler) UpdateMessage(user *model.ShibbolethUser, w http.Respo
 		return
 	}
 
-	message, err = h.app.Services.UpdateMessage(message)
+	message, err = h.app.Services.UpdateMessage(user, message)
 	if err != nil {
 		log.Printf("Error on update message: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
