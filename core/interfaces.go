@@ -22,14 +22,14 @@ import "notifications/core/model"
 // Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
-	StoreFirebaseToken(token string, userID *string) error
+	StoreFirebaseToken(token string, previousToken *string, userID *string) error
 	SubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error
 	UnsubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error
 	GetTopics() ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
-	GetMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(ID string) (*model.Message, error)
 	CreateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error)
 	UpdateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error)
@@ -45,8 +45,8 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
-func (s *servicesImpl) StoreFirebaseToken(token string, userID *string) error {
-	return s.app.storeFirebaseToken(token, userID)
+func (s *servicesImpl) StoreFirebaseToken(token string, previousToken *string, userID *string) error {
+	return s.app.storeFirebaseToken(token, previousToken, userID)
 }
 
 func (s *servicesImpl) SubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
@@ -69,8 +69,8 @@ func (s *servicesImpl) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return s.app.updateTopic(topic)
 }
 
-func (s *servicesImpl) GetMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return s.app.getMessages(userID, filterTopic, offset, limit, order)
+func (s *servicesImpl) GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return s.app.getMessages(userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
 func (s *servicesImpl) GetMessage(ID string) (*model.Message, error) {
@@ -97,7 +97,7 @@ func (s *servicesImpl) DeleteMessage(messageID string) error {
 type Storage interface {
 	FindUserByID(userID string) (*model.User, error)
 	FindUserByToken(token string) (*model.User, error)
-	StoreFirebaseToken(token string, userID *string) error
+	StoreFirebaseToken(token string, previousToken *string, userID *string) error
 	GetFirebaseTokensByRecipients(recipient []model.Recipient) ([]string, error)
 	SubscribeToTopic(token string, userID *string, topic string) error
 	UnsubscribeToTopic(token string, userID *string, topic string) error
@@ -105,7 +105,7 @@ type Storage interface {
 	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
-	GetMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(ID string) (*model.Message, error)
 	CreateMessage(message *model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)

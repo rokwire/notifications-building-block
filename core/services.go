@@ -26,8 +26,8 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) storeFirebaseToken(token string, userID *string) error {
-	return app.storage.StoreFirebaseToken(token, userID)
+func (app *Application) storeFirebaseToken(token string, previousToken *string, userID *string) error {
+	return app.storage.StoreFirebaseToken(token, previousToken, userID)
 }
 
 func (app *Application) subscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
@@ -108,8 +108,8 @@ func (app *Application) createMessage(user *model.ShibbolethUser, message *model
 	return persistedMessage, err
 }
 
-func (app *Application) getMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return app.storage.GetMessages(userID, filterTopic, offset, limit, order)
+func (app *Application) getMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return app.storage.GetMessages(userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
 func (app *Application) getMessage(ID string) (*model.Message, error) {

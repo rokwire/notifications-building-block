@@ -101,7 +101,8 @@ func (h AdminApisHandler) UpdateTopic(user *model.ShibbolethUser, w http.Respons
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Possible values: asc, desc. Default: desc"
-// @Success 200 {array} model.Message
+// @Param start_date query string false "start_date - Start date filter in milliseconds as an integer epoch value"
+// @Param end_date query string false "end_date - End date filter in milliseconds as an integer epoch value"// @Success 200 {array} model.Message
 // @Security AdminUserAuth
 // @Router /admin/messages [get]
 func (h AdminApisHandler) GetMessages(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
@@ -110,8 +111,10 @@ func (h AdminApisHandler) GetMessages(user *model.ShibbolethUser, w http.Respons
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
+	startDateFilter := getInt64QueryParam(r, "start_date")
+	endDateFilter := getInt64QueryParam(r, "end_date")
 
-	messages, err := h.app.Services.GetMessages(userIDFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(userIDFilter, nil, startDateFilter, endDateFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

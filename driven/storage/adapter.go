@@ -100,12 +100,12 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 }
 
 // StoreFirebaseToken stores firebase token and links it to the user
-func (sa Adapter) StoreFirebaseToken(token string, userID *string) error {
-	err := sa.storeFirebaseToken(token, userID)
+func (sa Adapter) StoreFirebaseToken(token string, previousToken *string, userID *string) error {
+	err := sa.storeFirebaseToken(token, previousToken, userID)
 	return err
 }
 
-func (sa Adapter) storeFirebaseToken(token string, userID *string) error {
+func (sa Adapter) storeFirebaseToken(token string, previousToken *string, userID *string) error {
 
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -114,8 +114,8 @@ func (sa Adapter) storeFirebaseToken(token string, userID *string) error {
 			return err
 		}
 
-		tokenRecord, _ := sa.findUserByTokenWithContext(sessionContext, token)
-		if tokenRecord == nil {
+		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, token)
+		if userRecord == nil {
 			if userID != nil {
 				user, _ := sa.findUserByIDWithContext(sessionContext, *userID)
 				if user != nil {
@@ -124,16 +124,28 @@ func (sa Adapter) storeFirebaseToken(token string, userID *string) error {
 					_, err = sa.createUserWithContext(sessionContext, token, userID)
 				}
 			}
-		} else if tokenRecord.UserID != nil && tokenRecord.UserID != userID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, token, tokenRecord.UserID)
+		} else if userRecord.UserID != nil && userRecord.UserID != userID {
+			err = sa.removeTokenFromUserWithContext(sessionContext, token, userRecord.UserID)
 			if err != nil {
-				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, *tokenRecord.UserID, err)
+				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, *userRecord.UserID, err)
 				return err
 			}
 			err = sa.addTokenToUserWithContext(sessionContext, token, userID)
 			if err != nil {
 				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", token, *userID, err)
 				return err
+			}
+		}
+
+		// Remove previous token no matter on with user is linked
+		if previousToken != nil {
+			user, _ := sa.findUserByTokenWithContext(sessionContext, *previousToken)
+			if user != nil {
+				err = sa.removeTokenFromUserWithContext(sessionContext, *previousToken, user.UserID)
+				if err != nil {
+					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *previousToken, *userID, err)
+					return err
+				}
 			}
 		}
 
@@ -178,39 +190,19 @@ func (sa Adapter) createUserWithContext(context context.Context, token string, u
 func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, userID *string) error {
 	if userID != nil {
 		// transaction
-		err := sa.db.dbClient.UseSession(ctx, func(sessionContext mongo.SessionContext) error {
-			err := sessionContext.StartTransaction()
-			if err != nil {
-				log.Printf("error starting a transaction - %s", err)
-				return err
-			}
+		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
 
-			filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			}},
+			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: token}}},
+		}
 
-			update := bson.D{
-				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "date_updated", Value: time.Now()},
-				}},
-				primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: token}}},
-			}
-
-			_, err = sa.db.users.UpdateOneWithContext(sessionContext, filter, &update, nil)
-			if err != nil {
-				fmt.Printf("warning: error while adding token (%s) to user (%s) %s\n", token, *userID, err)
-				abortTransaction(sessionContext)
-				return err
-			}
-
-			//commit the transaction
-			err = sessionContext.CommitTransaction(sessionContext)
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			return nil
-		})
+		_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
 		if err != nil {
-			return fmt.Errorf("error while adding token (%s) to user (%s) %s", token, *userID, err)
+			fmt.Printf("warning: error while adding token (%s) to user (%s) %s\n", token, *userID, err)
+			return err
 		}
 	}
 	return nil
@@ -218,40 +210,19 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, u
 
 func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token string, userID *string) error {
 	if userID != nil {
-		// transaction
-		err := sa.db.dbClient.UseSession(ctx, func(sessionContext mongo.SessionContext) error {
-			err := sessionContext.StartTransaction()
-			if err != nil {
-				log.Printf("error starting a transaction - %s", err)
-				return err
-			}
+		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
 
-			filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: token}}},
+		}
 
-			update := bson.D{
-				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "date_updated", Value: time.Now()},
-				}},
-				primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: token}}},
-			}
-
-			_, err = sa.db.users.UpdateOne(filter, &update, nil)
-			if err != nil {
-				fmt.Printf("warning: error while removing token (%s) from user (%s) %s\n", token, *userID, err)
-				abortTransaction(sessionContext)
-				return err
-			}
-
-			//commit the transaction
-			err = sessionContext.CommitTransaction(sessionContext)
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			return nil
-		})
+		_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
 		if err != nil {
-			return fmt.Errorf("error while adding token (%s) to user (%s) %s", token, *userID, err)
+			fmt.Printf("warning: error while removing token (%s) from user (%s) %s\n", token, *userID, err)
+			return err
 		}
 	}
 	return nil
@@ -468,7 +439,7 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 }
 
 // GetMessages Gets all messages according to the filter
-func (sa Adapter) GetMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+func (sa Adapter) GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
 	filter := bson.D{}
 	innerFilter := []interface{}{}
 	if userID != nil {
@@ -479,6 +450,19 @@ func (sa Adapter) GetMessages(userID *string, filterTopic *string, offset *int64
 	}
 	if filterTopic != nil {
 		filter = append(filter, primitive.E{Key: "topic", Value: filterTopic})
+	}
+	if len(messageIDs) > 0 {
+		filter = append(filter, primitive.E{Key: "_id", Value: bson.M{"$in": messageIDs}})
+	}
+	if startDateEpoch != nil {
+		seconds := *startDateEpoch / 1000
+		timeValue := time.Unix(seconds, 0)
+		filter = append(filter, primitive.E{Key: "date_created", Value: bson.D{primitive.E{Key: "$gte", Value: &timeValue}}})
+	}
+	if endDateEpoch != nil {
+		seconds := *endDateEpoch / 1000
+		timeValue := time.Unix(seconds, 0)
+		filter = append(filter, primitive.E{Key: "date_created", Value: bson.D{primitive.E{Key: "$lte", Value: &timeValue}}})
 	}
 
 	findOptions := options.Find()

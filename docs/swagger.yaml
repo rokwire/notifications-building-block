@@ -35,6 +35,13 @@ definitions:
           type: string
         type: array
     type: object
+  getMessagesRequestBody:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+    type: object
   model.Message:
     properties:
       body:
@@ -198,13 +205,16 @@ paths:
         in: query
         name: order
         type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.Message'
-            type: array
+      - description: start_date - Start date filter in milliseconds as an integer
+          epoch value
+        in: query
+        name: start_date
+        type: string
+      - description: end_date - End date filter in milliseconds as an integer epoch
+          value
+        in: query
+        name: end_date
+        type: string
       security:
       - AdminUserAuth: []
       tags:
@@ -308,7 +318,28 @@ paths:
       tags:
       - Client
   /messages:
+    delete:
+      consumes:
+      - application/json
+      description: Removes the current user from the recipient list of all described
+        messages
+      operationId: DeleteUserMessages
+      parameters:
+      - description: body json of the all message ids that need to be filtered
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/getMessagesRequestBody'
+      responses:
+        "200":
+          description: ""
+      security:
+      - UserAuth: []
+      tags:
+      - Client
     get:
+      consumes:
+      - application/json
       description: Gets all messages to the authenticated user.
       operationId: GetUserMessages
       parameters:
@@ -324,6 +355,21 @@ paths:
         in: query
         name: order
         type: string
+      - description: start_date - Start date filter in milliseconds as an integer
+          epoch value
+        in: query
+        name: start_date
+        type: string
+      - description: end_date - End date filter in milliseconds as an integer epoch
+          value
+        in: query
+        name: end_date
+        type: string
+      - description: body json of the all message ids that need to be filtered
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/getMessagesRequestBody'
       responses:
         "200":
           description: OK
@@ -365,8 +411,28 @@ paths:
         name: topic
         required: true
         type: string
-      produces:
-      - text/plain
+      - description: offset
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      - description: 'order - Possible values: asc, desc. Default: desc'
+        in: query
+        name: order
+        type: string
+      - description: start_date - Start date filter in milliseconds as an integer
+          epoch value
+        in: query
+        name: start_date
+        type: string
+      - description: end_date - End date filter in milliseconds as an integer epoch
+          value
+        in: query
+        name: end_date
+        type: string
       responses:
         "200":
           description: OK

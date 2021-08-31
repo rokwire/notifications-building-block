@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	"strings"
 )
 
 // ApisHandler handles the rest APIs implementation
@@ -37,6 +38,10 @@ type ApisHandler struct {
 func NewApisHandler(app *core.Application) ApisHandler {
 	return ApisHandler{app: app}
 }
+
+type getMessagesRequestBody struct {
+	IDs []string `json:"ids"`
+} //@name getMessagesRequestBody
 
 type storeTokenBody struct {
 	PreviousToken *string `json:"previous_token"`
@@ -90,7 +95,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.ShibbolethUser, w http.Respo
 		return
 	}
 
-	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, user.Email)
+	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, tokenBody.PreviousToken, user.Email)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -206,6 +211,10 @@ func (h ApisHandler) Unsubscribe(user *model.ShibbolethUser, w http.ResponseWrit
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Possible values: asc, desc. Default: desc"
+// @Param start_date query string false "start_date - Start date filter in milliseconds as an integer epoch value"
+// @Param end_date query string false "end_date - End date filter in milliseconds as an integer epoch value"
+// @Param data body getMessagesRequestBody false "body json of the all message ids that need to be filtered"
+// @Accept  json
 // @Success 200 {array} model.Message
 // @Security UserAuth
 // @Router /messages [get]
@@ -213,11 +222,23 @@ func (h ApisHandler) GetUserMessages(user *model.ShibbolethUser, w http.Response
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
+	startDateFilter := getInt64QueryParam(r, "start_date")
+	endDateFilter := getInt64QueryParam(r, "end_date")
 
-	var messages []model.Message
+	var messageIDs []string
+	bodyData, _ := ioutil.ReadAll(r.Body)
+	if bodyData != nil {
+		var body getMessagesRequestBody
+		bodyErr := json.Unmarshal(bodyData, &body)
+		if bodyErr == nil {
+			messageIDs = body.IDs
+		}
+	}
+
 	var err error
+	var messages []model.Message
 	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.Email, nil, offsetFilter, limitFilter, orderFilter)
+		messages, err = h.app.Services.GetMessages(user.Email, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -273,7 +294,11 @@ func (h ApisHandler) GetTopics(_ *model.ShibbolethUser, w http.ResponseWriter, r
 // @Tags Client
 // @ID GetTopicMessages
 // @Param topic path string true "topic"
-// @Produce plain
+// @Param offset query string false "offset"
+// @Param limit query string false "limit - limit the result"
+// @Param order query string false "order - Possible values: asc, desc. Default: desc"
+// @Param start_date query string false "start_date - Start date filter in milliseconds as an integer epoch value"
+// @Param end_date query string false "end_date - End date filter in milliseconds as an integer epoch value"// @Produce plain
 // @Success 200 {array} model.Message
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/messages [get]
@@ -281,6 +306,8 @@ func (h ApisHandler) GetTopicMessages(_ *model.ShibbolethUser, w http.ResponseWr
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
+	startDateFilter := getInt64QueryParam(r, "start_date")
+	endDateFilter := getInt64QueryParam(r, "end_date")
 
 	params := mux.Vars(r)
 	topic := params["topic"]
@@ -290,7 +317,7 @@ func (h ApisHandler) GetTopicMessages(_ *model.ShibbolethUser, w http.ResponseWr
 		return
 	}
 
-	messages, err := h.app.Services.GetMessages(nil, &topic, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, fmt.Sprintf("Error on getting messages: %s", err), http.StatusInternalServerError)
@@ -351,6 +378,48 @@ func (h ApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWrite
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+// DeleteUserMessages Removes the current user from the recipient list of all described messages
+// @Description Removes the current user from the recipient list of all described messages
+// @Tags Client
+// @ID DeleteUserMessages
+// @Param data body getMessagesRequestBody false "body json of the all message ids that need to be filtered"
+// @Accept  json
+// @Success 200
+// @Security UserAuth
+// @Router /messages [delete]
+func (h ApisHandler) DeleteUserMessages(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+	var messageIDs []string
+	bodyData, _ := ioutil.ReadAll(r.Body)
+	if bodyData != nil {
+		var body getMessagesRequestBody
+		bodyErr := json.Unmarshal(bodyData, &body)
+		if bodyErr == nil {
+			messageIDs = body.IDs
+		}
+	}
+
+	errStrings := []string{}
+	if len(messageIDs) > 0{
+		for _, id := range  messageIDs{
+			err := h.app.Services.DeleteUserMessage(user, id)
+			if err != nil {
+				errStrings = append(errStrings, fmt.Sprintf("%s\n", err.Error()))
+				log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.Email, err)
+			}
+		}
+	} else {
+		log.Printf("Missing ids inthe request body")
+		http.Error(w, fmt.Sprintf("Missing ids inthe request body"), http.StatusBadRequest)
+		return
+	}
+	if len(errStrings) > 0{
+		http.Error(w, strings.Join(errStrings, ""), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // DeleteUserMessage Removes the current user from the recipient list of the message

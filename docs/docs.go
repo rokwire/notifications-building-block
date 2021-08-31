@@ -209,19 +209,20 @@ var doc = `{
                         "description": "order - Possible values: asc, desc. Default: desc",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date - Start date filter in milliseconds as an integer epoch value",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end_date - End date filter in milliseconds as an integer epoch value",
+                        "name": "end_date",
+                        "in": "query"
                     }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Message"
-                            }
-                        }
-                    }
-                }
+                ]
             }
         },
         "/admin/topic": {
@@ -392,6 +393,9 @@ var doc = `{
                     }
                 ],
                 "description": "Gets all messages to the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
                 "tags": [
                     "Client"
                 ],
@@ -414,6 +418,26 @@ var doc = `{
                         "description": "order - Possible values: asc, desc. Default: desc",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date - Start date filter in milliseconds as an integer epoch value",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end_date - End date filter in milliseconds as an integer epoch value",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "description": "body json of the all message ids that need to be filtered",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/getMessagesRequestBody"
+                        }
                     }
                 ],
                 "responses": {
@@ -425,6 +449,36 @@ var doc = `{
                                 "$ref": "#/definitions/model.Message"
                             }
                         }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Removes the current user from the recipient list of all described messages",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "DeleteUserMessages",
+                "parameters": [
+                    {
+                        "description": "body json of the all message ids that need to be filtered",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/getMessagesRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
                     }
                 }
             }
@@ -470,9 +524,6 @@ var doc = `{
                     }
                 ],
                 "description": "Gets all messages for topic",
-                "produces": [
-                    "text/plain"
-                ],
                 "tags": [
                     "Client"
                 ],
@@ -484,6 +535,36 @@ var doc = `{
                         "name": "topic",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "order - Possible values: asc, desc. Default: desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date - Start date filter in milliseconds as an integer epoch value",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end_date - End date filter in milliseconds as an integer epoch value",
+                        "name": "end_date",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -672,6 +753,17 @@ var doc = `{
                     "type": "string"
                 },
                 "user_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "getMessagesRequestBody": {
+            "type": "object",
+            "properties": {
+                "ids": {
                     "type": "array",
                     "items": {
                         "type": "string"
