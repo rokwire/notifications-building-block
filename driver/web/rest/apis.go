@@ -401,8 +401,8 @@ func (h ApisHandler) DeleteUserMessages(user *model.ShibbolethUser, w http.Respo
 	}
 
 	errStrings := []string{}
-	if len(messageIDs) > 0{
-		for _, id := range  messageIDs{
+	if len(messageIDs) > 0 {
+		for _, id := range messageIDs {
 			err := h.app.Services.DeleteUserMessage(user, id)
 			if err != nil {
 				errStrings = append(errStrings, fmt.Sprintf("%s\n", err.Error()))
@@ -414,7 +414,7 @@ func (h ApisHandler) DeleteUserMessages(user *model.ShibbolethUser, w http.Respo
 		http.Error(w, fmt.Sprintf("Missing ids inthe request body"), http.StatusBadRequest)
 		return
 	}
-	if len(errStrings) > 0{
+	if len(errStrings) > 0 {
 		http.Error(w, strings.Join(errStrings, ""), http.StatusInternalServerError)
 		return
 	}
