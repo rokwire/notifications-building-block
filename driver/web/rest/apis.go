@@ -422,6 +422,50 @@ func (h ApisHandler) DeleteUserMessages(user *model.ShibbolethUser, w http.Respo
 	w.WriteHeader(http.StatusOK)
 }
 
+// CreateMessage Creates a message
+// @Description Creates a message
+// @Tags Client
+// @ID createMessage
+// @Accept  json
+// @Param data body model.Message true "body json"
+// @Success 200 {object} model.Message
+// @Security UserAuth
+// @Router /message [post]
+func (h ApisHandler) CreateMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on reading message data - %s\n", err.Error())
+		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	var message *model.Message
+	err = json.Unmarshal(data, &message)
+	if err != nil {
+		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	message, err = h.app.Services.CreateMessage(user, message)
+	if err != nil {
+		log.Printf("Error on create message: %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err = json.Marshal(message)
+	if err != nil {
+		log.Println("Error on marshal message")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // DeleteUserMessage Removes the current user from the recipient list of the message
 // @Description Removes the current user from the recipient list of the message
 // @Tags Client

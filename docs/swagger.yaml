@@ -92,7 +92,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Rokwire Notifications Building Block API
-  version: 0.1.5
+  version: 0.1.6
 paths:
   /admin/message:
     post:
@@ -276,6 +276,28 @@ paths:
       - InternalAuth: []
       tags:
       - Internal
+  /message:
+    post:
+      consumes:
+      - application/json
+      description: Creates a message
+      operationId: createMessage
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Message'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
+      security:
+      - UserAuth: []
+      tags:
+      - Client
   /message/{id}:
     delete:
       description: Removes the current user from the recipient list of the message

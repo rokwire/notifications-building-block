@@ -319,6 +319,42 @@ var doc = `{
                 }
             }
         },
+        "/message": {
+            "post": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Creates a message",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "createMessage",
+                "parameters": [
+                    {
+                        "description": "body json",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.Message"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Message"
+                        }
+                    }
+                }
+            }
+        },
         "/message/{id}": {
             "get": {
                 "security": [
@@ -871,7 +907,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "0.1.5",
+	Version:     "0.1.6",
 	Host:        "localhost",
 	BasePath:    "/notifications/api",
 	Schemes:     []string{"https"},
