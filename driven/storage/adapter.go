@@ -266,10 +266,7 @@ func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) e
 	if userID != nil {
 		record, err := sa.FindUserByID(*userID)
 		if err == nil && record != nil {
-			if err == nil && record != nil {
-				record.DateUpdated = time.Now()
-				record.AddTopic(topic)
-
+			if err == nil && record != nil && !record.HasTopic(topic) {
 				filter := bson.D{primitive.E{Key: "_id", Value: record.ID}}
 				update := bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
@@ -305,10 +302,7 @@ func (sa Adapter) UnsubscribeToTopic(token string, userID *string, topic string)
 	if userID != nil {
 		record, err := sa.FindUserByID(*userID)
 		if err == nil && record != nil {
-			if err == nil && record != nil {
-				record.DateUpdated = time.Now()
-				record.AddTopic(topic)
-
+			if err == nil && record != nil && record.HasTopic(topic) {
 				filter := bson.D{primitive.E{Key: "_id", Value: record.ID}}
 				update := bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
