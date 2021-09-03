@@ -2,6 +2,8 @@ basePath: /notifications/api
 definitions:
   Recipient:
     properties:
+      name:
+        type: string
       user_id:
         type: string
     type: object
@@ -33,13 +35,22 @@ definitions:
           type: string
         type: array
     type: object
+  getMessagesRequestBody:
+    properties:
+      ids:
+        items:
+          type: string
+        type: array
+    type: object
   model.Message:
     properties:
       body:
         type: string
+      data:
+        additionalProperties:
+          type: string
+        type: object
       date_created:
-        type: string
-      date_sent:
         type: string
       date_updated:
         type: string
@@ -53,8 +64,6 @@ definitions:
         type: array
       sender:
         $ref: '#/definitions/model.Sender'
-      sent:
-        type: boolean
       subject:
         type: string
       topic:
@@ -68,8 +77,10 @@ definitions:
       user:
         $ref: '#/definitions/ShibbolethUser'
     type: object
-  tokenBody:
+  storeTokenBody:
     properties:
+      previous_token:
+        type: string
       token:
         type: string
     type: object
@@ -81,7 +92,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Rokwire Notifications Building Block API
-  version: 0.1.3
+  version: 0.1.6
 paths:
   /admin/message:
     post:
@@ -194,13 +205,16 @@ paths:
         in: query
         name: order
         type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.Message'
-            type: array
+      - description: start_date - Start date filter in milliseconds as an integer
+          epoch value
+        in: query
+        name: start_date
+        type: string
+      - description: end_date - End date filter in milliseconds as an integer epoch
+          value
+        in: query
+        name: end_date
+        type: string
       security:
       - AdminUserAuth: []
       tags:
@@ -266,8 +280,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Sends a message to a user, list of users or a topic
-      operationId: SendMessage
+      description: Creates a message
+      operationId: createMessage
       parameters:
       - description: body json
         in: body
@@ -281,11 +295,73 @@ paths:
           schema:
             $ref: '#/definitions/model.Message'
       security:
-      - AdminUserAuth: []
+      - UserAuth: []
+      tags:
+      - Client
+  /message/{id}:
+    delete:
+      description: Removes the current user from the recipient list of the message
+      operationId: DeleteUserMessage
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      security:
+      - UserAuth: []
+      tags:
+      - Client
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a message by id
+      operationId: GetUserMessage
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
+      security:
+      - UserAuth: []
       tags:
       - Client
   /messages:
+    delete:
+      consumes:
+      - application/json
+      description: Removes the current user from the recipient list of all described
+        messages
+      operationId: DeleteUserMessages
+      parameters:
+      - description: body json of the all message ids that need to be filtered
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/getMessagesRequestBody'
+      responses:
+        "200":
+          description: ""
+      security:
+      - UserAuth: []
+      tags:
+      - Client
     get:
+      consumes:
+      - application/json
       description: Gets all messages to the authenticated user.
       operationId: GetUserMessages
       parameters:
@@ -301,6 +377,21 @@ paths:
         in: query
         name: order
         type: string
+      - description: start_date - Start date filter in milliseconds as an integer
+          epoch value
+        in: query
+        name: start_date
+        type: string
+      - description: end_date - End date filter in milliseconds as an integer epoch
+          value
+        in: query
+        name: end_date
+        type: string
+      - description: body json of the all message ids that need to be filtered
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/getMessagesRequestBody'
       responses:
         "200":
           description: OK
@@ -309,7 +400,7 @@ paths:
               $ref: '#/definitions/model.Message'
             type: array
       security:
-      - RokwireAuth: []
+      - UserAuth: []
       tags:
       - Client
   /token:
@@ -324,12 +415,12 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/tokenBody'
+          $ref: '#/definitions/storeTokenBody'
       responses:
         "200":
           description: ""
       security:
-      - RokwireAuth: []
+      - RokwireAuth UserAuth: []
       tags:
       - Client
   /topic/{topic}/messages:
@@ -342,8 +433,28 @@ paths:
         name: topic
         required: true
         type: string
-      produces:
-      - text/plain
+      - description: offset
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      - description: 'order - Possible values: asc, desc. Default: desc'
+        in: query
+        name: order
+        type: string
+      - description: start_date - Start date filter in milliseconds as an integer
+          epoch value
+        in: query
+        name: start_date
+        type: string
+      - description: end_date - End date filter in milliseconds as an integer epoch
+          value
+        in: query
+        name: end_date
+        type: string
       responses:
         "200":
           description: OK
@@ -352,7 +463,7 @@ paths:
               $ref: '#/definitions/model.Message'
             type: array
       security:
-      - RokwireAuth: []
+      - RokwireAuth UserAuth: []
       tags:
       - Client
   /topic/{topic}/subscribe:
@@ -372,12 +483,12 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/tokenBody'
+          $ref: '#/definitions/storeTokenBody'
       responses:
         "200":
           description: ""
       security:
-      - RokwireAuth: []
+      - RokwireAuth UserAuth: []
       tags:
       - Client
   /topic/{topic}/unsubscribe:
@@ -395,12 +506,12 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/tokenBody'
+          $ref: '#/definitions/storeTokenBody'
       responses:
         "200":
           description: ""
       security:
-      - RokwireAuth: []
+      - RokwireAuth UserAuth: []
       tags:
       - Client
   /topics:
@@ -435,7 +546,7 @@ schemes:
 - https
 securityDefinitions:
   AdminUserAuth:
-    in: header (add Bearer prefix to the Authorization value)
+    in: header (add admin id token with Bearer prefix to the Authorization value)
     name: Authorization
     type: apiKey
   InternalAuth:
@@ -445,5 +556,9 @@ securityDefinitions:
   RokwireAuth:
     in: header
     name: ROKWIRE-API-KEY
+    type: apiKey
+  UserAuth:
+    in: header (add client id token with Bearer prefix to the Authorization value)
+    name: Authorization
     type: apiKey
 swagger: "2.0"

@@ -209,19 +209,20 @@ var doc = `{
                         "description": "order - Possible values: asc, desc. Default: desc",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date - Start date filter in milliseconds as an integer epoch value",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end_date - End date filter in milliseconds as an integer epoch value",
+                        "name": "end_date",
+                        "in": "query"
                     }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Message"
-                            }
-                        }
-                    }
-                }
+                ]
             }
         },
         "/admin/topic": {
@@ -322,17 +323,17 @@ var doc = `{
             "post": {
                 "security": [
                     {
-                        "AdminUserAuth": []
+                        "UserAuth": []
                     }
                 ],
-                "description": "Sends a message to a user, list of users or a topic",
+                "description": "Creates a message",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
                     "Client"
                 ],
-                "operationId": "SendMessage",
+                "operationId": "createMessage",
                 "parameters": [
                     {
                         "description": "body json",
@@ -354,14 +355,83 @@ var doc = `{
                 }
             }
         },
+        "/message/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Retrieves a message by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "GetUserMessage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Message"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Removes the current user from the recipient list of the message",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "DeleteUserMessage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/messages": {
             "get": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "UserAuth": []
                     }
                 ],
                 "description": "Gets all messages to the authenticated user.",
+                "consumes": [
+                    "application/json"
+                ],
                 "tags": [
                     "Client"
                 ],
@@ -384,6 +454,26 @@ var doc = `{
                         "description": "order - Possible values: asc, desc. Default: desc",
                         "name": "order",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date - Start date filter in milliseconds as an integer epoch value",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end_date - End date filter in milliseconds as an integer epoch value",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "description": "body json of the all message ids that need to be filtered",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/getMessagesRequestBody"
+                        }
                     }
                 ],
                 "responses": {
@@ -397,13 +487,43 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "UserAuth": []
+                    }
+                ],
+                "description": "Removes the current user from the recipient list of all described messages",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "DeleteUserMessages",
+                "parameters": [
+                    {
+                        "description": "body json of the all message ids that need to be filtered",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/getMessagesRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
             }
         },
         "/token": {
             "post": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "RokwireAuth UserAuth": []
                     }
                 ],
                 "description": "Stores a firebase token and maps it to a idToken if presents",
@@ -421,7 +541,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/tokenBody"
+                            "$ref": "#/definitions/storeTokenBody"
                         }
                     }
                 ],
@@ -436,13 +556,10 @@ var doc = `{
             "get": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "RokwireAuth UserAuth": []
                     }
                 ],
                 "description": "Gets all messages for topic",
-                "produces": [
-                    "text/plain"
-                ],
                 "tags": [
                     "Client"
                 ],
@@ -454,6 +571,36 @@ var doc = `{
                         "name": "topic",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "order - Possible values: asc, desc. Default: desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "start_date - Start date filter in milliseconds as an integer epoch value",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "end_date - End date filter in milliseconds as an integer epoch value",
+                        "name": "end_date",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -473,7 +620,7 @@ var doc = `{
             "post": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "RokwireAuth UserAuth": []
                     }
                 ],
                 "description": "Subscribes the current user to a topic",
@@ -498,7 +645,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/tokenBody"
+                            "$ref": "#/definitions/storeTokenBody"
                         }
                     }
                 ],
@@ -513,7 +660,7 @@ var doc = `{
             "post": {
                 "security": [
                     {
-                        "RokwireAuth": []
+                        "RokwireAuth UserAuth": []
                     }
                 ],
                 "description": "Unsubscribes the current user to a topic",
@@ -535,7 +682,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/tokenBody"
+                            "$ref": "#/definitions/storeTokenBody"
                         }
                     }
                 ],
@@ -598,6 +745,9 @@ var doc = `{
         "Recipient": {
             "type": "object",
             "properties": {
+                "name": {
+                    "type": "string"
+                },
                 "user_id": {
                     "type": "string"
                 }
@@ -646,16 +796,30 @@ var doc = `{
                 }
             }
         },
+        "getMessagesRequestBody": {
+            "type": "object",
+            "properties": {
+                "ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "model.Message": {
             "type": "object",
             "properties": {
                 "body": {
                     "type": "string"
                 },
-                "date_created": {
-                    "type": "string"
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
-                "date_sent": {
+                "date_created": {
                     "type": "string"
                 },
                 "date_updated": {
@@ -675,9 +839,6 @@ var doc = `{
                 },
                 "sender": {
                     "$ref": "#/definitions/model.Sender"
-                },
-                "sent": {
-                    "type": "boolean"
                 },
                 "subject": {
                     "type": "string"
@@ -699,9 +860,12 @@ var doc = `{
                 }
             }
         },
-        "tokenBody": {
+        "storeTokenBody": {
             "type": "object",
             "properties": {
+                "previous_token": {
+                    "type": "string"
+                },
                 "token": {
                     "type": "string"
                 }
@@ -712,7 +876,7 @@ var doc = `{
         "AdminUserAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header (add Bearer prefix to the Authorization value)"
+            "in": "header (add admin id token with Bearer prefix to the Authorization value)"
         },
         "InternalAuth": {
             "type": "apiKey",
@@ -723,6 +887,11 @@ var doc = `{
             "type": "apiKey",
             "name": "ROKWIRE-API-KEY",
             "in": "header"
+        },
+        "UserAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header (add client id token with Bearer prefix to the Authorization value)"
         }
     }
 }`
@@ -738,7 +907,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "0.1.3",
+	Version:     "0.1.6",
 	Host:        "localhost",
 	BasePath:    "/notifications/api",
 	Schemes:     []string{"https"},

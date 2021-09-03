@@ -44,12 +44,13 @@ func (fa *Adapter) Start() error {
 }
 
 // SendNotificationToToken sends a notification to token
-func (fa *Adapter) SendNotificationToToken(token string, title string, body string) error {
+func (fa *Adapter) SendNotificationToToken(token string, title string, body string, data map[string]string) error {
 	ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
 	if err == nil {
 		message := &messaging.Message{
 			Token: token,
+			Data:  data,
 			Notification: &messaging.Notification{
 				Title: title,
 				Body:  body,

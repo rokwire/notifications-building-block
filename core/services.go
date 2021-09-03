@@ -26,14 +26,14 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) storeFirebaseToken(token string, userID *string) error {
-	return app.storage.StoreFirebaseToken(token, userID)
+func (app *Application) storeFirebaseToken(token string, previousToken *string, userID *string) error {
+	return app.storage.StoreFirebaseToken(token, previousToken, userID)
 }
 
-func (app *Application) subscribeToTopic(token string, userID *string, topic string) error {
+func (app *Application) subscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
 	var err error
-	if userID != nil {
-		err = app.storage.SubscribeToTopic(token, userID, topic)
+	if user != nil {
+		err = app.storage.SubscribeToTopic(token, user.Email, topic)
 		if err == nil {
 			err = app.firebase.SubscribeToTopic(token, topic)
 		}
@@ -44,10 +44,10 @@ func (app *Application) subscribeToTopic(token string, userID *string, topic str
 	return err
 }
 
-func (app *Application) unsubscribeToTopic(token string, userID *string, topic string) error {
+func (app *Application) unsubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
 	var err error
-	if userID != nil {
-		err = app.storage.UnsubscribeToTopic(token, userID, topic)
+	if user != nil {
+		err = app.storage.UnsubscribeToTopic(token, user.Email, topic)
 		if err == nil {
 			err = app.firebase.UnsubscribeToTopic(token, topic)
 		}
@@ -70,47 +70,37 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) sendMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
+func (app *Application) createMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
 	var persistedMessage *model.Message
 	var err error
 	if message.ID != nil {
-		persistedMessage, err = app.getMessage(*message.ID)
-		if err != nil || persistedMessage == nil {
-			return nil, fmt.Errorf("error while retriving stored message with id (%s): %w", *message.ID, err)
-		}
-		if persistedMessage.Sent {
-			return nil, fmt.Errorf("message with id (%s): is already sent", *message.ID)
-		}
+		return nil, fmt.Errorf("message with id (%s): is already sent", *message.ID)
 	}
+
+	if user != nil {
+		message.Sender = &model.Sender{Type: "user", User: &model.ShibbolethUser{Uin: user.Uin, Email: user.Email, Phone: user.Phone}}
+	} else {
+		message.Sender = &model.Sender{Type: "system"}
+	}
+	persistedMessage, err = app.storage.CreateMessage(message)
+
 	if len(message.Recipients) > 0 {
-		tokens, err := app.storage.GetFirebaseTokensBy(message.Recipients)
+		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients)
 		if err != nil {
 			return nil, err
 		}
 		if len(tokens) > 0 {
 			for _, token := range tokens {
-				err = app.firebase.SendNotificationToToken(token, message.Subject, message.Body)
-				if err != nil {
-					return nil, err
+				sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
+				if sendErr != nil {
+					fmt.Printf("error send notification to token (%s): %s", token, err)
 				}
 			}
 		}
 	} else if message.Topic != nil {
 		err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
 	}
-	if err == nil {
-		message.Sent = true
-		if user != nil {
-			message.Sender = &model.Sender{Type: "user", User: &model.ShibbolethUser{Uin: user.Uin, Email: user.Email, Phone: user.Phone}}
-		} else {
-			message.Sender = &model.Sender{Type: "system"}
-		}
-		if message.ID != nil {
-			persistedMessage, err = app.storage.UpdateMessage(message)
-		} else {
-			persistedMessage, err = app.storage.CreateMessage(message)
-		}
-	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -118,20 +108,29 @@ func (app *Application) sendMessage(user *model.ShibbolethUser, message *model.M
 	return persistedMessage, err
 }
 
-func (app *Application) getMessages(userID *string, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return app.storage.GetMessages(userID, filterTopic, offset, limit, order)
+func (app *Application) getMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return app.storage.GetMessages(userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
 func (app *Application) getMessage(ID string) (*model.Message, error) {
 	return app.storage.GetMessage(ID)
 }
 
-func (app *Application) createMessage(message *model.Message) (*model.Message, error) {
-	return app.storage.CreateMessage(message)
+func (app *Application) updateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
+	if message.ID != nil {
+		persistedMessage, err := app.storage.GetMessage(*message.ID)
+		if err == nil && persistedMessage != nil {
+			if persistedMessage.Sender.User != nil && persistedMessage.Sender.User.Email == user.Email {
+				return app.storage.UpdateMessage(message)
+			}
+			return nil, fmt.Errorf("only creator can update the original message")
+		}
+	}
+	return nil, fmt.Errorf("missing id or record")
 }
 
-func (app *Application) updateMessage(message *model.Message) (*model.Message, error) {
-	return app.storage.UpdateMessage(message)
+func (app *Application) deleteUserMessage(user *model.ShibbolethUser, messageID string) error {
+	return app.storage.DeleteUserMessage(*user.Email, messageID)
 }
 
 func (app *Application) deleteMessage(ID string) error {
