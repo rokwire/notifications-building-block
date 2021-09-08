@@ -59,11 +59,8 @@ func (t *User) RemoveToken(token string) {
 	}
 }
 
-// AddTopic adds topic to the list
-func (t *User) AddTopic(topic string) {
-	if t.Topics == nil {
-		t.Topics = []string{}
-	}
+// HasTopic checks if topic already exists
+func (t *User) HasTopic(topic string) bool {
 	exists := false
 	for _, entry := range t.Topics {
 		if topic == entry {
@@ -71,22 +68,7 @@ func (t *User) AddTopic(topic string) {
 			break
 		}
 	}
-	if !exists {
-		t.Topics = append(t.Topics, topic)
-	}
-}
-
-// RemoveTopic removes a topic
-func (t *User) RemoveTopic(topic string) {
-	if t.Topics != nil {
-		topics := []string{}
-		for _, entry := range t.Topics {
-			if entry != topic {
-				topics = append(topics, entry)
-			}
-		}
-		t.Topics = topics
-	}
+	return exists
 }
 
 //////////////////////////

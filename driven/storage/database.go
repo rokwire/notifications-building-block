@@ -215,7 +215,7 @@ func (m *database) applyTokensChecks(users *collectionWrapper) error {
 		err := users.AddIndex(
 			bson.D{
 				primitive.E{Key: "topics", Value: 1},
-			}, false)
+			}, true)
 		if err != nil {
 			return err
 		}

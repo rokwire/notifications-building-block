@@ -95,7 +95,11 @@ func (h ApisHandler) StoreFirebaseToken(user *model.ShibbolethUser, w http.Respo
 		return
 	}
 
-	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, tokenBody.PreviousToken, user.Email)
+	var email *string
+	if user != nil {
+		email = user.Email
+	}
+	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, tokenBody.PreviousToken, email)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
