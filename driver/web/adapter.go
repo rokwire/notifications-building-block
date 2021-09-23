@@ -96,6 +96,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/topic/{topic}/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
 	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
+	mainRouter.HandleFunc("/core/check", we.coreWrapFunc(we.apisHandler.CoreCheck)).Methods("GET")
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
@@ -107,7 +108,7 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
 	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
 
-	log.Fatal(http.ListenAndServe(":"+we.port, router))
+	log.Fatal(http.ListenAndServe(":81", router))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +126,22 @@ func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 		utils.LogRequest(req)
 
 		handler(w, req)
+	}
+}
+
+type coreAuthFunc = func(*string, http.ResponseWriter, *http.Request)
+
+func (we Adapter) coreWrapFunc(handler coreAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		authenticated, user := we.auth.coreAuth.coreAuthCheck(w, req)
+
+		if authenticated {
+			handler(user, w, req)
+		} else {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		}
 	}
 }
 
@@ -253,12 +270,12 @@ func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *mod
 	return true, shibboAuth
 }
 
-//NewWebAdapter creates new WebAdapter instance
+// NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(host string, port string, app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, adminAppClientID string, adminWebAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string, firebaseAuth string, firebaseProjectID string, internalAPIKey string) Adapter {
+	authKeys string, authIssuer string, internalAPIKey string, coreAuthPrivateKey string) Adapter {
 	auth := NewAuth(app, appKeys, oidcProvider, oidcAppClientID, adminAppClientID, adminWebAppClientID,
-		phoneAuthSecret, authKeys, authIssuer, internalAPIKey)
+		phoneAuthSecret, authKeys, authIssuer, internalAPIKey, coreAuthPrivateKey)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
@@ -268,7 +285,7 @@ func NewWebAdapter(host string, port string, app *core.Application, appKeys []st
 		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
 }
 
-//AppListener implements core.ApplicationListener interface
+// AppListener implements core.ApplicationListener interface
 type AppListener struct {
 	adapter *Adapter
 }

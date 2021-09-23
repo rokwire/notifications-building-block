@@ -33,6 +33,8 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/lestrrat-go/jwx/jwk"
+	"github.com/rokmetro/auth-library/authservice"
+	"github.com/rokmetro/auth-library/tokenauth"
 	"golang.org/x/sync/syncmap"
 	"gopkg.in/ericchiang/go-oidc.v2"
 )
@@ -47,6 +49,7 @@ type Auth struct {
 	userAuth     *UserAuth
 	adminAuth    *AdminAuth
 	internalAuth *InternalAuth
+	coreAuth     *CoreAuth
 }
 
 //Start starts the auth module
@@ -80,13 +83,20 @@ func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *mode
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, appKeys []string, oidcProvider string,
 	oidcAppClientID string, appClientID string, webAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string, internalAPIKey string) *Auth {
+	authKeys string, authIssuer string, internalAPIKey string, coreAuthPrivateKey string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	userAuth2 := newUserAuth(app, oidcProvider, oidcAppClientID, phoneAuthSecret, authKeys, authIssuer)
 	adminAuth := newAdminAuth(app, oidcProvider, appClientID, webAppClientID)
 	internalAuth := newInternalAuth(internalAPIKey)
+	coreAuth := newCoreAuth(app, coreAuthPrivateKey)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, userAuth: userAuth2, adminAuth: adminAuth, internalAuth: internalAuth}
+	auth := Auth{
+		apiKeysAuth: apiKeysAuth,
+		userAuth: userAuth2,
+		adminAuth: adminAuth,
+		internalAuth: internalAuth,
+		coreAuth: coreAuth,
+	}
 	return &auth
 }
 
@@ -765,4 +775,44 @@ func newUserAuth(app *core.Application, oidcProvider string, oidcAppClientID str
 	auth := UserAuth{app: app, appIDTokenVerifier: appIDTokenVerifier, phoneAuthSecret: phoneAuthSecret, Keys: keysSet, Issuer: issuer,
 		cachedUsers: cacheUsers, cachedUsersLock: lock, rosters: cacheRosters, rostersLock: rostersLock}
 	return &auth
+}
+
+
+// CoreAuth implementation
+type CoreAuth struct {
+	app *core.Application
+	tokenAuth *tokenauth.TokenAuth
+	coreAuthPrivateKey *string
+}
+
+func newCoreAuth(app *core.Application, coreAuthPrivateKey string) *CoreAuth {
+
+	serviceLoader := authservice.NewRemoteServiceRegLoader("https://api-dev.rokwire.illinois.edu/core/services/auth/service-regs", []string{"core"})
+	authService, err := authservice.NewAuthService("notifications", "https://api-dev.rokwire.illinois.edu/notifications", serviceLoader)
+	if err != nil {
+		log.Fatalf("Error initializing auth service: %v", err)
+	}
+	tokenAuth, err := tokenauth.NewTokenAuth(true, authService, nil, nil)
+	if err != nil {
+		log.Fatalf("Error intitializing token auth: %v", err)
+	}
+
+	auth := CoreAuth{app: app, tokenAuth: tokenAuth, coreAuthPrivateKey: &coreAuthPrivateKey}
+	return &auth
+}
+
+func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, *string) {
+	claims, err := ca.tokenAuth.CheckRequestTokens(r)
+	if err != nil {
+		log.Printf("error validate token: %s", err)
+		return false, nil
+	}
+
+	if claims != nil{
+		if claims.Valid() == nil{
+			return true, &claims.Id
+		}
+	}
+
+	return false, nil
 }

@@ -75,9 +75,10 @@ func main() {
 	authKeys := getEnvKey("AUTH_KEYS", true)
 	authIssuer := getEnvKey("AUTH_ISSUER", true)
 	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
+	coreAuthPrivateKey := getEnvKey("ROKWIRE_CORE_AUTH_PRIVATE_KEY", true)
 
 	webAdapter := driver.NewWebAdapter(host, port, application, apiKeys, oidcProvider, oidcAppClientID, adminAppClientID,
-		adminWebAppClientID, phoneSecret, authKeys, authIssuer, firebaseAuth, firebaseProjectID, internalAPIKey)
+		adminWebAppClientID, phoneSecret, authKeys, authIssuer, internalAPIKey, coreAuthPrivateKey)
 
 	webAdapter.Start()
 }
