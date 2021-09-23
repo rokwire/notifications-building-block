@@ -215,7 +215,20 @@ func (m *database) applyTokensChecks(users *collectionWrapper) error {
 		err := users.AddIndex(
 			bson.D{
 				primitive.E{Key: "topics", Value: 1},
-			}, true)
+			}, false)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := users.DropIndex("topics_1") // rebuild nonunique index
+		if err != nil {
+			return err
+		}
+
+		err = users.AddIndex(
+			bson.D{
+				primitive.E{Key: "topics", Value: 1},
+			}, false)
 		if err != nil {
 			return err
 		}
