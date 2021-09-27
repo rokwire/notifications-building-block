@@ -498,6 +498,6 @@ func (h ApisHandler) DeleteUserMessage(user *model.ShibbolethUser, w http.Respon
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h ApisHandler) CoreCheck(user *string, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) CoreCheck(user *model.CoreUser, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }

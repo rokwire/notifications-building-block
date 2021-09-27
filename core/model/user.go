@@ -80,3 +80,13 @@ type ShibbolethUser struct {
 	Phone      *string   `json:"phone" bson:"phone"`
 	Membership *[]string `json:"uiucedu_is_member_of,omitempty" bson:"membership,omitempty"`
 } //@name ShibbolethUser
+
+// CoreUser represents shibboleth auth entity
+type CoreUser struct {
+	UID            *string `json:"uid" bson:"uid"`
+	AppID          *string `json:"app_id" bson:"app_id"`
+	OrganizationID *string `json:"org_id" bson:"org_id"`
+	Subject        *string `json:"sub" bson:"sub"`
+	Scope          *string `json:"scope" bson:"scope"`
+	Permissions    *string `json:"permissions" bson:"permissions"`
+} //@name CoreUser

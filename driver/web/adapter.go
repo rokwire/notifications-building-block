@@ -108,7 +108,7 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
 	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
 
-	log.Fatal(http.ListenAndServe(":81", router))
+	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +129,7 @@ func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-type coreAuthFunc = func(*string, http.ResponseWriter, *http.Request)
+type coreAuthFunc = func(*model.CoreUser, http.ResponseWriter, *http.Request)
 
 func (we Adapter) coreWrapFunc(handler coreAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {

@@ -91,11 +91,11 @@ func NewAuth(app *core.Application, appKeys []string, oidcProvider string,
 	coreAuth := newCoreAuth(app, coreAuthPrivateKey)
 
 	auth := Auth{
-		apiKeysAuth: apiKeysAuth,
-		userAuth: userAuth2,
-		adminAuth: adminAuth,
+		apiKeysAuth:  apiKeysAuth,
+		userAuth:     userAuth2,
+		adminAuth:    adminAuth,
 		internalAuth: internalAuth,
-		coreAuth: coreAuth,
+		coreAuth:     coreAuth,
 	}
 	return &auth
 }
@@ -777,11 +777,10 @@ func newUserAuth(app *core.Application, oidcProvider string, oidcAppClientID str
 	return &auth
 }
 
-
 // CoreAuth implementation
 type CoreAuth struct {
-	app *core.Application
-	tokenAuth *tokenauth.TokenAuth
+	app                *core.Application
+	tokenAuth          *tokenauth.TokenAuth
 	coreAuthPrivateKey *string
 }
 
@@ -801,16 +800,23 @@ func newCoreAuth(app *core.Application, coreAuthPrivateKey string) *CoreAuth {
 	return &auth
 }
 
-func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, *string) {
+func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, *model.CoreUser) {
 	claims, err := ca.tokenAuth.CheckRequestTokens(r)
 	if err != nil {
 		log.Printf("error validate token: %s", err)
 		return false, nil
 	}
 
-	if claims != nil{
-		if claims.Valid() == nil{
-			return true, &claims.Id
+	if claims != nil {
+		if claims.Valid() == nil {
+			return true, &model.CoreUser{
+				UID:            &claims.UID,
+				AppID:          &claims.AppID,
+				OrganizationID: &claims.OrgID,
+				Subject:        &claims.Subject,
+				Scope:          &claims.Scope,
+				Permissions:    &claims.Permissions,
+			}
 		}
 	}
 
