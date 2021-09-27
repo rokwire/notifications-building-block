@@ -83,7 +83,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
 
 	// Internal APIs
-	mainRouter.HandleFunc("/int/message_send", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
+	mainRouter.HandleFunc("/int/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
 
 	// Client APIs
 	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
