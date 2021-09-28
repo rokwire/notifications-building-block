@@ -81,7 +81,7 @@ type CoreToken struct {
 	Subject        *string `json:"sub" bson:"sub"`
 	Scope          *string `json:"scope" bson:"scope"`
 	Permissions    *string `json:"permissions" bson:"permissions"`
-	Anonymous      bool   `json:"anonymous" bson:"anonymous"`
+	Anonymous      bool    `json:"anonymous" bson:"anonymous"`
 } //@name CoreToken
 
 // CoreUserRef user reference that contains UID & Name

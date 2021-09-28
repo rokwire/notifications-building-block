@@ -742,6 +742,17 @@ var doc = `{
         }
     },
     "definitions": {
+        "CoreUserRef": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                }
+            }
+        },
         "Recipient": {
             "type": "object",
             "properties": {
@@ -749,26 +760,6 @@ var doc = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "ShibbolethUser": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "uiucedu_is_member_of": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "uiucedu_uin": {
                     "type": "string"
                 }
             }
@@ -787,12 +778,6 @@ var doc = `{
                 },
                 "name": {
                     "type": "string"
-                },
-                "user_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -856,7 +841,7 @@ var doc = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/ShibbolethUser"
+                    "$ref": "#/definitions/CoreUserRef"
                 }
             }
         },
@@ -907,7 +892,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "0.1.7",
+	Version:     "0.1.9",
 	Host:        "localhost",
 	BasePath:    "/notifications/api",
 	Schemes:     []string{"https"},

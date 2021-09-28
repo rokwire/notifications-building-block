@@ -11,7 +11,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.1.7"
+        "version": "0.1.9"
     },
     "host": "localhost",
     "basePath": "/notifications/api",
@@ -730,6 +730,17 @@
         }
     },
     "definitions": {
+        "CoreUserRef": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                }
+            }
+        },
         "Recipient": {
             "type": "object",
             "properties": {
@@ -737,26 +748,6 @@
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "ShibbolethUser": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "uiucedu_is_member_of": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "uiucedu_uin": {
                     "type": "string"
                 }
             }
@@ -775,12 +766,6 @@
                 },
                 "name": {
                     "type": "string"
-                },
-                "user_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -844,7 +829,7 @@
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/ShibbolethUser"
+                    "$ref": "#/definitions/CoreUserRef"
                 }
             }
         },

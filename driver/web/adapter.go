@@ -47,7 +47,7 @@ type Adapter struct {
 
 // @title Rokwire Notifications Building Block API
 // @description Rokwire Notifications Building Block API Documentation.
-// @version 0.1.7
+// @version 0.1.9
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost
@@ -63,11 +63,11 @@ type Adapter struct {
 // @name INTERNAL-API-KEY
 
 // @securityDefinitions.apikey UserAuth
-// @in header (add client id token with Bearer prefix to the Authorization value)
+// @in header (add core access token with Bearer prefix to the Authorization value. The token must represent either anonymous or authenticated user )
 // @name Authorization
 
 // @securityDefinitions.apikey AdminUserAuth
-// @in header (add admin id token with Bearer prefix to the Authorization value)
+// @in header (add admin core access token with Bearer prefix to the Authorization value. The token must contain notifications_admin as a permission)
 // @name Authorization
 
 // Start starts the module
@@ -98,13 +98,13 @@ func (we Adapter) Start() {
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
-	adminRouter.HandleFunc("/topics", we.coreWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
-	adminRouter.HandleFunc("/topic", we.coreWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
-	adminRouter.HandleFunc("/messages", we.coreWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")
-	adminRouter.HandleFunc("/message", we.coreWrapFunc(we.adminApisHandler.CreateMessage)).Methods("POST")
-	adminRouter.HandleFunc("/message", we.coreWrapFunc(we.adminApisHandler.UpdateMessage)).Methods("PUT")
-	adminRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
-	adminRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
+	adminRouter.HandleFunc("/topics", we.coreAdminWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
+	adminRouter.HandleFunc("/topic", we.coreAdminWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
+	adminRouter.HandleFunc("/messages", we.coreAdminWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")
+	adminRouter.HandleFunc("/message", we.coreAdminWrapFunc(we.adminApisHandler.CreateMessage)).Methods("POST")
+	adminRouter.HandleFunc("/message", we.coreAdminWrapFunc(we.adminApisHandler.UpdateMessage)).Methods("PUT")
+	adminRouter.HandleFunc("/message/{id}", we.coreAdminWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
+	adminRouter.HandleFunc("/message/{id}", we.coreAdminWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -154,7 +154,7 @@ func (we Adapter) coreAdminWrapFunc(handler coreAdminAuthFunc) http.HandlerFunc 
 		if authenticated {
 			obj := req.URL.Path // the resource that is going to be accessed.
 			act := req.Method   // the operation that the user performs on the resource.
-			permissions := strings.Split(*user.Permissions,",")
+			permissions := strings.Split(*user.Permissions, ",")
 
 			HasAccess := false
 			for _, s := range permissions {
@@ -174,7 +174,6 @@ func (we Adapter) coreAdminWrapFunc(handler coreAdminAuthFunc) http.HandlerFunc 
 		}
 	}
 }
-
 
 type internalAPIKeyAuthFunc = func(http.ResponseWriter, *http.Request)
 

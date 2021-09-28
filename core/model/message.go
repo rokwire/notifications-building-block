@@ -40,6 +40,6 @@ func (m *Message) HasUser(user *CoreToken) bool {
 // @name Sender
 // @ID Sender
 type Sender struct {
-	Type string          `json:"type" bson:"type"` // user or system
+	Type string       `json:"type" bson:"type"` // user or system
 	User *CoreUserRef `json:"user,omitempty" bson:"user,omitempty"`
 }
