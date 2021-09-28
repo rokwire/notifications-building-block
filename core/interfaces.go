@@ -22,18 +22,18 @@ import "notifications/core/model"
 // Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
-	StoreFirebaseToken(token string, previousToken *string, userID *string) error
-	SubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error
-	UnsubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error
+	StoreFirebaseToken(token string, previousToken *string, user *model.CoreToken) error
+	SubscribeToTopic(token string, user *model.CoreToken, topic string) error
+	UnsubscribeToTopic(token string, user *model.CoreToken, topic string) error
 	GetTopics() ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
 	GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(ID string) (*model.Message, error)
-	CreateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error)
-	UpdateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error)
-	DeleteUserMessage(user *model.ShibbolethUser, messageID string) error
+	CreateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
+	UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
+	DeleteUserMessage(user *model.CoreToken, messageID string) error
 	DeleteMessage(ID string) error
 }
 
@@ -45,15 +45,15 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
-func (s *servicesImpl) StoreFirebaseToken(token string, previousToken *string, userID *string) error {
-	return s.app.storeFirebaseToken(token, previousToken, userID)
+func (s *servicesImpl) StoreFirebaseToken(token string, previousToken *string, user *model.CoreToken) error {
+	return s.app.storeFirebaseToken(token, previousToken, user)
 }
 
-func (s *servicesImpl) SubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
+func (s *servicesImpl) SubscribeToTopic(token string, user *model.CoreToken, topic string) error {
 	return s.app.subscribeToTopic(token, user, topic)
 }
 
-func (s *servicesImpl) UnsubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
+func (s *servicesImpl) UnsubscribeToTopic(token string, user *model.CoreToken, topic string) error {
 	return s.app.unsubscribeToTopic(token, user, topic)
 }
 
@@ -77,15 +77,15 @@ func (s *servicesImpl) GetMessage(ID string) (*model.Message, error) {
 	return s.app.getMessage(ID)
 }
 
-func (s *servicesImpl) CreateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
+func (s *servicesImpl) CreateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
 	return s.app.createMessage(user, message)
 }
 
-func (s *servicesImpl) UpdateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
+func (s *servicesImpl) UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
 	return s.app.updateMessage(user, message)
 }
 
-func (s *servicesImpl) DeleteUserMessage(user *model.ShibbolethUser, messageID string) error {
+func (s *servicesImpl) DeleteUserMessage(user *model.CoreToken, messageID string) error {
 	return s.app.deleteUserMessage(user, messageID)
 }
 

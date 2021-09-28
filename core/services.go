@@ -26,14 +26,18 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) storeFirebaseToken(token string, previousToken *string, userID *string) error {
-	return app.storage.StoreFirebaseToken(token, previousToken, userID)
+func (app *Application) storeFirebaseToken(token string, previousToken *string, user *model.CoreToken) error {
+	var uid *string
+	if user != nil && user.UID != nil {
+		uid = user.UID
+	}
+	return app.storage.StoreFirebaseToken(token, previousToken, uid)
 }
 
-func (app *Application) subscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
+func (app *Application) subscribeToTopic(token string, user *model.CoreToken, topic string) error {
 	var err error
 	if user != nil {
-		err = app.storage.SubscribeToTopic(token, user.Email, topic)
+		err = app.storage.SubscribeToTopic(token, user.UID, topic)
 		if err == nil {
 			err = app.firebase.SubscribeToTopic(token, topic)
 		}
@@ -44,10 +48,10 @@ func (app *Application) subscribeToTopic(token string, user *model.ShibbolethUse
 	return err
 }
 
-func (app *Application) unsubscribeToTopic(token string, user *model.ShibbolethUser, topic string) error {
+func (app *Application) unsubscribeToTopic(token string, user *model.CoreToken, topic string) error {
 	var err error
 	if user != nil {
-		err = app.storage.UnsubscribeToTopic(token, user.Email, topic)
+		err = app.storage.UnsubscribeToTopic(token, user.UID, topic)
 		if err == nil {
 			err = app.firebase.UnsubscribeToTopic(token, topic)
 		}
@@ -70,7 +74,7 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
+func (app *Application) createMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
 	var persistedMessage *model.Message
 	var err error
 	if message.ID != nil {
@@ -78,7 +82,7 @@ func (app *Application) createMessage(user *model.ShibbolethUser, message *model
 	}
 
 	if user != nil {
-		message.Sender = &model.Sender{Type: "user", User: &model.ShibbolethUser{Uin: user.Uin, Email: user.Email, Phone: user.Phone}}
+		message.Sender = &model.Sender{Type: "user", User: &model.CoreUserRef{UID: user.UID}}
 	} else {
 		message.Sender = &model.Sender{Type: "system"}
 	}
@@ -116,11 +120,11 @@ func (app *Application) getMessage(ID string) (*model.Message, error) {
 	return app.storage.GetMessage(ID)
 }
 
-func (app *Application) updateMessage(user *model.ShibbolethUser, message *model.Message) (*model.Message, error) {
+func (app *Application) updateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
 	if message.ID != nil {
 		persistedMessage, err := app.storage.GetMessage(*message.ID)
 		if err == nil && persistedMessage != nil {
-			if persistedMessage.Sender.User != nil && persistedMessage.Sender.User.Email == user.Email {
+			if persistedMessage.Sender.User != nil && persistedMessage.Sender.User.UID == user.UID {
 				return app.storage.UpdateMessage(message)
 			}
 			return nil, fmt.Errorf("only creator can update the original message")
@@ -129,8 +133,8 @@ func (app *Application) updateMessage(user *model.ShibbolethUser, message *model
 	return nil, fmt.Errorf("missing id or record")
 }
 
-func (app *Application) deleteUserMessage(user *model.ShibbolethUser, messageID string) error {
-	return app.storage.DeleteUserMessage(*user.Email, messageID)
+func (app *Application) deleteUserMessage(user *model.CoreToken, messageID string) error {
+	return app.storage.DeleteUserMessage(*user.UID, messageID)
 }
 
 func (app *Application) deleteMessage(ID string) error {

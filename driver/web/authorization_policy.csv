@@ -1,1 +1,1 @@
-p, urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire admin app, /notifications/api/admin*, (GET)|(POST)|(PUT)|(DELETE)
+p, notifications_admin, /notifications/api/admin*, (GET)|(POST)|(PUT)|(DELETE)

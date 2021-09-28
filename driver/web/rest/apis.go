@@ -41,16 +41,16 @@ func NewApisHandler(app *core.Application) ApisHandler {
 
 type getMessagesRequestBody struct {
 	IDs []string `json:"ids"`
-} //@name getMessagesRequestBody
+} // @name getMessagesRequestBody
 
 type storeTokenBody struct {
 	PreviousToken *string `json:"previous_token"`
 	Token         *string `json:"token"`
-} //@name storeTokenBody
+} // @name storeTokenBody
 
 type tokenBody struct {
 	Token *string `json:"token"`
-} //@name tokenBody
+} // @name tokenBody
 
 // Version gives the service version
 // @Description Gives the service version.
@@ -60,7 +60,7 @@ type tokenBody struct {
 // @Success 200
 // @Security RokwireAuth
 // @Router /version [get]
-func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Version(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
 }
 
@@ -73,7 +73,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /token [post]
-func (h ApisHandler) StoreFirebaseToken(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal token data - %s\n", err.Error())
@@ -91,15 +91,11 @@ func (h ApisHandler) StoreFirebaseToken(user *model.ShibbolethUser, w http.Respo
 
 	if tokenBody.Token == nil || len(*tokenBody.Token) == 0 {
 		log.Printf("token is empty or null")
-		http.Error(w, fmt.Sprintf("token is empty or null\n"), http.StatusBadRequest)
+		http.Error(w, "token is empty or null\n", http.StatusBadRequest)
 		return
 	}
 
-	var email *string
-	if user != nil {
-		email = user.Email
-	}
-	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, tokenBody.PreviousToken, email)
+	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, tokenBody.PreviousToken, user)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -119,10 +115,10 @@ func (h ApisHandler) StoreFirebaseToken(user *model.ShibbolethUser, w http.Respo
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/subscribe [post]
-func (h ApisHandler) Subscribe(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Subscribe(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	topic := params["topic"]
-	if len(topic) <= 0 {
+	if len(topic) == 0 {
 		log.Println("topic is required")
 		http.Error(w, "topic is required", http.StatusBadRequest)
 		return
@@ -168,10 +164,10 @@ func (h ApisHandler) Subscribe(user *model.ShibbolethUser, w http.ResponseWriter
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/unsubscribe [post]
-func (h ApisHandler) Unsubscribe(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Unsubscribe(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	topic := params["topic"]
-	if len(topic) <= 0 {
+	if len(topic) == 0 {
 		log.Println("topic is required")
 		http.Error(w, "topic is required", http.StatusBadRequest)
 		return
@@ -222,7 +218,7 @@ func (h ApisHandler) Unsubscribe(user *model.ShibbolethUser, w http.ResponseWrit
 // @Success 200 {array} model.Message
 // @Security UserAuth
 // @Router /messages [get]
-func (h ApisHandler) GetUserMessages(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
@@ -242,7 +238,7 @@ func (h ApisHandler) GetUserMessages(user *model.ShibbolethUser, w http.Response
 	var err error
 	var messages []model.Message
 	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.Email, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+		messages, err = h.app.Services.GetMessages(user.UID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -272,7 +268,7 @@ func (h ApisHandler) GetUserMessages(user *model.ShibbolethUser, w http.Response
 // @Success 200 {array} model.Topic
 // @Security RokwireAuth
 // @Router /topics [get]
-func (h ApisHandler) GetTopics(_ *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopics(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
 
 	topics, err := h.app.Services.GetTopics()
 	if err != nil {
@@ -306,7 +302,7 @@ func (h ApisHandler) GetTopics(_ *model.ShibbolethUser, w http.ResponseWriter, r
 // @Success 200 {array} model.Message
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/messages [get]
-func (h ApisHandler) GetTopicMessages(_ *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopicMessages(_ *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
@@ -315,7 +311,7 @@ func (h ApisHandler) GetTopicMessages(_ *model.ShibbolethUser, w http.ResponseWr
 
 	params := mux.Vars(r)
 	topic := params["topic"]
-	if len(topic) <= 0 {
+	if len(topic) == 0 {
 		log.Println("topic is required")
 		http.Error(w, "topic is required", http.StatusBadRequest)
 		return
@@ -350,10 +346,10 @@ func (h ApisHandler) GetTopicMessages(_ *model.ShibbolethUser, w http.ResponseWr
 // @Success 200 {object} model.Message
 // @Security UserAuth
 // @Router /message/{id} [get]
-func (h ApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
-	if len(id) <= 0 {
+	if len(id) == 0 {
 		log.Println("Message id is required")
 		http.Error(w, "Message id is required", http.StatusBadRequest)
 		return
@@ -393,7 +389,7 @@ func (h ApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWrite
 // @Success 200
 // @Security UserAuth
 // @Router /messages [delete]
-func (h ApisHandler) DeleteUserMessages(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	var messageIDs []string
 	bodyData, _ := ioutil.ReadAll(r.Body)
 	if bodyData != nil {
@@ -410,12 +406,12 @@ func (h ApisHandler) DeleteUserMessages(user *model.ShibbolethUser, w http.Respo
 			err := h.app.Services.DeleteUserMessage(user, id)
 			if err != nil {
 				errStrings = append(errStrings, fmt.Sprintf("%s\n", err.Error()))
-				log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.Email, err)
+				log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UID, err)
 			}
 		}
 	} else {
 		log.Printf("Missing ids inthe request body")
-		http.Error(w, fmt.Sprintf("Missing ids inthe request body"), http.StatusBadRequest)
+		http.Error(w, "Missing ids inthe request body", http.StatusBadRequest)
 		return
 	}
 	if len(errStrings) > 0 {
@@ -435,7 +431,7 @@ func (h ApisHandler) DeleteUserMessages(user *model.ShibbolethUser, w http.Respo
 // @Success 200 {object} model.Message
 // @Security UserAuth
 // @Router /message [post]
-func (h ApisHandler) CreateMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -479,10 +475,10 @@ func (h ApisHandler) CreateMessage(user *model.ShibbolethUser, w http.ResponseWr
 // @Success 200
 // @Security UserAuth
 // @Router /message/{id} [delete]
-func (h ApisHandler) DeleteUserMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) DeleteUserMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
-	if len(id) <= 0 {
+	if len(id) == 0 {
 		log.Println("Message id is required")
 		http.Error(w, "Message id is required", http.StatusBadRequest)
 		return
@@ -490,14 +486,10 @@ func (h ApisHandler) DeleteUserMessage(user *model.ShibbolethUser, w http.Respon
 
 	err := h.app.Services.DeleteUserMessage(user, id)
 	if err != nil {
-		log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.Email, err)
+		log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h ApisHandler) CoreCheck(user *model.CoreUser, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }

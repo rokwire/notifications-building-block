@@ -45,55 +45,16 @@ type cacheUser struct {
 
 //Auth handler
 type Auth struct {
-	apiKeysAuth  *APIKeysAuth
-	userAuth     *UserAuth
-	adminAuth    *AdminAuth
 	internalAuth *InternalAuth
 	coreAuth     *CoreAuth
 }
 
-//Start starts the auth module
-func (auth *Auth) Start() error {
-	auth.adminAuth.start()
-	auth.userAuth.start()
-
-	return nil
-}
-
-func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) bool {
-	clientID := r.Header.Get("APP")
-	if len(clientID) == 0 {
-		clientID = "edu.illinois.rokwire"
-	}
-
-	log.Println(fmt.Sprintf("400 - Bad Request"))
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("Bad Request"))
-	return false
-}
-
-func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) bool {
-	return auth.apiKeysAuth.check(w, r)
-}
-
-func (auth *Auth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser, *string) {
-	return auth.userAuth.userCheck(w, r)
-}
-
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, appKeys []string, oidcProvider string,
-	oidcAppClientID string, appClientID string, webAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string, internalAPIKey string, coreAuthPrivateKey string) *Auth {
-	apiKeysAuth := newAPIKeysAuth(appKeys)
-	userAuth2 := newUserAuth(app, oidcProvider, oidcAppClientID, phoneAuthSecret, authKeys, authIssuer)
-	adminAuth := newAdminAuth(app, oidcProvider, appClientID, webAppClientID)
+func NewAuth(app *core.Application, internalAPIKey string, coreAuthPrivateKey string) *Auth {
 	internalAuth := newInternalAuth(internalAPIKey)
 	coreAuth := newCoreAuth(app, coreAuthPrivateKey)
 
 	auth := Auth{
-		apiKeysAuth:  apiKeysAuth,
-		userAuth:     userAuth2,
-		adminAuth:    adminAuth,
 		internalAuth: internalAuth,
 		coreAuth:     coreAuth,
 	}
@@ -324,142 +285,6 @@ type UserAuth struct {
 
 func (auth *UserAuth) start() {
 
-}
-
-func (auth *UserAuth) mainCheck(r *http.Request) (bool, *model.ShibbolethUser, *string) {
-	//get the tokens
-	token, tokenSourceType, csrfToken, err := auth.getTokens(r)
-	if err != nil {
-		log.Printf("error gettings tokens - %s", err)
-		return false, nil, nil
-	}
-
-	//check if all input data is available
-	if token == nil || len(*token) == 0 {
-		return false, nil, nil
-	}
-	rawToken := *token //we have token
-	if *tokenSourceType == "cookie" && (csrfToken == nil || len(*csrfToken) == 0) {
-		//if the token is sent via cookie then we must have csrf token as well
-		return false, nil, nil
-	}
-
-	// determine the token type: 1 for shibboleth, 2 for phone, 3 for auth access token
-	// 1 & 2 are deprecated but we support them for back compatability
-	tokenType, err := auth.getTokenType(rawToken)
-	if err != nil {
-		return false, nil, nil
-	}
-	if !(*tokenType == 1 || *tokenType == 2 || *tokenType == 3) {
-		return false, nil, nil
-	}
-
-	// process the token - validate it, extract the user identifier
-	var externalID string
-	var authType string
-	user := &model.ShibbolethUser{}
-
-	switch *tokenType {
-	case 1:
-		//support this for back compatability
-		shibboData, err := auth.processShibbolethToken(rawToken)
-		if err != nil {
-			return false, nil, nil
-		}
-		user.Uin = shibboData.UIuceduUIN
-		user.Email = shibboData.Email
-		user.Membership = shibboData.UIuceduIsMemberOf
-		authType = "shibboleth"
-	case 2:
-		//support this for back compatability
-		phone, err := auth.processPhoneToken(rawToken)
-		if err != nil {
-			return false, nil, nil
-		}
-		user.Phone = phone
-		authType = "phone"
-	case 3:
-		//mobile app sends just token, the browser sends token + csrf token
-
-		csrfCheck := false
-		if *tokenSourceType == "cookie" {
-			csrfCheck = true
-		}
-
-		tokenData, err := auth.processAccessToken(rawToken, csrfCheck, csrfToken)
-		if err != nil {
-			return false, nil, nil
-		}
-
-		tokenAuth := tokenData.Auth
-		if tokenAuth == "oidc" {
-			externalID = tokenData.UID
-			authType = "shibboleth"
-		} else if tokenAuth == "rokwire_phone" {
-			externalID = tokenData.UID
-			authType = "phone"
-		} else {
-			return false, nil, nil
-		}
-	}
-
-	//TODO - refactor!!!
-	// if phone token then treat it as shibboleth
-	if authType == "phone" {
-		foundedUIN := auth.findUINByPhone(externalID)
-		if foundedUIN == nil {
-			//not found, it means that this phone is not added, so return unauthorized
-			return false, nil, nil
-		}
-		//it was found
-		externalID = *foundedUIN
-		authType = "shibboleth"
-	}
-
-	return true, user, &authType
-}
-
-//token source type - cookie and header
-func (auth *UserAuth) getTokens(r *http.Request) (*string, *string, *string, error) {
-	//1. Check if there is a cookie
-	cookie, err := r.Cookie("rokwire-access")
-	if err == nil && cookie != nil && len(cookie.Value) > 0 {
-		//there is a cookie
-		tokenSourceType := "cookie"
-		csrfToken := r.Header.Get("CSRF")
-
-		return &cookie.Value, &tokenSourceType, &csrfToken, nil
-	}
-
-	//2. Check if there is a token in the Authorization header
-	authorizationHeader := r.Header.Get("Authorization")
-	if len(authorizationHeader) <= 0 {
-		//no authorization
-		return nil, nil, nil, nil
-	}
-	splitAuthorization := strings.Fields(authorizationHeader)
-	if len(splitAuthorization) != 2 {
-		//bad authorization
-		return nil, nil, nil, nil
-	}
-	// expected - Bearer 1234
-	if splitAuthorization[0] != "Bearer" {
-		//bad authorization
-		return nil, nil, nil, nil
-	}
-	token := splitAuthorization[1]
-	tokenSourceType := "header"
-	return &token, &tokenSourceType, nil, nil
-}
-
-func (auth *UserAuth) userCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser, *string) {
-	//apply main check
-	ok, user, authType := auth.mainCheck(r)
-	if !ok {
-		return false, nil, nil
-	}
-
-	return true, user, authType
 }
 
 //mobile app sends just token, the browser sends token + csrf token
@@ -800,7 +625,7 @@ func newCoreAuth(app *core.Application, coreAuthPrivateKey string) *CoreAuth {
 	return &auth
 }
 
-func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, *model.CoreUser) {
+func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, *model.CoreToken) {
 	claims, err := ca.tokenAuth.CheckRequestTokens(r)
 	if err != nil {
 		log.Printf("error validate token: %s", err)
@@ -809,13 +634,14 @@ func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, 
 
 	if claims != nil {
 		if claims.Valid() == nil {
-			return true, &model.CoreUser{
-				UID:            &claims.UID,
-				AppID:          &claims.AppID,
-				OrganizationID: &claims.OrgID,
-				Subject:        &claims.Subject,
-				Scope:          &claims.Scope,
-				Permissions:    &claims.Permissions,
+			return true, &model.CoreToken{
+				UID:            claims.UID,
+				AppID:          claims.AppID,
+				OrganizationID: claims.OrgID,
+				Subject:        claims.Subject,
+				Scope:          claims.Scope,
+				Permissions:    claims.Permissions,
+				Anonymous:      claims.Anonymous,
 			}
 		}
 	}

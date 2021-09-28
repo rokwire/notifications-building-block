@@ -28,7 +28,7 @@ func NewAdminApisHandler(app *core.Application) AdminApisHandler {
 // @Success 200 {array} model.Topic
 // @Security AdminUserAuth
 // @Router /admin/topics [get]
-func (h AdminApisHandler) GetTopics(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) GetTopics(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 
 	topics, err := h.app.Services.GetTopics()
 	if err != nil {
@@ -57,7 +57,7 @@ func (h AdminApisHandler) GetTopics(user *model.ShibbolethUser, w http.ResponseW
 // @Success 200 {object} model.Topic
 // @Security AdminUserAuth
 // @Router /admin/topic [put]
-func (h AdminApisHandler) UpdateTopic(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) UpdateTopic(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -105,7 +105,7 @@ func (h AdminApisHandler) UpdateTopic(user *model.ShibbolethUser, w http.Respons
 // @Param end_date query string false "end_date - End date filter in milliseconds as an integer epoch value"// @Success 200 {array} model.Message
 // @Security AdminUserAuth
 // @Router /admin/messages [get]
-func (h AdminApisHandler) GetMessages(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	userIDFilter := getStringQueryParam(r, "user")
 	topicFilter := getStringQueryParam(r, "topic")
 	offsetFilter := getInt64QueryParam(r, "offset")
@@ -146,7 +146,7 @@ func (h AdminApisHandler) GetMessages(user *model.ShibbolethUser, w http.Respons
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message [post]
-func (h AdminApisHandler) CreateMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -190,7 +190,7 @@ func (h AdminApisHandler) CreateMessage(user *model.ShibbolethUser, w http.Respo
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message [put]
-func (h AdminApisHandler) UpdateMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) UpdateMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on reading message data - %s\n", err.Error())
@@ -241,7 +241,7 @@ func (h AdminApisHandler) UpdateMessage(user *model.ShibbolethUser, w http.Respo
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message/{id} [get]
-func (h AdminApisHandler) GetMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
@@ -279,7 +279,7 @@ func (h AdminApisHandler) GetMessage(user *model.ShibbolethUser, w http.Response
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/message/{id} [delete]
-func (h AdminApisHandler) DeleteMessage(user *model.ShibbolethUser, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) DeleteMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
