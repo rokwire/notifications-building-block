@@ -635,12 +635,12 @@ func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, 
 	if claims != nil {
 		if claims.Valid() == nil {
 			return true, &model.CoreToken{
-				UID:            claims.UID,
-				AppID:          claims.AppID,
-				OrganizationID: claims.OrgID,
-				Subject:        claims.Subject,
-				Scope:          claims.Scope,
-				Permissions:    claims.Permissions,
+				UID:            &claims.UID,
+				AppID:          &claims.AppID,
+				OrganizationID: &claims.OrgID,
+				Subject:        &claims.Subject,
+				Scope:          &claims.Scope,
+				Permissions:    &claims.Permissions,
 				Anonymous:      claims.Anonymous,
 			}
 		}

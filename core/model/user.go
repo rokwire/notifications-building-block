@@ -75,12 +75,12 @@ func (t *User) HasTopic(topic string) bool {
 
 // CoreToken represents shibboleth auth entity
 type CoreToken struct {
-	UID            string `json:"uid" bson:"uid"`
-	AppID          string `json:"app_id" bson:"app_id"`
-	OrganizationID string `json:"org_id" bson:"org_id"`
-	Subject        string `json:"sub" bson:"sub"`
-	Scope          string `json:"scope" bson:"scope"`
-	Permissions    string `json:"permissions" bson:"permissions"`
+	UID            *string `json:"uid" bson:"uid"`
+	AppID          *string `json:"app_id" bson:"app_id"`
+	OrganizationID *string `json:"org_id" bson:"org_id"`
+	Subject        *string `json:"sub" bson:"sub"`
+	Scope          *string `json:"scope" bson:"scope"`
+	Permissions    *string `json:"permissions" bson:"permissions"`
 	Anonymous      bool   `json:"anonymous" bson:"anonymous"`
 } //@name CoreToken
 

@@ -154,7 +154,7 @@ func (we Adapter) coreAdminWrapFunc(handler coreAdminAuthFunc) http.HandlerFunc 
 		if authenticated {
 			obj := req.URL.Path // the resource that is going to be accessed.
 			act := req.Method   // the operation that the user performs on the resource.
-			permissions := strings.Split(user.Permissions,",")
+			permissions := strings.Split(*user.Permissions,",")
 
 			HasAccess := false
 			for _, s := range permissions {
