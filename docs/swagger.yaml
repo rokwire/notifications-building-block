@@ -11,7 +11,7 @@ definitions:
     properties:
       name:
         type: string
-      user_id:
+      uid:
         type: string
     type: object
   Topic:
@@ -82,7 +82,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Rokwire Notifications Building Block API
-  version: 0.1.9
+  version: 0.1.10
 paths:
   /admin/message:
     post:
@@ -536,7 +536,8 @@ schemes:
 - https
 securityDefinitions:
   AdminUserAuth:
-    in: header (add admin id token with Bearer prefix to the Authorization value)
+    in: header (add admin core access token with Bearer prefix to the Authorization
+      value. The token must contain notifications_admin as a permission)
     name: Authorization
     type: apiKey
   InternalAuth:
@@ -548,7 +549,8 @@ securityDefinitions:
     name: ROKWIRE-API-KEY
     type: apiKey
   UserAuth:
-    in: header (add client id token with Bearer prefix to the Authorization value)
+    in: header (add core access token with Bearer prefix to the Authorization value.
+      The token must represent either anonymous or authenticated user )
     name: Authorization
     type: apiKey
 swagger: "2.0"

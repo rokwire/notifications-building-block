@@ -64,7 +64,7 @@ func (sa Adapter) findUserByTokenWithContext(context context.Context, token stri
 	filter := bson.D{}
 	if len(token) > 0 {
 		filter = bson.D{
-			primitive.E{Key: "firebase_tokens", Value: token},
+			primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 		}
 	}
 
@@ -171,9 +171,12 @@ func (sa Adapter) createUserWithContext(context context.Context, token string, u
 
 	now := time.Now()
 	record := &model.User{
-		ID:          uuid.NewString(),
-		UID:         userID,
-		Tokens:      []string{token},
+		ID:  uuid.NewString(),
+		UID: userID,
+		FirebaseTokens: []model.FirebaseToken{{
+			Token:       token,
+			DateCreated: now,
+		}},
 		Topics:      []string{},
 		DateCreated: now,
 		DateUpdated: now,
@@ -196,7 +199,10 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, u
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			}},
-			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: token}}},
+			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: model.FirebaseToken{
+				Token:       token,
+				DateCreated: time.Now(),
+			}}}},
 		}
 
 		_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -216,7 +222,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			}},
-			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: token}}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 		}
 
 		_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -250,8 +256,8 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient) ([
 
 		tokens := []string{}
 		for _, tokenMapping := range tokenMappings {
-			for _, token := range tokenMapping.Tokens {
-				tokens = append(tokens, token)
+			for _, token := range tokenMapping.FirebaseTokens {
+				tokens = append(tokens, token.Token)
 			}
 		}
 

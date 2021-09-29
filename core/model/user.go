@@ -21,41 +21,44 @@ import "time"
 
 // User represents user entity and all its relationship with firebase tokens and topics
 type User struct {
-	ID          string    `json:"id" bson:"_id"`
-	Tokens      []string  `json:"firebase_tokens" bson:"firebase_tokens"`
-	UID         *string   `json:"uid" bson:"uid"`
-	Topics      []string  `json:"topics" bson:"topics"`
-	DateCreated time.Time `json:"date_created" bson:"date_created"`
-	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
+	ID             string          `json:"id" bson:"_id"`
+	FirebaseTokens []FirebaseToken `json:"firebase_tokens" bson:"firebase_tokens"`
+	UID            *string         `json:"uid" bson:"uid"`
+	Topics         []string        `json:"topics" bson:"topics"`
+	DateCreated    time.Time       `json:"date_created" bson:"date_created"`
+	DateUpdated    time.Time       `json:"date_updated" bson:"date_updated"`
 } //@name User
 
 // AddToken adds topic to the list
 func (t *User) AddToken(token string) {
-	if t.Tokens == nil {
-		t.Tokens = []string{}
+	if t.FirebaseTokens == nil {
+		t.FirebaseTokens = []FirebaseToken{}
 	}
 	exists := false
-	for _, entry := range t.Tokens {
-		if token == entry {
+	for _, entry := range t.FirebaseTokens {
+		if token == entry.Token {
 			exists = true
 			break
 		}
 	}
 	if !exists {
-		t.Tokens = append(t.Tokens, token)
+		t.FirebaseTokens = append(t.FirebaseTokens, FirebaseToken{
+			Token:       token,
+			DateCreated: time.Now(),
+		})
 	}
 }
 
 // RemoveToken removes a topic
 func (t *User) RemoveToken(token string) {
-	if t.Tokens != nil {
-		tokens := []string{}
-		for _, entry := range t.Tokens {
-			if entry != token {
+	if t.FirebaseTokens != nil {
+		tokens := []FirebaseToken{}
+		for _, entry := range t.FirebaseTokens {
+			if entry.Token != token {
 				tokens = append(tokens, entry)
 			}
 		}
-		t.Tokens = tokens
+		t.FirebaseTokens = tokens
 	}
 }
 

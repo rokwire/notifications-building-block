@@ -11,7 +11,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.1.9"
+        "version": "0.1.10"
     },
     "host": "localhost",
     "basePath": "/notifications/api",
@@ -747,7 +747,7 @@
                 "name": {
                     "type": "string"
                 },
-                "user_id": {
+                "uid": {
                     "type": "string"
                 }
             }
@@ -849,7 +849,7 @@
         "AdminUserAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header (add admin id token with Bearer prefix to the Authorization value)"
+            "in": "header (add admin core access token with Bearer prefix to the Authorization value. The token must contain notifications_admin as a permission)"
         },
         "InternalAuth": {
             "type": "apiKey",
@@ -864,7 +864,7 @@
         "UserAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header (add client id token with Bearer prefix to the Authorization value)"
+            "in": "header (add core access token with Bearer prefix to the Authorization value. The token must represent either anonymous or authenticated user )"
         }
     }
 }

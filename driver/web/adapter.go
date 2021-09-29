@@ -47,7 +47,7 @@ type Adapter struct {
 
 // @title Rokwire Notifications Building Block API
 // @description Rokwire Notifications Building Block API Documentation.
-// @version 0.1.9
+// @version 0.1.10
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost
@@ -85,7 +85,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/int/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
 
 	// Client APIs
-	mainRouter.HandleFunc("/token", we.coreWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
+	mainRouter.HandleFunc("/token", we.core1WrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
 	mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
@@ -124,6 +124,18 @@ func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 		utils.LogRequest(req)
 
 		handler(w, req)
+	}
+}
+
+type core1AuthFunc = func(*model.CoreToken, http.ResponseWriter, *http.Request)
+
+func (we Adapter) core1WrapFunc(handler core1AuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		_, user := we.auth.coreAuth.coreAuthCheck(w, req)
+
+		handler(user, w, req)
 	}
 }
 

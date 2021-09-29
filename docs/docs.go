@@ -759,7 +759,7 @@ var doc = `{
                 "name": {
                     "type": "string"
                 },
-                "user_id": {
+                "uid": {
                     "type": "string"
                 }
             }
@@ -861,7 +861,7 @@ var doc = `{
         "AdminUserAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header (add admin id token with Bearer prefix to the Authorization value)"
+            "in": "header (add admin core access token with Bearer prefix to the Authorization value. The token must contain notifications_admin as a permission)"
         },
         "InternalAuth": {
             "type": "apiKey",
@@ -876,7 +876,7 @@ var doc = `{
         "UserAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header (add client id token with Bearer prefix to the Authorization value)"
+            "in": "header (add core access token with Bearer prefix to the Authorization value. The token must represent either anonymous or authenticated user )"
         }
     }
 }`
@@ -892,7 +892,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "0.1.9",
+	Version:     "0.1.10",
 	Host:        "localhost",
 	BasePath:    "/notifications/api",
 	Schemes:     []string{"https"},
