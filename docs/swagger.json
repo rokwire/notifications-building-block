@@ -11,7 +11,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.1.7"
+        "version": "0.1.10"
     },
     "host": "localhost",
     "basePath": "/notifications/api",
@@ -730,33 +730,24 @@
         }
     },
     "definitions": {
+        "CoreUserRef": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
+                }
+            }
+        },
         "Recipient": {
             "type": "object",
             "properties": {
                 "name": {
                     "type": "string"
                 },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "ShibbolethUser": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "uiucedu_is_member_of": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "uiucedu_uin": {
+                "uid": {
                     "type": "string"
                 }
             }
@@ -775,12 +766,6 @@
                 },
                 "name": {
                     "type": "string"
-                },
-                "user_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -844,7 +829,7 @@
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/ShibbolethUser"
+                    "$ref": "#/definitions/CoreUserRef"
                 }
             }
         },
@@ -864,7 +849,7 @@
         "AdminUserAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header (add admin id token with Bearer prefix to the Authorization value)"
+            "in": "header (add admin core access token with Bearer prefix to the Authorization value. The token must contain notifications_admin as a permission)"
         },
         "InternalAuth": {
             "type": "apiKey",
@@ -879,7 +864,7 @@
         "UserAuth": {
             "type": "apiKey",
             "name": "Authorization",
-            "in": "header (add client id token with Bearer prefix to the Authorization value)"
+            "in": "header (add core access token with Bearer prefix to the Authorization value. The token must represent either anonymous or authenticated user )"
         }
     }
 }

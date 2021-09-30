@@ -64,7 +64,7 @@ func (sa Adapter) findUserByTokenWithContext(context context.Context, token stri
 	filter := bson.D{}
 	if len(token) > 0 {
 		filter = bson.D{
-			primitive.E{Key: "firebase_tokens", Value: token},
+			primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 		}
 	}
 
@@ -86,7 +86,7 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 	filter := bson.D{}
 	if len(userID) > 0 {
 		filter = bson.D{
-			primitive.E{Key: "user_id", Value: userID},
+			primitive.E{Key: "uid", Value: userID},
 		}
 	}
 
@@ -124,10 +124,10 @@ func (sa Adapter) storeFirebaseToken(token string, previousToken *string, userID
 					_, err = sa.createUserWithContext(sessionContext, token, userID)
 				}
 			}
-		} else if userRecord.UserID != nil && userRecord.UserID != userID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, token, userRecord.UserID)
+		} else if userRecord.UID != nil && userRecord.UID != userID {
+			err = sa.removeTokenFromUserWithContext(sessionContext, token, userRecord.UID)
 			if err != nil {
-				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, *userRecord.UserID, err)
+				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, *userRecord.UID, err)
 				return err
 			}
 			err = sa.addTokenToUserWithContext(sessionContext, token, userID)
@@ -141,7 +141,7 @@ func (sa Adapter) storeFirebaseToken(token string, previousToken *string, userID
 		if previousToken != nil {
 			user, _ := sa.findUserByTokenWithContext(sessionContext, *previousToken)
 			if user != nil {
-				err = sa.removeTokenFromUserWithContext(sessionContext, *previousToken, user.UserID)
+				err = sa.removeTokenFromUserWithContext(sessionContext, *previousToken, user.UID)
 				if err != nil {
 					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *previousToken, *userID, err)
 					return err
@@ -171,9 +171,12 @@ func (sa Adapter) createUserWithContext(context context.Context, token string, u
 
 	now := time.Now()
 	record := &model.User{
-		ID:          uuid.NewString(),
-		UserID:      userID,
-		Tokens:      []string{token},
+		ID:  uuid.NewString(),
+		UID: userID,
+		FirebaseTokens: []model.FirebaseToken{{
+			Token:       token,
+			DateCreated: now,
+		}},
 		Topics:      []string{},
 		DateCreated: now,
 		DateUpdated: now,
@@ -190,13 +193,16 @@ func (sa Adapter) createUserWithContext(context context.Context, token string, u
 func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, userID *string) error {
 	if userID != nil {
 		// transaction
-		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+		filter := bson.D{primitive.E{Key: "uid", Value: userID}}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			}},
-			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: token}}},
+			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: model.FirebaseToken{
+				Token:       token,
+				DateCreated: time.Now(),
+			}}}},
 		}
 
 		_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -210,13 +216,13 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, u
 
 func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token string, userID *string) error {
 	if userID != nil {
-		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+		filter := bson.D{primitive.E{Key: "uid", Value: userID}}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			}},
-			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: token}}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 		}
 
 		_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -233,8 +239,8 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient) ([
 	if len(recipients) > 0 {
 		innerFilter := []interface{}{}
 		for _, recipient := range recipients {
-			if recipient.UserID != nil {
-				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: recipient.UserID}})
+			if recipient.UID != nil {
+				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "uid", Value: recipient.UID}})
 			}
 		}
 
@@ -250,8 +256,8 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient) ([
 
 		tokens := []string{}
 		for _, tokenMapping := range tokenMappings {
-			for _, token := range tokenMapping.Tokens {
-				tokens = append(tokens, token)
+			for _, token := range tokenMapping.FirebaseTokens {
+				tokens = append(tokens, token.Token)
 			}
 		}
 
@@ -277,15 +283,10 @@ func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) e
 				_, err = sa.db.users.UpdateOne(filter, update, nil)
 				if err == nil {
 					var topicRecord *model.Topic
-					topicRecord, err = sa.GetTopicByName(topic)
-					if err == nil {
-						if topicRecord == nil {
-							_, err = sa.InsertTopic(&model.Topic{Name: topic, UserIDs: []string{*userID}}) // just try to append within the topics collection
-						} else {
-							err = sa.AddUserIDToTopic(*userID, topic)
-						}
+					topicRecord, _ = sa.GetTopicByName(topic)
+					if topicRecord == nil {
+						sa.InsertTopic(&model.Topic{Name: topic}) // just try to append within the topics collection
 					}
-
 				}
 			}
 		}
@@ -315,9 +316,7 @@ func (sa Adapter) UnsubscribeToTopic(token string, userID *string, topic string)
 					var topicRecord *model.Topic
 					topicRecord, _ = sa.GetTopicByName(topic)
 					if topicRecord == nil {
-						_, err = sa.InsertTopic(&model.Topic{Name: topic, UserIDs: []string{}}) // just try to append within the topics collection
-					} else {
-						err = sa.RemoveUserIDFromTopic(*userID, topic)
+						sa.InsertTopic(&model.Topic{Name: topic}) // just try to append within the topics collection in case it's missing
 					}
 				}
 			}
@@ -374,40 +373,6 @@ func (sa Adapter) InsertTopic(topic *model.Topic) (*model.Topic, error) {
 	return topic, nil
 }
 
-// AddUserIDToTopic removes a user to a topic
-func (sa Adapter) AddUserIDToTopic(userID string, topic string) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: topic}}
-
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now()},
-		}},
-		primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "user_ids", Value: userID}}},
-	}
-	_, err := sa.db.topics.UpdateOne(filter, &update, nil)
-	if err != nil {
-		fmt.Printf("warning: error while add user (%s) topic (%s) - %s\n", userID, topic, err)
-	}
-	return err
-}
-
-// RemoveUserIDFromTopic removes a user from a topic
-func (sa Adapter) RemoveUserIDFromTopic(userID string, topic string) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: topic}}
-
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now()},
-		}},
-		primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "user_ids", Value: userID}}},
-	}
-	_, err := sa.db.topics.UpdateOne(filter, &update, nil)
-	if err != nil {
-		fmt.Printf("warning: error while add user (%s) topic (%s) - %s\n", userID, topic, err)
-	}
-	return err
-}
-
 // UpdateTopic updates a topic (for now only description is updatable)
 func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: topic.Name}}
@@ -419,7 +384,6 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "description", Value: topic.Description},
 			primitive.E{Key: "date_updated", Value: topic.DateUpdated},
-			primitive.E{Key: "user_ids", Value: topic.UserIDs},
 		}},
 	}
 
@@ -437,7 +401,7 @@ func (sa Adapter) GetMessages(userID *string, messageIDs []string, startDateEpoc
 	filter := bson.D{}
 	innerFilter := []interface{}{}
 	if userID != nil {
-		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: userID}})
+		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "uid", Value: userID}})
 	}
 	if len(innerFilter) > 0 {
 		filter = append(filter, primitive.E{Key: "recipients", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "$or", Value: innerFilter}}}}})
@@ -553,7 +517,7 @@ func (sa Adapter) DeleteUserMessage(userID string, messageID string) error {
 
 	updatesRecipients := []model.Recipient{}
 	for _, recipient := range persistedMessage.Recipients {
-		if userID != *recipient.UserID {
+		if userID != *recipient.UID {
 			updatesRecipients = append(updatesRecipients, recipient)
 		}
 	}

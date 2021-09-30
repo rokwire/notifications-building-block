@@ -28,9 +28,10 @@ import (
 	"notifications/core/model"
 	"notifications/driver/web/rest"
 	"notifications/utils"
+	"strings"
 )
 
-//Adapter entity
+// Adapter entity
 type Adapter struct {
 	host          string
 	port          string
@@ -46,7 +47,7 @@ type Adapter struct {
 
 // @title Rokwire Notifications Building Block API
 // @description Rokwire Notifications Building Block API Documentation.
-// @version 0.1.7
+// @version 0.1.10
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost
@@ -62,17 +63,15 @@ type Adapter struct {
 // @name INTERNAL-API-KEY
 
 // @securityDefinitions.apikey UserAuth
-// @in header (add client id token with Bearer prefix to the Authorization value)
+// @in header (add core access token with Bearer prefix to the Authorization value. The token must represent either anonymous or authenticated user )
 // @name Authorization
 
 // @securityDefinitions.apikey AdminUserAuth
-// @in header (add admin id token with Bearer prefix to the Authorization value)
+// @in header (add admin core access token with Bearer prefix to the Authorization value. The token must contain notifications_admin as a permission)
 // @name Authorization
 
 // Start starts the module
 func (we Adapter) Start() {
-
-	we.auth.Start()
 
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -86,26 +85,26 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/int/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
 
 	// Client APIs
-	mainRouter.HandleFunc("/token", we.apiKeyOrTokenWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
-	mainRouter.HandleFunc("/messages", we.tokenWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
-	mainRouter.HandleFunc("/messages", we.tokenWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
-	mainRouter.HandleFunc("/message", we.tokenWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
-	mainRouter.HandleFunc("/message/{id}", we.tokenWrapFunc(we.apisHandler.GetMessage)).Methods("GET")
-	mainRouter.HandleFunc("/message/{id}", we.tokenWrapFunc(we.apisHandler.DeleteUserMessage)).Methods("DELETE")
-	mainRouter.HandleFunc("/topics", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
-	mainRouter.HandleFunc("/topic/{topic}/messages", we.apiKeyOrTokenWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
-	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
-	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.apiKeyOrTokenWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
+	mainRouter.HandleFunc("/token", we.core1WrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
+	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
+	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
+	mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
+	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.GetMessage)).Methods("GET")
+	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.DeleteUserMessage)).Methods("DELETE")
+	mainRouter.HandleFunc("/topics", we.coreWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
+	mainRouter.HandleFunc("/topic/{topic}/messages", we.coreWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
+	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.coreWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
+	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.coreWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
-	adminRouter.HandleFunc("/topics", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
-	adminRouter.HandleFunc("/topic", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
-	adminRouter.HandleFunc("/messages", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")
-	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.CreateMessage)).Methods("POST")
-	adminRouter.HandleFunc("/message", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMessage)).Methods("PUT")
-	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
-	adminRouter.HandleFunc("/message/{id}", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
+	adminRouter.HandleFunc("/topics", we.coreAdminWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
+	adminRouter.HandleFunc("/topic", we.coreAdminWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
+	adminRouter.HandleFunc("/messages", we.coreAdminWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")
+	adminRouter.HandleFunc("/message", we.coreAdminWrapFunc(we.adminApisHandler.CreateMessage)).Methods("POST")
+	adminRouter.HandleFunc("/message", we.coreAdminWrapFunc(we.adminApisHandler.UpdateMessage)).Methods("PUT")
+	adminRouter.HandleFunc("/message/{id}", we.coreAdminWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
+	adminRouter.HandleFunc("/message/{id}", we.coreAdminWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -128,6 +127,66 @@ func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+type core1AuthFunc = func(*model.CoreToken, http.ResponseWriter, *http.Request)
+
+func (we Adapter) core1WrapFunc(handler core1AuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		_, user := we.auth.coreAuth.coreAuthCheck(w, req)
+
+		handler(user, w, req)
+	}
+}
+
+type coreAuthFunc = func(*model.CoreToken, http.ResponseWriter, *http.Request)
+
+func (we Adapter) coreWrapFunc(handler coreAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		authenticated, user := we.auth.coreAuth.coreAuthCheck(w, req)
+
+		if authenticated {
+			handler(user, w, req)
+		} else {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		}
+	}
+}
+
+type coreAdminAuthFunc = func(*model.CoreToken, http.ResponseWriter, *http.Request)
+
+func (we Adapter) coreAdminWrapFunc(handler coreAdminAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		authenticated, user := we.auth.coreAuth.coreAuthCheck(w, req)
+
+		if authenticated {
+			obj := req.URL.Path // the resource that is going to be accessed.
+			act := req.Method   // the operation that the user performs on the resource.
+			permissions := strings.Split(*user.Permissions, ",")
+
+			HasAccess := false
+			for _, s := range permissions {
+				HasAccess = we.authorization.Enforce(s, obj, act)
+				if HasAccess {
+					break
+				}
+			}
+			if HasAccess {
+				handler(user, w, req)
+			} else {
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			}
+
+		} else {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		}
+	}
+}
+
 type internalAPIKeyAuthFunc = func(http.ResponseWriter, *http.Request)
 
 func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) http.HandlerFunc {
@@ -144,121 +203,9 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 	}
 }
 
-type apiKeysAuthFunc = func(*model.ShibbolethUser, http.ResponseWriter, *http.Request)
-
-func (we Adapter) apiKeyOrTokenWrapFunc(handler apiKeysAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		apiKeyAuthenticated := we.auth.apiKeyCheck(w, req)
-		userAuthenticated, user, _ := we.auth.userCheck(w, req)
-
-		if apiKeyAuthenticated || userAuthenticated {
-			handler(user, w, req)
-		} else {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		}
-	}
-}
-
-type tokenAuthFunc = func(*model.ShibbolethUser, http.ResponseWriter, *http.Request)
-
-func (we Adapter) tokenWrapFunc(handler tokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		userAuthenticated, user, _ := we.auth.userCheck(w, req)
-
-		if userAuthenticated {
-			handler(user, w, req)
-		} else {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		}
-	}
-}
-
-type adminAuthFunc = func(*model.ShibbolethUser, http.ResponseWriter, *http.Request)
-
-func (we Adapter) adminAppIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		ok, shiboUser := we.auth.adminCheck(w, req)
-		if !ok {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-
-		obj := req.URL.Path // the resource that is going to be accessed.
-		act := req.Method   // the operation that the user performs on the resource.
-
-		var HasAccess = false
-		for _, s := range *shiboUser.Membership {
-			HasAccess = we.authorization.Enforce(s, obj, act)
-			if HasAccess {
-				break
-			}
-		}
-
-		if !HasAccess {
-			log.Printf("Access control error - UIN: %s is trying to apply %s operation for %s\n", *shiboUser.Uin, act, obj)
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-
-		handler(shiboUser, w, req)
-	}
-}
-
-func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser) {
-	return auth.adminAuth.check(w, r)
-}
-
-func (auth *AdminAuth) check(w http.ResponseWriter, r *http.Request) (bool, *model.ShibbolethUser) {
-	//1. Get the token from the request
-	rawIDToken, tokenType, err := auth.getIDToken(r)
-	if err != nil {
-		auth.responseBadRequest(w)
-		return false, nil
-	}
-
-	//3. Validate the token
-	idToken, err := auth.verify(*rawIDToken, *tokenType)
-	if err != nil {
-		log.Printf("error validating token - %s\n", err)
-
-		auth.responseUnauthorized(*rawIDToken, w)
-		return false, nil
-	}
-
-	//4. Get the user data from the token
-	var userData userData
-	if err := idToken.Claims(&userData); err != nil {
-		log.Printf("error getting user data from token - %s\n", err)
-
-		auth.responseUnauthorized(*rawIDToken, w)
-		return false, nil
-	}
-	//we must have UIuceduUIN
-	if userData.UIuceduUIN == nil {
-		log.Printf("error - missing uiuceuin data in the token - %s\n", err)
-
-		auth.responseUnauthorized(*rawIDToken, w)
-		return false, nil
-	}
-
-	shibboAuth := &model.ShibbolethUser{Uin: userData.UIuceduUIN, Email: userData.Email,
-		Membership: userData.UIuceduIsMemberOf}
-
-	return true, shibboAuth
-}
-
-//NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(host string, port string, app *core.Application, appKeys []string, oidcProvider string,
-	oidcAppClientID string, adminAppClientID string, adminWebAppClientID string, phoneAuthSecret string,
-	authKeys string, authIssuer string, firebaseAuth string, firebaseProjectID string, internalAPIKey string) Adapter {
-	auth := NewAuth(app, appKeys, oidcProvider, oidcAppClientID, adminAppClientID, adminWebAppClientID,
-		phoneAuthSecret, authKeys, authIssuer, internalAPIKey)
+// NewWebAdapter creates new WebAdapter instance
+func NewWebAdapter(host string, port string, app *core.Application, internalAPIKey string, coreAuthPrivateKey string) Adapter {
+	auth := NewAuth(app, internalAPIKey, coreAuthPrivateKey)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
@@ -268,7 +215,7 @@ func NewWebAdapter(host string, port string, app *core.Application, appKeys []st
 		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
 }
 
-//AppListener implements core.ApplicationListener interface
+// AppListener implements core.ApplicationListener interface
 type AppListener struct {
 	adapter *Adapter
 }

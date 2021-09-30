@@ -24,7 +24,6 @@ import (
 	storage "notifications/driven/storage"
 	driver "notifications/driver/web"
 	"os"
-	"strings"
 )
 
 var (
@@ -41,7 +40,7 @@ func main() {
 
 	port := getEnvKey("PORT", true)
 
-	//mongoDB adapter
+	// mongoDB adapter
 	mongoDBAuth := getEnvKey("MONGO_AUTH", true)
 	mongoDBName := getEnvKey("MONGO_DATABASE", true)
 	mongoTimeout := getEnvKey("MONGO_TIMEOUT", false)
@@ -60,39 +59,18 @@ func main() {
 		log.Fatal("Cannot start the Firebase adapter - " + err.Error())
 	}
 
-	//application
+	// application
 	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter)
 	application.Start()
 
-	//web adapter
-	apiKeys := getAPIKeys()
+	// web adapter
 	host := getEnvKey("HOST", true)
-	oidcProvider := getEnvKey("OIDC_PROVIDER", true)
-	oidcAppClientID := getEnvKey("OIDC_APP_CLIENT_ID", true)
-	adminAppClientID := getEnvKey("OIDC_ADMIN_CLIENT_ID", true)
-	adminWebAppClientID := getEnvKey("OIDC_ADMIN_WEB_CLIENT_ID", true)
-	phoneSecret := getEnvKey("PHONE_SECRET", true)
-	authKeys := getEnvKey("AUTH_KEYS", true)
-	authIssuer := getEnvKey("AUTH_ISSUER", true)
 	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
+	coreAuthPrivateKey := getEnvKey("ROKWIRE_CORE_AUTH_PRIVATE_KEY", true)
 
-	webAdapter := driver.NewWebAdapter(host, port, application, apiKeys, oidcProvider, oidcAppClientID, adminAppClientID,
-		adminWebAppClientID, phoneSecret, authKeys, authIssuer, firebaseAuth, firebaseProjectID, internalAPIKey)
+	webAdapter := driver.NewWebAdapter(host, port, application, internalAPIKey, coreAuthPrivateKey)
 
 	webAdapter.Start()
-}
-
-func getAPIKeys() []string {
-	//get from the environment
-	rokwireAPIKeys := getEnvKey("ROKWIRE_API_KEYS", true)
-
-	//it is comma separated format
-	rokwireAPIKeysList := strings.Split(rokwireAPIKeys, ",")
-	if len(rokwireAPIKeysList) <= 0 {
-		log.Fatal("For some reasons the apis keys list is empty")
-	}
-
-	return rokwireAPIKeysList
 }
 
 func getEnvKey(key string, required bool) string {

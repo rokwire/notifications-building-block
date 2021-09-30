@@ -8,7 +8,6 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/casbin/casbin v1.9.1
-	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.3 // indirect
@@ -18,11 +17,10 @@ require (
 	github.com/lestrrat-go/jwx v1.2.1
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/rokmetro/auth-library v0.1.18
 	github.com/swaggo/http-swagger v1.0.0
 	github.com/swaggo/swag v1.7.0
 	go.mongodb.org/mongo-driver v1.5.3
-	golang.org/x/net v0.0.0-20210610132358-84b48f89b13b // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273 // indirect

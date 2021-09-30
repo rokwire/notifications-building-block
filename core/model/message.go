@@ -21,15 +21,15 @@ type Message struct {
 }
 
 // HasUser checks if the user is the sender or as a recipient for the current message
-func (m *Message) HasUser(user *ShibbolethUser) bool {
+func (m *Message) HasUser(user *CoreToken) bool {
 	if user != nil {
 		for _, recipient := range m.Recipients {
-			if recipient.UserID == user.Email {
+			if recipient.UID == user.UID {
 				return true
 			}
 		}
 
-		if m.Sender.User != nil && user.Email == m.Sender.User.Email {
+		if m.Sender.User.UID != nil && user.UID == m.Sender.User.UID {
 			return true
 		}
 	}
@@ -40,6 +40,6 @@ func (m *Message) HasUser(user *ShibbolethUser) bool {
 // @name Sender
 // @ID Sender
 type Sender struct {
-	Type string          `json:"type" bson:"type"` // user or system
-	User *ShibbolethUser `json:"user,omitempty" bson:"user,omitempty"`
+	Type string       `json:"type" bson:"type"` // user or system
+	User *CoreUserRef `json:"user,omitempty" bson:"user,omitempty"`
 }

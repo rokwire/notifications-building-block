@@ -66,7 +66,7 @@ func (m *database) start() error {
 	db := client.Database(m.mongoDBName)
 
 	users := &collectionWrapper{database: m, coll: db.Collection("users")}
-	err = m.applyTokensChecks(users)
+	err = m.applyUsersChecks(users)
 	if err != nil {
 		return err
 	}
@@ -105,30 +105,11 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 			indexMapping[name] = index
 		}
 	}
-	if indexMapping["recipients.email_1"] == nil {
-		err := messages.AddIndex(
-			bson.D{
-				primitive.E{Key: "recipients.email", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
 
-	if indexMapping["recipients.phone_1"] == nil {
+	if indexMapping["recipients.uid_1"] == nil {
 		err := messages.AddIndex(
 			bson.D{
-				primitive.E{Key: "recipients.phone", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["recipients.uin_1"] == nil {
-		err := messages.AddIndex(
-			bson.D{
-				primitive.E{Key: "recipients.uin", Value: 1},
+				primitive.E{Key: "recipients.uid", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -165,21 +146,11 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 		}
 	}
 
-	if indexMapping["sent_1"] == nil {
-		err := messages.AddIndex(
-			bson.D{
-				primitive.E{Key: "sent", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
 	log.Println("apply messages passed")
 	return nil
 }
 
-func (m *database) applyTokensChecks(users *collectionWrapper) error {
+func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	log.Println("apply users checks.....")
 
 	indexes, _ := users.ListIndexes()
@@ -191,10 +162,10 @@ func (m *database) applyTokensChecks(users *collectionWrapper) error {
 		}
 	}
 
-	if indexMapping["user_id_1"] == nil {
+	if indexMapping["uid_1"] == nil {
 		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "user_id", Value: 1},
+				primitive.E{Key: "uid", Value: 1},
 			}, true)
 		if err != nil {
 			return err

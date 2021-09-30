@@ -21,41 +21,44 @@ import "time"
 
 // User represents user entity and all its relationship with firebase tokens and topics
 type User struct {
-	ID          string    `json:"id" bson:"_id"`
-	Tokens      []string  `json:"firebase_tokens" bson:"firebase_tokens"`
-	UserID      *string   `json:"user_id" bson:"user_id"`
-	Topics      []string  `json:"topics" bson:"topics"`
-	DateCreated time.Time `json:"date_created" bson:"date_created"`
-	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
+	ID             string          `json:"id" bson:"_id"`
+	FirebaseTokens []FirebaseToken `json:"firebase_tokens" bson:"firebase_tokens"`
+	UID            *string         `json:"uid" bson:"uid"`
+	Topics         []string        `json:"topics" bson:"topics"`
+	DateCreated    time.Time       `json:"date_created" bson:"date_created"`
+	DateUpdated    time.Time       `json:"date_updated" bson:"date_updated"`
 } //@name User
 
 // AddToken adds topic to the list
 func (t *User) AddToken(token string) {
-	if t.Tokens == nil {
-		t.Tokens = []string{}
+	if t.FirebaseTokens == nil {
+		t.FirebaseTokens = []FirebaseToken{}
 	}
 	exists := false
-	for _, entry := range t.Tokens {
-		if token == entry {
+	for _, entry := range t.FirebaseTokens {
+		if token == entry.Token {
 			exists = true
 			break
 		}
 	}
 	if !exists {
-		t.Tokens = append(t.Tokens, token)
+		t.FirebaseTokens = append(t.FirebaseTokens, FirebaseToken{
+			Token:       token,
+			DateCreated: time.Now(),
+		})
 	}
 }
 
 // RemoveToken removes a topic
 func (t *User) RemoveToken(token string) {
-	if t.Tokens != nil {
-		tokens := []string{}
-		for _, entry := range t.Tokens {
-			if entry != token {
+	if t.FirebaseTokens != nil {
+		tokens := []FirebaseToken{}
+		for _, entry := range t.FirebaseTokens {
+			if entry.Token != token {
 				tokens = append(tokens, entry)
 			}
 		}
-		t.Tokens = tokens
+		t.FirebaseTokens = tokens
 	}
 }
 
@@ -73,10 +76,19 @@ func (t *User) HasTopic(topic string) bool {
 
 //////////////////////////
 
-// ShibbolethUser represents shibboleth auth entity
-type ShibbolethUser struct {
-	Uin        *string   `json:"uiucedu_uin" bson:"uin"`
-	Email      *string   `json:"email" bson:"email"`
-	Phone      *string   `json:"phone" bson:"phone"`
-	Membership *[]string `json:"uiucedu_is_member_of,omitempty" bson:"membership,omitempty"`
-} //@name ShibbolethUser
+// CoreToken represents shibboleth auth entity
+type CoreToken struct {
+	UID            *string `json:"uid" bson:"uid"`
+	AppID          *string `json:"app_id" bson:"app_id"`
+	OrganizationID *string `json:"org_id" bson:"org_id"`
+	Subject        *string `json:"sub" bson:"sub"`
+	Scope          *string `json:"scope" bson:"scope"`
+	Permissions    *string `json:"permissions" bson:"permissions"`
+	Anonymous      bool    `json:"anonymous" bson:"anonymous"`
+} //@name CoreToken
+
+// CoreUserRef user reference that contains UID & Name
+type CoreUserRef struct {
+	UID  *string `json:"uid" bson:"uid"`
+	Name *string `json:"name" bson:"name"`
+} //@name CoreUserRef
