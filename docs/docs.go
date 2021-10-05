@@ -748,7 +748,7 @@ var doc = `{
                 "name": {
                     "type": "string"
                 },
-                "uid": {
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -759,7 +759,7 @@ var doc = `{
                 "name": {
                     "type": "string"
                 },
-                "uid": {
+                "user_id": {
                     "type": "string"
                 }
             }

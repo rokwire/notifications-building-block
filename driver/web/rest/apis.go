@@ -238,7 +238,7 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	var err error
 	var messages []model.Message
 	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.UID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+		messages, err = h.app.Services.GetMessages(user.UserID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -406,7 +406,7 @@ func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWr
 			err := h.app.Services.DeleteUserMessage(user, id)
 			if err != nil {
 				errStrings = append(errStrings, fmt.Sprintf("%s\n", err.Error()))
-				log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UID, err)
+				log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UserID, err)
 			}
 		}
 	} else {
@@ -486,7 +486,7 @@ func (h ApisHandler) DeleteUserMessage(user *model.CoreToken, w http.ResponseWri
 
 	err := h.app.Services.DeleteUserMessage(user, id)
 	if err != nil {
-		log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UID, err)
+		log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UserID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

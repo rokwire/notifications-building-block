@@ -4,14 +4,14 @@ definitions:
     properties:
       name:
         type: string
-      uid:
+      user_id:
         type: string
     type: object
   Recipient:
     properties:
       name:
         type: string
-      uid:
+      user_id:
         type: string
     type: object
   Topic:
