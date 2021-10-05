@@ -162,10 +162,10 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 		}
 	}
 
-	if indexMapping["uid_1"] == nil {
+	if indexMapping["user_id_1"] == nil {
 		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "uid", Value: 1},
+				primitive.E{Key: "user_id", Value: 1},
 			}, true)
 		if err != nil {
 			return err

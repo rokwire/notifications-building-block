@@ -27,17 +27,17 @@ func (app *Application) getVersion() string {
 }
 
 func (app *Application) storeFirebaseToken(token string, previousToken *string, user *model.CoreToken) error {
-	var uid *string
-	if user != nil && user.UID != nil {
-		uid = user.UID
+	var userID *string
+	if user != nil && user.UserID != nil {
+		userID = user.UserID
 	}
-	return app.storage.StoreFirebaseToken(token, previousToken, uid)
+	return app.storage.StoreFirebaseToken(token, previousToken, userID)
 }
 
 func (app *Application) subscribeToTopic(token string, user *model.CoreToken, topic string) error {
 	var err error
 	if user != nil {
-		err = app.storage.SubscribeToTopic(token, user.UID, topic)
+		err = app.storage.SubscribeToTopic(token, user.UserID, topic)
 		if err == nil {
 			err = app.firebase.SubscribeToTopic(token, topic)
 		}
@@ -51,7 +51,7 @@ func (app *Application) subscribeToTopic(token string, user *model.CoreToken, to
 func (app *Application) unsubscribeToTopic(token string, user *model.CoreToken, topic string) error {
 	var err error
 	if user != nil {
-		err = app.storage.UnsubscribeToTopic(token, user.UID, topic)
+		err = app.storage.UnsubscribeToTopic(token, user.UserID, topic)
 		if err == nil {
 			err = app.firebase.UnsubscribeToTopic(token, topic)
 		}
@@ -82,7 +82,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	}
 
 	if user != nil {
-		message.Sender = &model.Sender{Type: "user", User: &model.CoreUserRef{UID: user.UID}}
+		message.Sender = &model.Sender{Type: "token", User: &model.CoreUserRef{UserID: user.UserID}}
 	} else {
 		message.Sender = &model.Sender{Type: "system"}
 	}
@@ -124,7 +124,7 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 	if message.ID != nil {
 		persistedMessage, err := app.storage.GetMessage(*message.ID)
 		if err == nil && persistedMessage != nil {
-			if persistedMessage.Sender.User != nil && persistedMessage.Sender.User.UID == user.UID {
+			if persistedMessage.Sender.User != nil && persistedMessage.Sender.User.UserID == user.UserID {
 				return app.storage.UpdateMessage(message)
 			}
 			return nil, fmt.Errorf("only creator can update the original message")
@@ -134,7 +134,7 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 }
 
 func (app *Application) deleteUserMessage(user *model.CoreToken, messageID string) error {
-	return app.storage.DeleteUserMessage(*user.UID, messageID)
+	return app.storage.DeleteUserMessage(*user.UserID, messageID)
 }
 
 func (app *Application) deleteMessage(ID string) error {

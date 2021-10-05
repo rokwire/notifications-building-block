@@ -86,7 +86,7 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 	filter := bson.D{}
 	if len(userID) > 0 {
 		filter = bson.D{
-			primitive.E{Key: "uid", Value: userID},
+			primitive.E{Key: "user_id", Value: userID},
 		}
 	}
 
@@ -124,10 +124,10 @@ func (sa Adapter) storeFirebaseToken(token string, previousToken *string, userID
 					_, err = sa.createUserWithContext(sessionContext, token, userID)
 				}
 			}
-		} else if userRecord.UID != nil && userRecord.UID != userID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, token, userRecord.UID)
+		} else if userRecord.UserID != nil && userRecord.UserID != userID {
+			err = sa.removeTokenFromUserWithContext(sessionContext, token, userRecord.UserID)
 			if err != nil {
-				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, *userRecord.UID, err)
+				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, *userRecord.UserID, err)
 				return err
 			}
 			err = sa.addTokenToUserWithContext(sessionContext, token, userID)
@@ -141,7 +141,7 @@ func (sa Adapter) storeFirebaseToken(token string, previousToken *string, userID
 		if previousToken != nil {
 			user, _ := sa.findUserByTokenWithContext(sessionContext, *previousToken)
 			if user != nil {
-				err = sa.removeTokenFromUserWithContext(sessionContext, *previousToken, user.UID)
+				err = sa.removeTokenFromUserWithContext(sessionContext, *previousToken, user.UserID)
 				if err != nil {
 					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *previousToken, *userID, err)
 					return err
@@ -171,8 +171,8 @@ func (sa Adapter) createUserWithContext(context context.Context, token string, u
 
 	now := time.Now()
 	record := &model.User{
-		ID:  uuid.NewString(),
-		UID: userID,
+		ID:     uuid.NewString(),
+		UserID: userID,
 		FirebaseTokens: []model.FirebaseToken{{
 			Token:       token,
 			DateCreated: now,
@@ -193,7 +193,7 @@ func (sa Adapter) createUserWithContext(context context.Context, token string, u
 func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, userID *string) error {
 	if userID != nil {
 		// transaction
-		filter := bson.D{primitive.E{Key: "uid", Value: userID}}
+		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
@@ -216,7 +216,7 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, u
 
 func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token string, userID *string) error {
 	if userID != nil {
-		filter := bson.D{primitive.E{Key: "uid", Value: userID}}
+		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
@@ -239,8 +239,8 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient) ([
 	if len(recipients) > 0 {
 		innerFilter := []interface{}{}
 		for _, recipient := range recipients {
-			if recipient.UID != nil {
-				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "uid", Value: recipient.UID}})
+			if recipient.UserID != nil {
+				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: recipient.UserID}})
 			}
 		}
 
@@ -401,7 +401,7 @@ func (sa Adapter) GetMessages(userID *string, messageIDs []string, startDateEpoc
 	filter := bson.D{}
 	innerFilter := []interface{}{}
 	if userID != nil {
-		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "uid", Value: userID}})
+		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: userID}})
 	}
 	if len(innerFilter) > 0 {
 		filter = append(filter, primitive.E{Key: "recipients", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "$or", Value: innerFilter}}}}})
@@ -517,7 +517,7 @@ func (sa Adapter) DeleteUserMessage(userID string, messageID string) error {
 
 	updatesRecipients := []model.Recipient{}
 	for _, recipient := range persistedMessage.Recipients {
-		if userID != *recipient.UID {
+		if userID != *recipient.UserID {
 			updatesRecipients = append(updatesRecipients, recipient)
 		}
 	}

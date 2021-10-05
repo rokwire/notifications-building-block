@@ -23,7 +23,7 @@ import "time"
 type User struct {
 	ID             string          `json:"id" bson:"_id"`
 	FirebaseTokens []FirebaseToken `json:"firebase_tokens" bson:"firebase_tokens"`
-	UID            *string         `json:"uid" bson:"uid"`
+	UserID         *string         `json:"user_id" bson:"user_id"`
 	Topics         []string        `json:"topics" bson:"topics"`
 	DateCreated    time.Time       `json:"date_created" bson:"date_created"`
 	DateUpdated    time.Time       `json:"date_updated" bson:"date_updated"`
@@ -78,17 +78,17 @@ func (t *User) HasTopic(topic string) bool {
 
 // CoreToken represents shibboleth auth entity
 type CoreToken struct {
-	UID            *string `json:"uid" bson:"uid"`
+	ExternalID     *string `json:"uid" bson:"uid"`
 	AppID          *string `json:"app_id" bson:"app_id"`
 	OrganizationID *string `json:"org_id" bson:"org_id"`
-	Subject        *string `json:"sub" bson:"sub"`
+	UserID         *string `json:"sub" bson:"sub"`
 	Scope          *string `json:"scope" bson:"scope"`
 	Permissions    *string `json:"permissions" bson:"permissions"`
 	Anonymous      bool    `json:"anonymous" bson:"anonymous"`
 } //@name CoreToken
 
-// CoreUserRef user reference that contains UID & Name
+// CoreUserRef user reference that contains ExternalID & Name
 type CoreUserRef struct {
-	UID  *string `json:"uid" bson:"uid"`
-	Name *string `json:"name" bson:"name"`
+	UserID *string `json:"user_id" bson:"user_id"`
+	Name   *string `json:"name" bson:"name"`
 } //@name CoreUserRef
