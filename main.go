@@ -20,6 +20,7 @@ package main
 import (
 	"log"
 	"notifications/core"
+	"notifications/core/model"
 	"notifications/driven/firebase"
 	storage "notifications/driven/storage"
 	driver "notifications/driver/web"
@@ -66,9 +67,18 @@ func main() {
 	// web adapter
 	host := getEnvKey("HOST", true)
 	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
-	coreAuthPrivateKey := getEnvKey("ROKWIRE_CORE_AUTH_PRIVATE_KEY", true)
+	coreAuthPrivateKey := getEnvKey("CORE_AUTH_PRIVATE_KEY", true)
+	coreServiceRegLoaderURL := getEnvKey("CORE_SERVICE_REG_LOADER_URL", true)
+	contentServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
 
-	webAdapter := driver.NewWebAdapter(host, port, application, internalAPIKey, coreAuthPrivateKey)
+	config := &model.Config{
+		InternalAPIKey:          internalAPIKey,
+		CoreAuthPrivateKey:      coreAuthPrivateKey,
+		CoreServiceRegLoaderURL: coreServiceRegLoaderURL,
+		NotificationsServiceURL: contentServiceURL,
+	}
+
+	webAdapter := driver.NewWebAdapter(host, port, application, config)
 
 	webAdapter.Start()
 }
@@ -79,16 +89,8 @@ func getEnvKey(key string, required bool) string {
 	if !exist {
 		if required {
 			log.Fatal("No provided environment variable for " + key)
-		} else {
-			log.Printf("No provided environment variable for " + key)
 		}
 	}
-	printEnvVar(key, value)
-	return value
-}
 
-func printEnvVar(name string, value string) {
-	if Version == "dev" {
-		log.Printf("%s=%s", name, value)
-	}
+	return value
 }

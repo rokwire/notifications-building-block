@@ -28,16 +28,16 @@ import (
 	"github.com/rokmetro/auth-library/tokenauth"
 )
 
-//Auth handler
+// Auth handler
 type Auth struct {
 	internalAuth *InternalAuth
 	coreAuth     *CoreAuth
 }
 
-//NewAuth creates new auth handler
-func NewAuth(app *core.Application, internalAPIKey string, coreAuthPrivateKey string) *Auth {
-	internalAuth := newInternalAuth(internalAPIKey)
-	coreAuth := newCoreAuth(app, coreAuthPrivateKey)
+// NewAuth creates new auth handler
+func NewAuth(app *core.Application, config *model.Config) *Auth {
+	internalAuth := newInternalAuth(config.InternalAPIKey)
+	coreAuth := newCoreAuth(app, config)
 
 	auth := Auth{
 		internalAuth: internalAuth,
@@ -48,7 +48,7 @@ func NewAuth(app *core.Application, internalAPIKey string, coreAuthPrivateKey st
 
 ///////
 
-//InternalAuth handling the internal calls fromother BBs
+// InternalAuth handling the internal calls fromother BBs
 type InternalAuth struct {
 	internalAPIKey string
 }
@@ -92,10 +92,10 @@ type CoreAuth struct {
 	coreAuthPrivateKey *string
 }
 
-func newCoreAuth(app *core.Application, coreAuthPrivateKey string) *CoreAuth {
+func newCoreAuth(app *core.Application, config *model.Config) *CoreAuth {
 
-	serviceLoader := authservice.NewRemoteServiceRegLoader("https://api-dev.rokwire.illinois.edu/core/services/auth/service-regs", []string{"core"})
-	authService, err := authservice.NewAuthService("notifications", "https://api-dev.rokwire.illinois.edu/notifications", serviceLoader)
+	serviceLoader := authservice.NewRemoteServiceRegLoader(config.CoreServiceRegLoaderURL, []string{"core"})
+	authService, err := authservice.NewAuthService("notifications", config.NotificationsServiceURL, serviceLoader)
 	if err != nil {
 		log.Fatalf("Error initializing auth service: %v", err)
 	}
@@ -104,7 +104,7 @@ func newCoreAuth(app *core.Application, coreAuthPrivateKey string) *CoreAuth {
 		log.Fatalf("Error intitializing token auth: %v", err)
 	}
 
-	auth := CoreAuth{app: app, tokenAuth: tokenAuth, coreAuthPrivateKey: &coreAuthPrivateKey}
+	auth := CoreAuth{app: app, tokenAuth: tokenAuth, coreAuthPrivateKey: &config.CoreAuthPrivateKey}
 	return &auth
 }
 

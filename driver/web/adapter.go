@@ -192,8 +192,8 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(host string, port string, app *core.Application, internalAPIKey string, coreAuthPrivateKey string) Adapter {
-	auth := NewAuth(app, internalAPIKey, coreAuthPrivateKey)
+func NewWebAdapter(host string, port string, app *core.Application, config *model.Config) Adapter {
+	auth := NewAuth(app, config)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
