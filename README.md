@@ -15,19 +15,19 @@ The following Environment variables are supported. The service will not start un
 
 Name|Value|Required|Description
 ---|---|---|---
-PORT | < value > | yes | The port number of the listening port
-AUTH_ISSUER | < value > | yes | Auth issuer base uri
-AUTH_KEYS | < value > | yes | Auth keys
 HOST | < value > | yes | Host name
+PORT | < value > | yes | The port number of the listening port
 MONGO_AUTH | <mongodb://USER:PASSWORD@HOST:PORT/DATABASE NAME> | yes | MongoDB authentication string. The user must have read/write privileges.
 MONGO_DATABASE | < value > | yes | MongoDB database name
 MONGO_TIMEOUT | < value > | no | MongoDB timeout in milliseconds. Set default value(500 milliseconds) if omitted
-OIDC_ADMIN_CLIENT_ID | < value > | yes | OIDC admin client id
-OIDC_ADMIN_WEB_CLIENT_ID | < value > | yes | OIDC admin web client id
-OIDC_APP_CLIENT_ID | < value > | yes | OIDC app client id
-OIDC_PROVIDER | < value > | yes | OIDC provider
-PHONE_SECRET | < value > | yes | Phone secret
-ROKWIRE_API_KEYS | <value1,value2,value3> | yes | Comma separated list of rokwire api keys
+FIREBASE_PROJECT_ID | < value > | yes | Firebase project ID
+FIREBASE_AUTH | < value > | yes | Firebase authentication JSON string
+INTERNAL_API_KEY | < value > | yes | Internal API key for invocation of other BBs
+CORE_AUTH_PRIVATE_KEY | < value > | yes | Private key for comunicating with Core
+CORE_SERVICE_REG_LOADER_URL | < value > | yes | Core service reg loader url
+NOTIFICATIONS_SERVICE_URL | < value > | yes | Notification base URL
+
+
 ### Run Application
 
 #### Run locally without Docker
