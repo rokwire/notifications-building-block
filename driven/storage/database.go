@@ -106,10 +106,10 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 		}
 	}
 
-	if indexMapping["recipients.uid_1"] == nil {
+	if indexMapping["recipients.user_id_1"] == nil {
 		err := messages.AddIndex(
 			bson.D{
-				primitive.E{Key: "recipients.uid", Value: 1},
+				primitive.E{Key: "recipients.user_id", Value: 1},
 			}, false)
 		if err != nil {
 			return err
