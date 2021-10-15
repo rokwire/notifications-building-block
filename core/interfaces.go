@@ -99,6 +99,7 @@ type Storage interface {
 	FindUserByToken(token string) (*model.User, error)
 	StoreFirebaseToken(token string, previousToken *string, userID *string) error
 	GetFirebaseTokensByRecipients(recipient []model.Recipient) ([]string, error)
+	GetRecipientsByTopic(topic string) ([]model.Recipient, error)
 	SubscribeToTopic(token string, userID *string, topic string) error
 	UnsubscribeToTopic(token string, userID *string, topic string) error
 	GetTopics() ([]model.Topic, error)

@@ -102,7 +102,22 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 			}
 		}
 	} else if message.Topic != nil {
+		recipients, err := app.storage.GetRecipientsByTopic(*message.Topic)
+		if err != nil {
+			fmt.Printf("error retrieving recipients by topic (%s): %s", *message.Topic, err)
+		}
+		if recipients != nil {
+			message.Recipients = recipients
+			persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
+			if err != nil {
+				fmt.Printf("error storing the message to topic %s: %s", *message.Topic, err)
+			}
+		}
+
 		err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
+		if err != nil {
+			fmt.Printf("error send notification to topic (%s): %s", *message.Topic, err)
+		}
 	}
 
 	if err != nil {
