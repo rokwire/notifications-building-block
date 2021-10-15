@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.14] - 2021-10-15
+- Messages to topics are not mapped to individual users that are subscribed [#30](https://github.com/rokwire/notifications-building-block/issues/30).
+
 ## [0.1.13] - 2021-10-06
 - Unable to register new token [#27](https://github.com/rokwire/notifications-building-block/issues/27).
 

@@ -266,6 +266,29 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient) ([
 	return nil, fmt.Errorf("empty recient information")
 }
 
+// GetRecipientsByTopic Gets all users recipients by topic
+func (sa Adapter) GetRecipientsByTopic(topic string) ([]model.Recipient, error) {
+	if len(topic) > 0 {
+		filter := bson.D{primitive.E{Key: "topics", Value: topic}}
+
+		var tokenMappings []model.User
+		err := sa.db.users.Find(filter, &tokenMappings, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		recipients := []model.Recipient{}
+		for _, user := range tokenMappings {
+			recipients = append(recipients, model.Recipient{
+				UserID: user.UserID,
+			})
+		}
+
+		return recipients, nil
+	}
+	return nil, fmt.Errorf("no mapped recipients to %s topic", topic)
+}
+
 // SubscribeToTopic subscribes the token to a topic
 func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) error {
 	var err error
