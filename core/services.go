@@ -26,12 +26,8 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) storeFirebaseToken(token string, previousToken *string, user *model.CoreToken) error {
-	var userID *string
-	if user != nil && user.UserID != nil {
-		userID = user.UserID
-	}
-	return app.storage.StoreFirebaseToken(token, previousToken, userID)
+func (app *Application) storeFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
+	return app.storage.StoreFirebaseToken(tokenInfo, user)
 }
 
 func (app *Application) subscribeToTopic(token string, user *model.CoreToken, topic string) error {

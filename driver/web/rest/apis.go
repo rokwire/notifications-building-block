@@ -43,11 +43,6 @@ type getMessagesRequestBody struct {
 	IDs []string `json:"ids"`
 } // @name getMessagesRequestBody
 
-type storeTokenBody struct {
-	PreviousToken *string `json:"previous_token"`
-	Token         *string `json:"token"`
-} // @name storeTokenBody
-
 type tokenBody struct {
 	Token *string `json:"token"`
 } // @name tokenBody
@@ -81,21 +76,33 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
-	var tokenBody storeTokenBody
-	err = json.Unmarshal(data, &tokenBody)
+	var tokenInfo model.TokenInfo
+	err = json.Unmarshal(data, &tokenInfo)
 	if err != nil {
 		log.Printf("Error on unmarshal the create student guide request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if tokenBody.Token == nil || len(*tokenBody.Token) == 0 {
+	if tokenInfo.Token == nil || len(*tokenInfo.Token) == 0 {
 		log.Printf("token is empty or null")
 		http.Error(w, "token is empty or null\n", http.StatusBadRequest)
 		return
 	}
 
-	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, tokenBody.PreviousToken, user)
+	if tokenInfo.Platform == nil || len(*tokenInfo.Platform) == 0 {
+		log.Printf("platform is empty or null")
+		http.Error(w, "platform is empty or null\n", http.StatusBadRequest)
+		return
+	}
+
+	if tokenInfo.Version == nil || len(*tokenInfo.Version) == 0 {
+		log.Printf("version is empty or null")
+		http.Error(w, "version is empty or null\n", http.StatusBadRequest)
+		return
+	}
+
+	err = h.app.Services.StoreFirebaseToken(&tokenInfo, user)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

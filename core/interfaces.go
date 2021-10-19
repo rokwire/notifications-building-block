@@ -22,7 +22,7 @@ import "notifications/core/model"
 // Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
-	StoreFirebaseToken(token string, previousToken *string, user *model.CoreToken) error
+	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
 	SubscribeToTopic(token string, user *model.CoreToken, topic string) error
 	UnsubscribeToTopic(token string, user *model.CoreToken, topic string) error
 	GetTopics() ([]model.Topic, error)
@@ -45,8 +45,8 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
-func (s *servicesImpl) StoreFirebaseToken(token string, previousToken *string, user *model.CoreToken) error {
-	return s.app.storeFirebaseToken(token, previousToken, user)
+func (s *servicesImpl) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
+	return s.app.storeFirebaseToken(tokenInfo, user)
 }
 
 func (s *servicesImpl) SubscribeToTopic(token string, user *model.CoreToken, topic string) error {
@@ -97,7 +97,7 @@ func (s *servicesImpl) DeleteMessage(messageID string) error {
 type Storage interface {
 	FindUserByID(userID string) (*model.User, error)
 	FindUserByToken(token string) (*model.User, error)
-	StoreFirebaseToken(token string, previousToken *string, userID *string) error
+	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
 	GetFirebaseTokensByRecipients(recipient []model.Recipient) ([]string, error)
 	GetRecipientsByTopic(topic string) ([]model.Recipient, error)
 	SubscribeToTopic(token string, userID *string, topic string) error

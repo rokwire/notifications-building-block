@@ -99,13 +99,7 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 	return result, err
 }
 
-// StoreFirebaseToken stores firebase token and links it to the user
-func (sa Adapter) StoreFirebaseToken(token string, previousToken *string, userID *string) error {
-	err := sa.storeFirebaseToken(token, previousToken, userID)
-	return err
-}
-
-func (sa Adapter) storeFirebaseToken(token string, previousToken *string, userID *string) error {
+func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
 
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -114,43 +108,43 @@ func (sa Adapter) storeFirebaseToken(token string, previousToken *string, userID
 			return err
 		}
 
-		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, token)
+		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.Token)
 		if userRecord == nil {
-			if userID != nil {
-				user, _ := sa.findUserByIDWithContext(sessionContext, *userID)
+			if user.UserID != nil {
+				user, _ := sa.findUserByIDWithContext(sessionContext, *user.UserID)
 				if user != nil {
-					err = sa.addTokenToUserWithContext(sessionContext, token, userID)
+					err = sa.addTokenToUserWithContext(sessionContext, *tokenInfo.Token, user.UserID)
 				} else {
-					_, err = sa.createUserWithContext(sessionContext, token, userID)
+					_, err = sa.createUserWithContext(sessionContext, *tokenInfo.Token, user.UserID)
 				}
 			}
-		} else if userRecord.UserID != nil && userRecord.UserID != userID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, token, userRecord.UserID)
+		} else if userRecord.UserID != nil && userRecord.UserID != user.UserID {
+			err = sa.removeTokenFromUserWithContext(sessionContext, *tokenInfo.Token, userRecord.UserID)
 			if err != nil {
-				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", token, *userRecord.UserID, err)
+				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *userRecord.UserID, err)
 				return err
 			}
-			err = sa.addTokenToUserWithContext(sessionContext, token, userID)
+			err = sa.addTokenToUserWithContext(sessionContext, *tokenInfo.Token, user.UserID)
 			if err != nil {
-				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", token, *userID, err)
+				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *user.UserID, err)
 				return err
 			}
 		}
 
 		// Remove previous token no matter on with user is linked
-		if previousToken != nil {
-			user, _ := sa.findUserByTokenWithContext(sessionContext, *previousToken)
+		if tokenInfo.PreviousToken != nil {
+			user, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.PreviousToken)
 			if user != nil {
-				err = sa.removeTokenFromUserWithContext(sessionContext, *previousToken, user.UserID)
+				err = sa.removeTokenFromUserWithContext(sessionContext, *tokenInfo.PreviousToken, user.UserID)
 				if err != nil {
-					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *previousToken, *userID, err)
+					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *tokenInfo.PreviousToken, *user.UserID, err)
 					return err
 				}
 			}
 		}
 
 		if err != nil {
-			fmt.Printf("error while storing token (%s) to user (%s) %s\n", token, *userID, err)
+			fmt.Printf("error while storing token (%s) to user (%s) %s\n", tokenInfo.Token, *user.UserID, err)
 			abortTransaction(sessionContext)
 			return err
 		}
