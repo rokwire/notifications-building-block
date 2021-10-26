@@ -63,7 +63,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, _ *http.Request) {
 // @Description Stores a firebase token and maps it to a idToken if presents
 // @Tags Client
 // @ID Token
-// @Param data body storeTokenBody true "body json"
+// @Param data body model.TokenInfo true "body json"
 // @Accept  json
 // @Success 200
 // @Security RokwireAuth UserAuth
@@ -90,13 +90,13 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
-	if tokenInfo.Platform == nil || len(*tokenInfo.Platform) == 0 {
+	if tokenInfo.AppVersion == nil || len(*tokenInfo.AppVersion) == 0 {
 		log.Printf("platform is empty or null")
 		http.Error(w, "platform is empty or null\n", http.StatusBadRequest)
 		return
 	}
 
-	if tokenInfo.Version == nil || len(*tokenInfo.Version) == 0 {
+	if tokenInfo.AppPlatform == nil || len(*tokenInfo.AppPlatform) == 0 {
 		log.Printf("version is empty or null")
 		http.Error(w, "version is empty or null\n", http.StatusBadRequest)
 		return
@@ -117,7 +117,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 // @Tags Client
 // @ID Subscribe
 // @Param topic path string true "topic"
-// @Param data body storeTokenBody true "body json"
+// @Param data body tokenBody true "body json"
 // @Accept  json
 // @Success 200
 // @Security RokwireAuth UserAuth
@@ -167,7 +167,7 @@ func (h ApisHandler) Subscribe(user *model.CoreToken, w http.ResponseWriter, r *
 // @Tags Client
 // @ID Unsubscribe
 // @Param topic path string true "topic"
-// @Param data body storeTokenBody true "body json"
+// @Param data body tokenBody true "body json"
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/unsubscribe [post]

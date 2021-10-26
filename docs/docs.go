@@ -28,6 +28,50 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/app_platforms": {
+            "get": {
+                "security": [
+                    {
+                        "AdminUserAuth": []
+                    }
+                ],
+                "description": "Gets all available app platforms",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "GetAllAppPlatforms",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/admin/app_versions": {
+            "get": {
+                "security": [
+                    {
+                        "AdminUserAuth": []
+                    }
+                ],
+                "description": "Gets all available app versions",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "GetAllAppVersions",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/admin/message": {
             "put": {
                 "security": [
@@ -541,7 +585,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/storeTokenBody"
+                            "$ref": "#/definitions/TokenInfo"
                         }
                     }
                 ],
@@ -645,7 +689,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/storeTokenBody"
+                            "$ref": "#/definitions/tokenBody"
                         }
                     }
                 ],
@@ -682,7 +726,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/storeTokenBody"
+                            "$ref": "#/definitions/tokenBody"
                         }
                     }
                 ],
@@ -764,9 +808,29 @@ var doc = `{
                 }
             }
         },
+        "TokenInfo": {
+            "type": "object",
+            "properties": {
+                "app_platform": {
+                    "type": "string"
+                },
+                "app_version": {
+                    "type": "string"
+                },
+                "previous_token": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "Topic": {
             "type": "object",
             "properties": {
+                "app_id": {
+                    "type": "string"
+                },
                 "date_created": {
                     "type": "string"
                 },
@@ -777,6 +841,9 @@ var doc = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "org_id": {
                     "type": "string"
                 }
             }
@@ -822,6 +889,12 @@ var doc = `{
                         "$ref": "#/definitions/Recipient"
                     }
                 },
+                "recipients_criteria_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.RecipientCriteria"
+                    }
+                },
                 "sender": {
                     "$ref": "#/definitions/model.Sender"
                 },
@@ -829,6 +902,17 @@ var doc = `{
                     "type": "string"
                 },
                 "topic": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.RecipientCriteria": {
+            "type": "object",
+            "properties": {
+                "app_platform": {
+                    "type": "string"
+                },
+                "app_version": {
                     "type": "string"
                 }
             }
@@ -845,12 +929,9 @@ var doc = `{
                 }
             }
         },
-        "storeTokenBody": {
+        "tokenBody": {
             "type": "object",
             "properties": {
-                "previous_token": {
-                    "type": "string"
-                },
                 "token": {
                     "type": "string"
                 }

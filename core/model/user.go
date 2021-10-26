@@ -2,7 +2,7 @@
  *   Copyright (c) 2020 Board of Trustees of the University of Illinois.
  *   All rights reserved.
 
- *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   Licensed under the Apache License, AppVersion 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
 
@@ -44,7 +44,7 @@ func (t *User) AddToken(token string) {
 	if !exists {
 		t.FirebaseTokens = append(t.FirebaseTokens, FirebaseToken{
 			Token:       token,
-			DateCreated: time.Now(),
+			DateCreated: time.Now().UTC(),
 		})
 	}
 }

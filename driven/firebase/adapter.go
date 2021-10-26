@@ -65,12 +65,13 @@ func (fa *Adapter) SendNotificationToToken(token string, title string, body stri
 }
 
 // SendNotificationToTopic sends a notification to a topic
-func (fa *Adapter) SendNotificationToTopic(topic string, title string, body string) error {
+func (fa *Adapter) SendNotificationToTopic(topic string, title string, body string, data map[string]string) error {
 	ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
 	if err == nil {
 		message := &messaging.Message{
 			Topic: topic,
+			Data:  data,
 			Notification: &messaging.Notification{
 				Title: title,
 				Body:  body,

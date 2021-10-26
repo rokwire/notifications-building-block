@@ -35,6 +35,9 @@ type Services interface {
 	UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(user *model.CoreToken, messageID string) error
 	DeleteMessage(ID string) error
+
+	GetAllAppVersions() ([]model.AppVersion, error)
+	GetAllAppPlatforms() ([]model.AppPlatform, error)
 }
 
 type servicesImpl struct {
@@ -93,6 +96,14 @@ func (s *servicesImpl) DeleteMessage(messageID string) error {
 	return s.app.deleteMessage(messageID)
 }
 
+func (s *servicesImpl) GetAllAppVersions() ([]model.AppVersion, error) {
+	return s.app.getAllAppVersions()
+}
+
+func (s *servicesImpl) GetAllAppPlatforms() ([]model.AppPlatform, error) {
+	return s.app.getAllAppPlatforms()
+}
+
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	FindUserByID(userID string) (*model.User, error)
@@ -100,6 +111,7 @@ type Storage interface {
 	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
 	GetFirebaseTokensByRecipients(recipient []model.Recipient) ([]string, error)
 	GetRecipientsByTopic(topic string) ([]model.Recipient, error)
+	GetRecipientsByRecipientCriterias(recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error)
 	SubscribeToTopic(token string, userID *string, topic string) error
 	UnsubscribeToTopic(token string, userID *string, topic string) error
 	GetTopics() ([]model.Topic, error)
@@ -112,12 +124,15 @@ type Storage interface {
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessage(userID string, messageID string) error
 	DeleteMessage(ID string) error
+
+	GetAllAppVersions() ([]model.AppVersion, error)
+	GetAllAppPlatforms() ([]model.AppPlatform, error)
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
 type Firebase interface {
 	SendNotificationToToken(token string, title string, body string, data map[string]string) error
-	SendNotificationToTopic(topic string, title string, body string) error
+	SendNotificationToTopic(topic string, title string, body string, data map[string]string) error
 	SubscribeToTopic(token string, topic string) error
 	UnsubscribeToTopic(token string, topic string) error
 }

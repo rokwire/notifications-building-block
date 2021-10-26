@@ -98,6 +98,8 @@ func (we Adapter) Start() {
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
+	adminRouter.HandleFunc("/app-versions", we.coreAdminWrapFunc(we.adminApisHandler.GetAllAppVersions)).Methods("GET")
+	adminRouter.HandleFunc("/app-platforms", we.coreAdminWrapFunc(we.adminApisHandler.GetAllAppPlatforms)).Methods("GET")
 	adminRouter.HandleFunc("/topics", we.coreAdminWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
 	adminRouter.HandleFunc("/topic", we.coreAdminWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
 	adminRouter.HandleFunc("/messages", we.coreAdminWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")

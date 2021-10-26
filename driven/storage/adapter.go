@@ -2,7 +2,7 @@
  *   Copyright (c) 2020 Board of Trustees of the University of Illinois.
  *   All rights reserved.
 
- *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   Licensed under the Apache License, AppVersion 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
 
@@ -99,6 +99,7 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 	return result, err
 }
 
+// StoreFirebaseToken stores firebase token
 func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
 
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -106,29 +107,6 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 		if err != nil {
 			log.Printf("error starting a transaction - %s", err)
 			return err
-		}
-
-		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.Token)
-		if userRecord == nil {
-			if user.UserID != nil {
-				user, _ := sa.findUserByIDWithContext(sessionContext, *user.UserID)
-				if user != nil {
-					err = sa.addTokenToUserWithContext(sessionContext, *tokenInfo.Token, user.UserID)
-				} else {
-					_, err = sa.createUserWithContext(sessionContext, *tokenInfo.Token, user.UserID)
-				}
-			}
-		} else if userRecord.UserID != nil && userRecord.UserID != user.UserID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, *tokenInfo.Token, userRecord.UserID)
-			if err != nil {
-				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *userRecord.UserID, err)
-				return err
-			}
-			err = sa.addTokenToUserWithContext(sessionContext, *tokenInfo.Token, user.UserID)
-			if err != nil {
-				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *user.UserID, err)
-				return err
-			}
 		}
 
 		// Remove previous token no matter on with user is linked
@@ -143,6 +121,29 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 			}
 		}
 
+		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.Token)
+		if userRecord == nil {
+			if user.UserID != nil {
+				user, _ := sa.findUserByIDWithContext(sessionContext, *user.UserID)
+				if user != nil {
+					err = sa.addTokenToUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+				} else {
+					_, err = sa.createUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+				}
+			}
+		} else if userRecord.UserID != nil && userRecord.UserID != user.UserID {
+			err = sa.removeTokenFromUserWithContext(sessionContext, *tokenInfo.Token, userRecord.UserID)
+			if err != nil {
+				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *userRecord.UserID, err)
+				return err
+			}
+			err = sa.addTokenToUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+			if err != nil {
+				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *user.UserID, err)
+				return err
+			}
+		}
+
 		if err != nil {
 			fmt.Printf("error while storing token (%s) to user (%s) %s\n", tokenInfo.Token, *user.UserID, err)
 			abortTransaction(sessionContext)
@@ -152,6 +153,7 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 		//commit the transaction
 		err = sessionContext.CommitTransaction(sessionContext)
 		if err != nil {
+			abortTransaction(sessionContext)
 			fmt.Println(err)
 			return err
 		}
@@ -161,14 +163,16 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 	return err
 }
 
-func (sa Adapter) createUserWithContext(context context.Context, token string, userID *string) (*model.User, error) {
+func (sa Adapter) createUserWithContext(context context.Context, userID *string, token string, appPlatform *string, appVersion *string) (*model.User, error) {
 
-	now := time.Now()
+	now := time.Now().UTC()
 	record := &model.User{
 		ID:     uuid.NewString(),
 		UserID: userID,
 		FirebaseTokens: []model.FirebaseToken{{
 			Token:       token,
+			AppVersion:  appVersion,
+			AppPlatform: appPlatform,
 			DateCreated: now,
 		}},
 		Topics:      []string{},
@@ -184,18 +188,20 @@ func (sa Adapter) createUserWithContext(context context.Context, token string, u
 	return record, err
 }
 
-func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, userID *string) error {
+func (sa Adapter) addTokenToUserWithContext(ctx context.Context, userID *string, token string, appPlatform *string, appVersion *string) error {
 	if userID != nil {
 		// transaction
 		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "date_updated", Value: time.Now()},
+				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 			}},
 			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: model.FirebaseToken{
 				Token:       token,
-				DateCreated: time.Now(),
+				AppVersion:  appVersion,
+				AppPlatform: appPlatform,
+				DateCreated: time.Now().UTC(),
 			}}}},
 		}
 
@@ -204,6 +210,14 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, token string, u
 			fmt.Printf("warning: error while adding token (%s) to user (%s) %s\n", token, *userID, err)
 			return err
 		}
+
+		sa.db.appVersions.InsertOne(map[string]string{
+			"name": *appVersion,
+		})
+
+		sa.db.appPlatforms.InsertOne(map[string]string{
+			"name": *appPlatform,
+		})
 	}
 	return nil
 }
@@ -214,7 +228,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "date_updated", Value: time.Now()},
+				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 			}},
 			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 		}
@@ -283,6 +297,46 @@ func (sa Adapter) GetRecipientsByTopic(topic string) ([]model.Recipient, error) 
 	return nil, fmt.Errorf("no mapped recipients to %s topic", topic)
 }
 
+// GetRecipientsByRecipientCriterias gets recipients list by list of criteria
+func (sa Adapter) GetRecipientsByRecipientCriterias(recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error) {
+	if len(recipientCriterias) > 0 {
+		var tokenMappings []model.User
+		innerFilter := []interface{}{}
+
+		for _, criteria := range recipientCriterias {
+			if criteria.AppVersion != nil && len(*criteria.AppVersion) > 0 {
+				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "firebase_tokens.app_version", Value: criteria.AppVersion}})
+			}
+			if criteria.AppPlatform != nil && len(*criteria.AppPlatform) > 0 {
+				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "firebase_tokens.app_platform", Value: criteria.AppPlatform}})
+			}
+		}
+
+		if len(innerFilter) == 0 {
+			return nil, fmt.Errorf("no mapped recipients for the input criterias")
+		}
+
+		filter := bson.D{
+			primitive.E{Key: "$or", Value: innerFilter},
+		}
+
+		err := sa.db.users.Find(filter, &tokenMappings, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		recipients := []model.Recipient{}
+		for _, user := range tokenMappings {
+			recipients = append(recipients, model.Recipient{
+				UserID: user.UserID,
+			})
+		}
+
+		return recipients, nil
+	}
+	return nil, fmt.Errorf("no mapped recipients for the input criterias")
+}
+
 // SubscribeToTopic subscribes the token to a topic
 func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) error {
 	var err error
@@ -293,7 +347,7 @@ func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) e
 				filter := bson.D{primitive.E{Key: "_id", Value: record.ID}}
 				update := bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
-						primitive.E{Key: "date_updated", Value: time.Now()},
+						primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 					}},
 					primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "topics", Value: topic}}},
 				}
@@ -324,7 +378,7 @@ func (sa Adapter) UnsubscribeToTopic(token string, userID *string, topic string)
 				filter := bson.D{primitive.E{Key: "_id", Value: record.ID}}
 				update := bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
-						primitive.E{Key: "date_updated", Value: time.Now()},
+						primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 					}},
 					primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "topics", Value: topic}}},
 				}
@@ -376,7 +430,7 @@ func (sa Adapter) GetTopicByName(name string) (*model.Topic, error) {
 // InsertTopic appends a new topic within the topics collection
 func (sa Adapter) InsertTopic(topic *model.Topic) (*model.Topic, error) {
 	if topic.Name != "" {
-		now := time.Now()
+		now := time.Now().UTC()
 		topic.DateUpdated = now
 		topic.DateCreated = now
 
@@ -394,7 +448,7 @@ func (sa Adapter) InsertTopic(topic *model.Topic) (*model.Topic, error) {
 func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: topic.Name}}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	topic.DateUpdated = now
 
 	update := bson.D{
@@ -481,7 +535,7 @@ func (sa Adapter) CreateMessage(message *model.Message) (*model.Message, error) 
 		id := uuid.New().String()
 		message.ID = &id
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	message.DateUpdated = &now
 	message.DateCreated = &now
 
@@ -511,7 +565,7 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 				primitive.E{Key: "topic", Value: message.Topic},
 				primitive.E{Key: "subject", Value: message.Subject},
 				primitive.E{Key: "body", Value: message.Body},
-				primitive.E{Key: "date_updated", Value: time.Now()},
+				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 			}},
 		}
 
@@ -572,6 +626,32 @@ func (sa Adapter) DeleteMessage(ID string) error {
 	}
 
 	return nil
+}
+
+// GetAllAppVersions gets all registered versions
+func (sa Adapter) GetAllAppVersions() ([]model.AppVersion, error) {
+	filter := bson.D{}
+
+	var versions []model.AppVersion
+	err := sa.db.appVersions.Find(filter, &versions, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return versions, nil
+}
+
+// GetAllAppPlatforms gets all registered platforms
+func (sa Adapter) GetAllAppPlatforms() ([]model.AppPlatform, error) {
+	filter := bson.D{}
+
+	var platforms []model.AppPlatform
+	err := sa.db.appPlatforms.Find(filter, &platforms, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return platforms, nil
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {
