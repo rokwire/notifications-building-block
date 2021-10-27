@@ -145,7 +145,7 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 		}
 
 		if err != nil {
-			fmt.Printf("error while storing token (%s) to user (%s) %s\n", tokenInfo.Token, *user.UserID, err)
+			fmt.Printf("error while storing token (%s) to user (%s) %s\n", *tokenInfo.Token, *user.UserID, err)
 			abortTransaction(sessionContext)
 			return err
 		}

@@ -10,5 +10,3 @@ type FirebaseToken struct {
 	DateCreated time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
 } // @name FirebaseToken
-
-
