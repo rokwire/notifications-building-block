@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.15] - 2021-10-27
+- Improve notifications targeting & filtering [#32](https://github.com/rokwire/notifications-building-block/issues/32).
+
 ## [0.1.14] - 2021-10-15
 - Messages to topics are not mapped to individual users that are subscribed [#30](https://github.com/rokwire/notifications-building-block/issues/30).
 
