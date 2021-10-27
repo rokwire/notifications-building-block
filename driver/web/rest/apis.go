@@ -91,14 +91,14 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 	}
 
 	if tokenInfo.AppVersion == nil || len(*tokenInfo.AppVersion) == 0 {
-		log.Printf("platform is empty or null")
-		http.Error(w, "platform is empty or null\n", http.StatusBadRequest)
+		log.Printf("app_version is empty or null")
+		http.Error(w, "app_version is empty or null\n", http.StatusBadRequest)
 		return
 	}
 
 	if tokenInfo.AppPlatform == nil || len(*tokenInfo.AppPlatform) == 0 {
-		log.Printf("version is empty or null")
-		http.Error(w, "version is empty or null\n", http.StatusBadRequest)
+		log.Printf("app_platform is empty or null")
+		http.Error(w, "app_platform is empty or null\n", http.StatusBadRequest)
 		return
 	}
 
