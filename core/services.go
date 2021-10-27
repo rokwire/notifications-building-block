@@ -26,12 +26,8 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) storeFirebaseToken(token string, previousToken *string, user *model.CoreToken) error {
-	var userID *string
-	if user != nil && user.UserID != nil {
-		userID = user.UserID
-	}
-	return app.storage.StoreFirebaseToken(token, previousToken, userID)
+func (app *Application) storeFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
+	return app.storage.StoreFirebaseToken(tokenInfo, user)
 }
 
 func (app *Application) subscribeToTopic(token string, user *model.CoreToken, topic string) error {
@@ -114,9 +110,34 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 			}
 		}
 
-		err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body)
+		err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body, message.Data)
 		if err != nil {
 			fmt.Printf("error send notification to topic (%s): %s", *message.Topic, err)
+		}
+	} else if message.RecipientsCriteriaList != nil {
+		recipients, err := app.storage.GetRecipientsByRecipientCriterias(message.RecipientsCriteriaList)
+		if err != nil {
+			fmt.Printf("error retrieving recipients by topic (%s): %s", *message.Topic, err)
+		}
+		if recipients != nil {
+			message.Recipients = recipients
+			persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
+			if err != nil {
+				fmt.Printf("error storing the message to topic %s: %s", *message.Topic, err)
+			}
+		}
+
+		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients)
+		if err != nil {
+			return nil, err
+		}
+		if len(tokens) > 0 {
+			for _, token := range tokens {
+				sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
+				if sendErr != nil {
+					fmt.Printf("error send notification to token (%s): %s", token, err)
+				}
+			}
 		}
 	}
 
@@ -154,4 +175,12 @@ func (app *Application) deleteUserMessage(user *model.CoreToken, messageID strin
 
 func (app *Application) deleteMessage(ID string) error {
 	return app.storage.DeleteMessage(ID)
+}
+
+func (app *Application) getAllAppVersions() ([]model.AppVersion, error) {
+	return app.storage.GetAllAppVersions()
+}
+
+func (app *Application) getAllAppPlatforms() ([]model.AppPlatform, error) {
+	return app.storage.GetAllAppPlatforms()
 }

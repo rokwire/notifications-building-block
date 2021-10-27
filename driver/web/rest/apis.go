@@ -43,11 +43,6 @@ type getMessagesRequestBody struct {
 	IDs []string `json:"ids"`
 } // @name getMessagesRequestBody
 
-type storeTokenBody struct {
-	PreviousToken *string `json:"previous_token"`
-	Token         *string `json:"token"`
-} // @name storeTokenBody
-
 type tokenBody struct {
 	Token *string `json:"token"`
 } // @name tokenBody
@@ -68,7 +63,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, _ *http.Request) {
 // @Description Stores a firebase token and maps it to a idToken if presents
 // @Tags Client
 // @ID Token
-// @Param data body storeTokenBody true "body json"
+// @Param data body model.TokenInfo true "body json"
 // @Accept  json
 // @Success 200
 // @Security RokwireAuth UserAuth
@@ -81,21 +76,33 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
-	var tokenBody storeTokenBody
-	err = json.Unmarshal(data, &tokenBody)
+	var tokenInfo model.TokenInfo
+	err = json.Unmarshal(data, &tokenInfo)
 	if err != nil {
 		log.Printf("Error on unmarshal the create student guide request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if tokenBody.Token == nil || len(*tokenBody.Token) == 0 {
+	if tokenInfo.Token == nil || len(*tokenInfo.Token) == 0 {
 		log.Printf("token is empty or null")
 		http.Error(w, "token is empty or null\n", http.StatusBadRequest)
 		return
 	}
 
-	err = h.app.Services.StoreFirebaseToken(*tokenBody.Token, tokenBody.PreviousToken, user)
+	if tokenInfo.AppVersion == nil || len(*tokenInfo.AppVersion) == 0 {
+		log.Printf("platform is empty or null")
+		http.Error(w, "platform is empty or null\n", http.StatusBadRequest)
+		return
+	}
+
+	if tokenInfo.AppPlatform == nil || len(*tokenInfo.AppPlatform) == 0 {
+		log.Printf("version is empty or null")
+		http.Error(w, "version is empty or null\n", http.StatusBadRequest)
+		return
+	}
+
+	err = h.app.Services.StoreFirebaseToken(&tokenInfo, user)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -110,7 +117,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 // @Tags Client
 // @ID Subscribe
 // @Param topic path string true "topic"
-// @Param data body storeTokenBody true "body json"
+// @Param data body tokenBody true "body json"
 // @Accept  json
 // @Success 200
 // @Security RokwireAuth UserAuth
@@ -160,7 +167,7 @@ func (h ApisHandler) Subscribe(user *model.CoreToken, w http.ResponseWriter, r *
 // @Tags Client
 // @ID Unsubscribe
 // @Param topic path string true "topic"
-// @Param data body storeTokenBody true "body json"
+// @Param data body tokenBody true "body json"
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/unsubscribe [post]

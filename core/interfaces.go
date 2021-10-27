@@ -22,7 +22,7 @@ import "notifications/core/model"
 // Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
-	StoreFirebaseToken(token string, previousToken *string, user *model.CoreToken) error
+	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
 	SubscribeToTopic(token string, user *model.CoreToken, topic string) error
 	UnsubscribeToTopic(token string, user *model.CoreToken, topic string) error
 	GetTopics() ([]model.Topic, error)
@@ -35,6 +35,9 @@ type Services interface {
 	UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(user *model.CoreToken, messageID string) error
 	DeleteMessage(ID string) error
+
+	GetAllAppVersions() ([]model.AppVersion, error)
+	GetAllAppPlatforms() ([]model.AppPlatform, error)
 }
 
 type servicesImpl struct {
@@ -45,8 +48,8 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
-func (s *servicesImpl) StoreFirebaseToken(token string, previousToken *string, user *model.CoreToken) error {
-	return s.app.storeFirebaseToken(token, previousToken, user)
+func (s *servicesImpl) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
+	return s.app.storeFirebaseToken(tokenInfo, user)
 }
 
 func (s *servicesImpl) SubscribeToTopic(token string, user *model.CoreToken, topic string) error {
@@ -93,13 +96,22 @@ func (s *servicesImpl) DeleteMessage(messageID string) error {
 	return s.app.deleteMessage(messageID)
 }
 
+func (s *servicesImpl) GetAllAppVersions() ([]model.AppVersion, error) {
+	return s.app.getAllAppVersions()
+}
+
+func (s *servicesImpl) GetAllAppPlatforms() ([]model.AppPlatform, error) {
+	return s.app.getAllAppPlatforms()
+}
+
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	FindUserByID(userID string) (*model.User, error)
 	FindUserByToken(token string) (*model.User, error)
-	StoreFirebaseToken(token string, previousToken *string, userID *string) error
+	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
 	GetFirebaseTokensByRecipients(recipient []model.Recipient) ([]string, error)
 	GetRecipientsByTopic(topic string) ([]model.Recipient, error)
+	GetRecipientsByRecipientCriterias(recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error)
 	SubscribeToTopic(token string, userID *string, topic string) error
 	UnsubscribeToTopic(token string, userID *string, topic string) error
 	GetTopics() ([]model.Topic, error)
@@ -112,12 +124,15 @@ type Storage interface {
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessage(userID string, messageID string) error
 	DeleteMessage(ID string) error
+
+	GetAllAppVersions() ([]model.AppVersion, error)
+	GetAllAppPlatforms() ([]model.AppPlatform, error)
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
 type Firebase interface {
 	SendNotificationToToken(token string, title string, body string, data map[string]string) error
-	SendNotificationToTopic(topic string, title string, body string) error
+	SendNotificationToTopic(topic string, title string, body string, data map[string]string) error
 	SubscribeToTopic(token string, topic string) error
 	UnsubscribeToTopic(token string, topic string) error
 }

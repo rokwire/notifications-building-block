@@ -297,3 +297,59 @@ func (h AdminApisHandler) DeleteMessage(user *model.CoreToken, w http.ResponseWr
 
 	w.WriteHeader(http.StatusOK)
 }
+
+// GetAllAppVersions Gets all available app versions
+// @Description Gets all available app versions
+// @Tags Admin
+// @ID GetAllAppVersions
+// @Produce plain
+// @Success 200
+// @Security AdminUserAuth
+// @Router /admin/app_versions [get]
+func (h AdminApisHandler) GetAllAppVersions(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
+	appVersions, err := h.app.Services.GetAllAppVersions()
+	if err != nil {
+		log.Printf("Error on get app versions: %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(appVersions)
+	if err != nil {
+		log.Println("Error on marshal appVersions")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// GetAllAppPlatforms Gets all available app platforms
+// @Description Gets all available app platforms
+// @Tags Admin
+// @ID GetAllAppPlatforms
+// @Produce plain
+// @Success 200
+// @Security AdminUserAuth
+// @Router /admin/app_platforms [get]
+func (h AdminApisHandler) GetAllAppPlatforms(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
+	appPlatforms, err := h.app.Services.GetAllAppPlatforms()
+	if err != nil {
+		log.Printf("Error on get app platforms: %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(appPlatforms)
+	if err != nil {
+		log.Println("Error on marshal app platforms")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}

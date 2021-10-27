@@ -14,8 +14,21 @@ definitions:
       user_id:
         type: string
     type: object
+  TokenInfo:
+    properties:
+      app_platform:
+        type: string
+      app_version:
+        type: string
+      previous_token:
+        type: string
+      token:
+        type: string
+    type: object
   Topic:
     properties:
+      app_id:
+        type: string
       date_created:
         type: string
       date_updated:
@@ -23,6 +36,8 @@ definitions:
       description:
         type: string
       name:
+        type: string
+      org_id:
         type: string
     type: object
   getMessagesRequestBody:
@@ -52,11 +67,22 @@ definitions:
         items:
           $ref: '#/definitions/Recipient'
         type: array
+      recipients_criteria_list:
+        items:
+          $ref: '#/definitions/model.RecipientCriteria'
+        type: array
       sender:
         $ref: '#/definitions/model.Sender'
       subject:
         type: string
       topic:
+        type: string
+    type: object
+  model.RecipientCriteria:
+    properties:
+      app_platform:
+        type: string
+      app_version:
         type: string
     type: object
   model.Sender:
@@ -67,10 +93,8 @@ definitions:
       user:
         $ref: '#/definitions/CoreUserRef'
     type: object
-  storeTokenBody:
+  tokenBody:
     properties:
-      previous_token:
-        type: string
       token:
         type: string
     type: object
@@ -84,6 +108,32 @@ info:
   title: Rokwire Notifications Building Block API
   version: 0.1.10
 paths:
+  /admin/app_platforms:
+    get:
+      description: Gets all available app platforms
+      operationId: GetAllAppPlatforms
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
+  /admin/app_versions:
+    get:
+      description: Gets all available app versions
+      operationId: GetAllAppVersions
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      security:
+      - AdminUserAuth: []
+      tags:
+      - Admin
   /admin/message:
     post:
       consumes:
@@ -405,7 +455,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/storeTokenBody'
+          $ref: '#/definitions/TokenInfo'
       responses:
         "200":
           description: ""
@@ -473,7 +523,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/storeTokenBody'
+          $ref: '#/definitions/tokenBody'
       responses:
         "200":
           description: ""
@@ -496,7 +546,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/storeTokenBody'
+          $ref: '#/definitions/tokenBody'
       responses:
         "200":
           description: ""

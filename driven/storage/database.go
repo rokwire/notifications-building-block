@@ -39,6 +39,9 @@ type database struct {
 	users    *collectionWrapper
 	topics   *collectionWrapper
 	messages *collectionWrapper
+
+	appVersions  *collectionWrapper
+	appPlatforms *collectionWrapper
 }
 
 func (m *database) start() error {
@@ -83,6 +86,18 @@ func (m *database) start() error {
 		return err
 	}
 
+	appPlatforms := &collectionWrapper{database: m, coll: db.Collection("app_platforms")}
+	err = m.applyPlatformsChecks(appPlatforms)
+	if err != nil {
+		return err
+	}
+
+	appVersions := &collectionWrapper{database: m, coll: db.Collection("app_versions")}
+	err = m.applyVersionsChecks(appVersions)
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -90,6 +105,8 @@ func (m *database) start() error {
 	m.users = users
 	m.topics = topics
 	m.messages = messages
+	m.appPlatforms = appPlatforms
+	m.appVersions = appVersions
 
 	return nil
 }
@@ -233,6 +250,58 @@ func (m *database) applyTopicsChecks(topics *collectionWrapper) error {
 	log.Println("apply topics checks.....")
 
 	log.Println("apply topics passed")
+	return nil
+}
+
+func (m *database) applyVersionsChecks(appVersions *collectionWrapper) error {
+	log.Println("apply app_versions checks.....")
+
+	indexes, _ := appVersions.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
+	}
+
+	if indexMapping["name"] == nil {
+		err := appVersions.AddIndex(
+			bson.D{
+				primitive.E{Key: "name", Value: 1},
+			}, true)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("apply app_versions passed")
+	return nil
+}
+
+func (m *database) applyPlatformsChecks(appPlatforms *collectionWrapper) error {
+	log.Println("apply app_platforms checks.....")
+
+	indexes, _ := appPlatforms.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
+	}
+
+	if indexMapping["name"] == nil {
+		err := appPlatforms.AddIndex(
+			bson.D{
+				primitive.E{Key: "name", Value: 1},
+			}, true)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("apply app_platforms passed")
 	return nil
 }
 
