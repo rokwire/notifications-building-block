@@ -111,9 +111,9 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 
 		// Remove previous token no matter on with user is linked
 		if tokenInfo.PreviousToken != nil {
-			user, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.PreviousToken)
-			if user != nil {
-				err = sa.removeTokenFromUserWithContext(sessionContext, *tokenInfo.PreviousToken, user.UserID)
+			existingUser, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.PreviousToken)
+			if existingUser != nil {
+				err = sa.removeTokenFromUserWithContext(sessionContext, *tokenInfo.PreviousToken, existingUser.UserID)
 				if err != nil {
 					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *tokenInfo.PreviousToken, *user.UserID, err)
 					return err
@@ -124,8 +124,8 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.Token)
 		if userRecord == nil {
 			if user.UserID != nil {
-				user, _ := sa.findUserByIDWithContext(sessionContext, *user.UserID)
-				if user != nil {
+				existingUser, _ := sa.findUserByIDWithContext(sessionContext, *user.UserID)
+				if existingUser != nil {
 					err = sa.addTokenToUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
 				} else {
 					_, err = sa.createUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
