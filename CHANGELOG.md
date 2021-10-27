@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.17] - 2021-10-27
+- Fix bad token transfer from user to anonymous user and vice versa [#37](https://github.com/rokwire/notifications-building-block/issues/37).
+
 ## [0.1.16] - 2021-10-27
 - Service crash on anonymous token [#35](https://github.com/rokwire/notifications-building-block/issues/35).
 

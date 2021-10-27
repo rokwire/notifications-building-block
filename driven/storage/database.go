@@ -189,11 +189,11 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 		}
 	}
 
-	if indexMapping["firebase_tokens_1"] == nil {
+	if indexMapping["firebase_tokens.token_1"] == nil {
 		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "firebase_tokens", Value: 1},
-			}, true)
+				primitive.E{Key: "firebase_tokens.token", Value: 1},
+			}, false)
 		if err != nil {
 			return err
 		}
