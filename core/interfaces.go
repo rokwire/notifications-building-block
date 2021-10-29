@@ -28,6 +28,7 @@ type Services interface {
 	GetTopics() ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
+	FindUserByID(userID string) (*model.User, error)
 
 	GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(ID string) (*model.Message, error)
@@ -102,6 +103,10 @@ func (s *servicesImpl) GetAllAppVersions() ([]model.AppVersion, error) {
 
 func (s *servicesImpl) GetAllAppPlatforms() ([]model.AppPlatform, error) {
 	return s.app.getAllAppPlatforms()
+}
+
+func (s *servicesImpl) FindUserByID(userID string) (*model.User, error) {
+	return s.app.findUserByID(userID)
 }
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc

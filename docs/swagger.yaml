@@ -7,6 +7,19 @@ definitions:
       user_id:
         type: string
     type: object
+  FirebaseToken:
+    properties:
+      app_platform:
+        type: string
+      app_version:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      token:
+        type: string
+    type: object
   Recipient:
     properties:
       name:
@@ -38,6 +51,25 @@ definitions:
       name:
         type: string
       org_id:
+        type: string
+    type: object
+  User:
+    properties:
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      firebase_tokens:
+        items:
+          $ref: '#/definitions/FirebaseToken'
+        type: array
+      id:
+        type: string
+      topics:
+        items:
+          type: string
+        type: array
+      user_id:
         type: string
     type: object
   getMessagesRequestBody:
@@ -106,7 +138,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Rokwire Notifications Building Block API
-  version: 0.1.17
+  version: 0.1.18
 paths:
   /admin/app_platforms:
     get:
@@ -567,6 +599,21 @@ paths:
             type: array
       security:
       - RokwireAuth: []
+      tags:
+      - Client
+  /user:
+    get:
+      description: Gets user record
+      operationId: User
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/User'
+            type: array
+      security:
+      - RokwireAuth UserAuth: []
       tags:
       - Client
   /version:
