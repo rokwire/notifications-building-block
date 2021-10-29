@@ -762,6 +762,31 @@ var doc = `{
                 }
             }
         },
+        "/user": {
+            "get": {
+                "security": [
+                    {
+                        "RokwireAuth UserAuth": []
+                    }
+                ],
+                "description": "Gets user record",
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "User",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/User"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "security": [
@@ -793,6 +818,26 @@ var doc = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "FirebaseToken": {
+            "type": "object",
+            "properties": {
+                "app_platform": {
+                    "type": "string"
+                },
+                "app_version": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "token": {
                     "type": "string"
                 }
             }
@@ -844,6 +889,35 @@ var doc = `{
                     "type": "string"
                 },
                 "org_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "User": {
+            "type": "object",
+            "properties": {
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "firebase_tokens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FirebaseToken"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "topics": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -973,7 +1047,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "0.1.17",
+	Version:     "0.1.18",
 	Host:        "localhost",
 	BasePath:    "/notifications/api",
 	Schemes:     []string{"https"},

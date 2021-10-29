@@ -184,3 +184,7 @@ func (app *Application) getAllAppVersions() ([]model.AppVersion, error) {
 func (app *Application) getAllAppPlatforms() ([]model.AppPlatform, error) {
 	return app.storage.GetAllAppPlatforms()
 }
+
+func (app *Application) findUserByID(userID string) (*model.User, error) {
+	return app.storage.FindUserByID(userID)
+}

@@ -47,7 +47,7 @@ type Adapter struct {
 
 // @title Rokwire Notifications Building Block API
 // @description Rokwire Notifications Building Block API Documentation.
-// @version 0.1.17
+// @version 0.1.18
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost
@@ -86,6 +86,7 @@ func (we Adapter) Start() {
 
 	// Client APIs
 	mainRouter.HandleFunc("/token", we.coreWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
+	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.GetUser)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
 	mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")

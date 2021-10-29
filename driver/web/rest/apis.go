@@ -112,6 +112,39 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 	w.WriteHeader(http.StatusOK)
 }
 
+// GetUser Gets user record
+// @Description Gets user record
+// @Tags Client
+// @ID User
+// @Success 200 {array} model.User
+// @Security RokwireAuth UserAuth
+// @Router /user [get]
+func (h ApisHandler) GetUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+	userMapping, err := h.app.Services.FindUserByID(*user.UserID)
+	if err != nil {
+		log.Printf("Error on retrieving user mapping: %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if userMapping == nil {
+		log.Printf("unable to find user: %s\n", err)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	data, err := json.Marshal(userMapping)
+	if err != nil {
+		log.Printf("Error on marshal user mapping: %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // Subscribe Subscribes the current user to a topic
 // @Description Subscribes the current user to a topic
 // @Tags Client

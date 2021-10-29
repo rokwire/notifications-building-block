@@ -11,7 +11,7 @@
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
-        "version": "0.1.17"
+        "version": "0.1.18"
     },
     "host": "localhost",
     "basePath": "/notifications/api",
@@ -750,6 +750,31 @@
                 }
             }
         },
+        "/user": {
+            "get": {
+                "security": [
+                    {
+                        "RokwireAuth UserAuth": []
+                    }
+                ],
+                "description": "Gets user record",
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "User",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/User"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "security": [
@@ -781,6 +806,26 @@
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "FirebaseToken": {
+            "type": "object",
+            "properties": {
+                "app_platform": {
+                    "type": "string"
+                },
+                "app_version": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "token": {
                     "type": "string"
                 }
             }
@@ -832,6 +877,35 @@
                     "type": "string"
                 },
                 "org_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "User": {
+            "type": "object",
+            "properties": {
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "firebase_tokens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/FirebaseToken"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "topics": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
