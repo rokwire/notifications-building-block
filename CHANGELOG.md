@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.19] - 2021-11-01
+- Don't store data notifications without subject & body [#42]
+
+
 ## [0.1.18] - 2021-10-29
 - Expose client API for user record [#40](https://github.com/rokwire/notifications-building-block/issues/40).
 

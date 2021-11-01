@@ -352,7 +352,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a message
+      description: Creates a message. Message without subject and body will be interpreted
+        as a data massage and it won't be stored in the database
       operationId: createMessage
       parameters:
       - description: body json
