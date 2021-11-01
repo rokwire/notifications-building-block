@@ -82,7 +82,10 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	} else {
 		message.Sender = &model.Sender{Type: "system"}
 	}
-	persistedMessage, err = app.storage.CreateMessage(message)
+	storeInInbox := len(message.Subject) > 0 && len(message.Body) > 0
+	if storeInInbox {
+		persistedMessage, err = app.storage.CreateMessage(message)
+	}
 
 	if len(message.Recipients) > 0 {
 		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients)
@@ -104,9 +107,11 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		}
 		if recipients != nil {
 			message.Recipients = recipients
-			persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
-			if err != nil {
-				fmt.Printf("error storing the message to topic %s: %s", *message.Topic, err)
+			if storeInInbox {
+				persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
+				if err != nil {
+					fmt.Printf("error storing the message to topic %s: %s", *message.Topic, err)
+				}
 			}
 		}
 
@@ -121,9 +126,11 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		}
 		if recipients != nil {
 			message.Recipients = recipients
-			persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
-			if err != nil {
-				fmt.Printf("error storing the message to topic %s: %s", *message.Topic, err)
+			if storeInInbox {
+				persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
+				if err != nil {
+					fmt.Printf("error storing the message to topic %s: %s", *message.Topic, err)
+				}
 			}
 		}
 

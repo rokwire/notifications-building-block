@@ -462,8 +462,8 @@ func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWr
 	w.WriteHeader(http.StatusOK)
 }
 
-// CreateMessage Creates a message
-// @Description Creates a message
+// CreateMessage Creates a message. Message without subject and body will be interpreted as a data massage and it won't be stored in the database
+// @Description Creates a message. Message without subject and body will be interpreted as a data massage and it won't be stored in the database
 // @Tags Client
 // @ID createMessage
 // @Accept  json
