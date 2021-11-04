@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.20] - 2021-11-04
+Send FCM to target user only if he/she is subscribed to a topic [#44](https://github.com/rokwire/notifications-building-block/issues/44).
+
 ## [0.1.19] - 2021-11-01
 - Don't store data notifications without subject & body [#42]
 
