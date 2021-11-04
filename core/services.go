@@ -88,7 +88,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	}
 
 	hasRecipients := len(message.Recipients) > 0
-	if hasRecipients{
+	if hasRecipients {
 		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, message.Topic)
 		if err != nil {
 			return nil, err
