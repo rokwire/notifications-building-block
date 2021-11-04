@@ -243,7 +243,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 }
 
 // GetFirebaseTokensByRecipients Gets all users mapped to the recipients input list
-func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient) ([]string, error) {
+func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, topic *string) ([]string, error) {
 	if len(recipients) > 0 {
 		innerFilter := []interface{}{}
 		for _, recipient := range recipients {
@@ -256,16 +256,18 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient) ([
 			primitive.E{Key: "$or", Value: innerFilter},
 		}
 
-		var tokenMappings []model.User
-		err := sa.db.users.Find(filter, &tokenMappings, nil)
+		var users []model.User
+		err := sa.db.users.Find(filter, &users, nil)
 		if err != nil {
 			return nil, err
 		}
 
 		tokens := []string{}
-		for _, tokenMapping := range tokenMappings {
-			for _, token := range tokenMapping.FirebaseTokens {
-				tokens = append(tokens, token.Token)
+		for _, tokenMapping := range users {
+			if topic == nil || tokenMapping.HasTopic(*topic) {
+				for _, token := range tokenMapping.FirebaseTokens {
+					tokens = append(tokens, token.Token)
+				}
 			}
 		}
 
@@ -344,7 +346,7 @@ func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) e
 		record, err := sa.FindUserByID(*userID)
 		if err == nil && record != nil {
 			if err == nil && record != nil && !record.HasTopic(topic) {
-				filter := bson.D{primitive.E{Key: "_id", Value: record.ID}}
+				filter := bson.D{primitive.E{Key: "user_id", Value: record.UserID}}
 				update := bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
 						primitive.E{Key: "date_updated", Value: time.Now().UTC()},
@@ -375,7 +377,7 @@ func (sa Adapter) UnsubscribeToTopic(token string, userID *string, topic string)
 		record, err := sa.FindUserByID(*userID)
 		if err == nil && record != nil {
 			if err == nil && record != nil && record.HasTopic(topic) {
-				filter := bson.D{primitive.E{Key: "_id", Value: record.ID}}
+				filter := bson.D{primitive.E{Key: "user_id", Value: record.UserID}}
 				update := bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
 						primitive.E{Key: "date_updated", Value: time.Now().UTC()},

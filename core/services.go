@@ -87,8 +87,9 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		persistedMessage, err = app.storage.CreateMessage(message)
 	}
 
-	if len(message.Recipients) > 0 {
-		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients)
+	hasRecipients := len(message.Recipients) > 0
+	if hasRecipients{
+		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, message.Topic)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +135,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 			}
 		}
 
-		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients)
+		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, nil)
 		if err != nil {
 			return nil, err
 		}
