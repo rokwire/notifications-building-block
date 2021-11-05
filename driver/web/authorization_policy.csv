@@ -1,1 +1,1 @@
-p, admin_app, /notifications/api/admin*, (GET)|(POST)|(PUT)|(DELETE)
+p, all_admin_notifications, /notifications/api/admin*, (GET)|(POST)|(PUT)|(DELETE)
