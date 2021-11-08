@@ -140,9 +140,9 @@ func (we Adapter) coreWrapFunc(handler coreAuthFunc) http.HandlerFunc {
 
 		if authenticated {
 			handler(user, w, req)
-		} else {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
 		}
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	}
 }
 
@@ -168,10 +168,9 @@ func (we Adapter) coreAdminWrapFunc(handler coreAdminAuthFunc) http.HandlerFunc 
 			}
 			if HasAccess {
 				handler(user, w, req)
-			} else {
-				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return
 			}
-
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		} else {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		}
