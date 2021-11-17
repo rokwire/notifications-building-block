@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.23] - 2021-11-17
+- Introduce pause notifications for user [#49](https://github.com/rokwire/notifications-building-block/issues/49).
+
 ## [0.1.22] - 2021-11-08
 - Additional fix for admin API mappings [#46](https://github.com/rokwire/notifications-building-block/issues/46).
 

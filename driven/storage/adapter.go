@@ -95,7 +95,7 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 	if err != nil {
 		log.Printf("warning: error while retriving user (%s) - %s", userID, err)
 
-		if result == nil{
+		if result == nil {
 			log.Printf("attempt to create a user with id: %s", userID)
 			result, err = sa.createUserWithContext(nil, &userID, "", nil, nil)
 		}
@@ -182,12 +182,12 @@ func (sa Adapter) createUserWithContext(context context.Context, userID *string,
 		}}
 	}
 	record := &model.User{
-		ID:     uuid.NewString(),
-		UserID: userID,
+		ID:             uuid.NewString(),
+		UserID:         userID,
 		FirebaseTokens: tokenList,
-		Topics:      []string{},
-		DateCreated: now,
-		DateUpdated: now,
+		Topics:         []string{},
+		DateCreated:    now,
+		DateUpdated:    now,
 	}
 
 	_, err := sa.db.users.InsertOneWithContext(context, &record)
