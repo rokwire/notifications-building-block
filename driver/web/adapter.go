@@ -87,6 +87,7 @@ func (we Adapter) Start() {
 	// Client APIs
 	mainRouter.HandleFunc("/token", we.coreWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
 	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.GetUser)).Methods("GET")
+	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.UpdateUser)).Methods("PUT")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
 	mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")

@@ -29,6 +29,7 @@ type Services interface {
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 	FindUserByID(userID string) (*model.User, error)
+	UpdateUserByID(userID string, notificationsEnabled bool) (*model.User, error)
 
 	GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(ID string) (*model.Message, error)
@@ -109,9 +110,14 @@ func (s *servicesImpl) FindUserByID(userID string) (*model.User, error) {
 	return s.app.findUserByID(userID)
 }
 
+func (s *servicesImpl) UpdateUserByID(userID string, notificationsDisabled bool) (*model.User, error) {
+	return s.app.updateUserByID(userID, notificationsDisabled)
+}
+
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	FindUserByID(userID string) (*model.User, error)
+	UpdateUserByID(userID string, notificationsEnabled bool) (*model.User, error)
 	FindUserByToken(token string) (*model.User, error)
 	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
 	GetFirebaseTokensByRecipients(recipient []model.Recipient, topic *string) ([]string, error)

@@ -785,6 +785,40 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "RokwireAuth UserAuth": []
+                    }
+                ],
+                "description": "Updates user record",
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "User",
+                "parameters": [
+                    {
+                        "description": "body json",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/updateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/User"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/version": {
@@ -848,6 +882,9 @@ var doc = `{
                 "name": {
                     "type": "string"
                 },
+                "notification_disabled": {
+                    "type": "boolean"
+                },
                 "user_id": {
                     "type": "string"
                 }
@@ -910,6 +947,9 @@ var doc = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "notifications_disabled": {
+                    "type": "boolean"
                 },
                 "topics": {
                     "type": "array",
@@ -1008,6 +1048,14 @@ var doc = `{
             "properties": {
                 "token": {
                     "type": "string"
+                }
+            }
+        },
+        "updateUserRequest": {
+            "type": "object",
+            "properties": {
+                "notifications_disabled": {
+                    "type": "boolean"
                 }
             }
         }

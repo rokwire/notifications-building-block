@@ -94,6 +94,11 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 	err := sa.db.users.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
 		log.Printf("warning: error while retriving user (%s) - %s", userID, err)
+
+		if result == nil {
+			log.Printf("attempt to create a user with id: %s", userID)
+			result, err = sa.createUserWithContext(nil, &userID, "", nil, nil)
+		}
 	}
 
 	return result, err
@@ -166,18 +171,23 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 func (sa Adapter) createUserWithContext(context context.Context, userID *string, token string, appPlatform *string, appVersion *string) (*model.User, error) {
 
 	now := time.Now().UTC()
-	record := &model.User{
-		ID:     uuid.NewString(),
-		UserID: userID,
-		FirebaseTokens: []model.FirebaseToken{{
+
+	var tokenList []model.FirebaseToken
+	if token != "" {
+		tokenList = []model.FirebaseToken{{
 			Token:       token,
 			AppVersion:  appVersion,
 			AppPlatform: appPlatform,
 			DateCreated: now,
-		}},
-		Topics:      []string{},
-		DateCreated: now,
-		DateUpdated: now,
+		}}
+	}
+	record := &model.User{
+		ID:             uuid.NewString(),
+		UserID:         userID,
+		FirebaseTokens: tokenList,
+		Topics:         []string{},
+		DateCreated:    now,
+		DateUpdated:    now,
 	}
 
 	_, err := sa.db.users.InsertOneWithContext(context, &record)
@@ -245,15 +255,15 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 // GetFirebaseTokensByRecipients Gets all users mapped to the recipients input list
 func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, topic *string) ([]string, error) {
 	if len(recipients) > 0 {
-		innerFilter := []interface{}{}
+		innerFilter := []string{}
 		for _, recipient := range recipients {
 			if recipient.UserID != nil {
-				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: recipient.UserID}})
+				innerFilter = append(innerFilter, *recipient.UserID)
 			}
 		}
 
 		filter := bson.D{
-			primitive.E{Key: "$or", Value: innerFilter},
+			primitive.E{Key: "user_id", Value: bson.M{"$in": innerFilter}},
 		}
 
 		var users []model.User
@@ -264,7 +274,7 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, to
 
 		tokens := []string{}
 		for _, tokenMapping := range users {
-			if topic == nil || tokenMapping.HasTopic(*topic) {
+			if !tokenMapping.NotificationsDisabled && (topic == nil || tokenMapping.HasTopic(*topic)) {
 				for _, token := range tokenMapping.FirebaseTokens {
 					tokens = append(tokens, token.Token)
 				}
@@ -289,9 +299,12 @@ func (sa Adapter) GetRecipientsByTopic(topic string) ([]model.Recipient, error) 
 
 		recipients := []model.Recipient{}
 		for _, user := range tokenMappings {
-			recipients = append(recipients, model.Recipient{
-				UserID: user.UserID,
-			})
+			if user.HasTopic(topic) {
+				recipients = append(recipients, model.Recipient{
+					UserID:               user.UserID,
+					NotificationDisabled: user.NotificationsDisabled,
+				})
+			}
 		}
 
 		return recipients, nil
@@ -330,13 +343,39 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(recipientCriterias []model.R
 		recipients := []model.Recipient{}
 		for _, user := range tokenMappings {
 			recipients = append(recipients, model.Recipient{
-				UserID: user.UserID,
+				UserID:               user.UserID,
+				NotificationDisabled: user.NotificationsDisabled,
 			})
 		}
 
 		return recipients, nil
 	}
 	return nil, fmt.Errorf("no mapped recipients for the input criterias")
+}
+
+// UpdateUserByID Updates users notification enabled flag
+func (sa Adapter) UpdateUserByID(userID string, notificationsDisabled bool) (*model.User, error) {
+	if userID != "" {
+		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+
+		innerUpdate := bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+			primitive.E{Key: "notifications_disabled", Value: notificationsDisabled},
+		}
+
+		update := bson.D{
+			primitive.E{Key: "$set", Value: innerUpdate},
+		}
+
+		_, err := sa.db.users.UpdateOneWithContext(context.Background(), filter, &update, nil)
+		if err != nil {
+			fmt.Printf("warning: error while updating user record (%s): %s\n", userID, err)
+			return nil, err
+		}
+
+		return sa.FindUserByID(userID)
+	}
+	return nil, nil
 }
 
 // SubscribeToTopic subscribes the token to a topic

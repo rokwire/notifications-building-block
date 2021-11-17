@@ -85,6 +85,10 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	storeInInbox := len(message.Subject) > 0 && len(message.Body) > 0
 	if storeInInbox {
 		persistedMessage, err = app.storage.CreateMessage(message)
+		if err != nil {
+			fmt.Printf("error on creating a message: %s", err)
+			return nil, fmt.Errorf("error on creating a message: %s", err)
+		}
 	}
 
 	hasRecipients := len(message.Recipients) > 0
@@ -195,4 +199,8 @@ func (app *Application) getAllAppPlatforms() ([]model.AppPlatform, error) {
 
 func (app *Application) findUserByID(userID string) (*model.User, error) {
 	return app.storage.FindUserByID(userID)
+}
+
+func (app *Application) updateUserByID(userID string, notificationsDisabled bool) (*model.User, error) {
+	return app.storage.UpdateUserByID(userID, notificationsDisabled)
 }
