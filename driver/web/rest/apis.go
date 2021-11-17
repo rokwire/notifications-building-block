@@ -145,6 +145,60 @@ func (h ApisHandler) GetUser(user *model.CoreToken, w http.ResponseWriter, r *ht
 	w.Write(data)
 }
 
+// updateUserRequest Wrapper for update user request body
+type updateUserRequest struct {
+	NotificationsDisabled bool `json:"notifications_disabled" bson:"notifications_disabled"`
+} // @name updateUserRequest
+
+// UpdateUser Updates user record
+// @Description Updates user record
+// @Tags Client
+// @ID User
+// @Param data body updateUserRequest true "body json"
+// @Success 200 {array} model.User
+// @Security RokwireAuth UserAuth
+// @Router /user [post]
+func (h ApisHandler) UpdateUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal updateUserRequest data - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var bodyData updateUserRequest
+	err = json.Unmarshal(data, &bodyData)
+	if err != nil {
+		log.Printf("Error on unmarshal the updateUserRequest request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userMapping, err := h.app.Services.UpdateUserByID(*user.UserID, bodyData.NotificationsDisabled)
+	if err != nil {
+		log.Printf("Error on updating user: %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if userMapping == nil {
+		log.Printf("unable to find user: %s\n", err)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	responseData, err := json.Marshal(userMapping)
+	if err != nil {
+		log.Printf("Error on marshal user mapping: %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseData)
+}
+
 // Subscribe Subscribes the current user to a topic
 // @Description Subscribes the current user to a topic
 // @Tags Client
