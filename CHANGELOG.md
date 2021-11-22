@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.24] - 2021-11-22
+- Message with missing subject must be stored if the body has text [#51](https://github.com/rokwire/notifications-building-block/issues/51).
+
 ## [0.1.23] - 2021-11-17
 - Introduce pause notifications for user [#49](https://github.com/rokwire/notifications-building-block/issues/49).
 

@@ -24,8 +24,8 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 
-	"github.com/rokmetro/auth-library/authservice"
-	"github.com/rokmetro/auth-library/tokenauth"
+	"github.com/rokwire/core-auth-library-go/authservice"
+	"github.com/rokwire/core-auth-library-go/tokenauth"
 )
 
 // Auth handler
@@ -119,6 +119,7 @@ func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, 
 		if claims.Valid() == nil {
 			return true, &model.CoreToken{
 				UserID:         &claims.Subject,
+				Name:           &claims.Name,
 				ExternalID:     &claims.UID,
 				AppID:          &claims.AppID,
 				OrganizationID: &claims.OrgID,
