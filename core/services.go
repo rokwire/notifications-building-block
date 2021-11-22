@@ -78,11 +78,11 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	}
 
 	if user != nil {
-		message.Sender = &model.Sender{Type: "token", User: &model.CoreUserRef{UserID: user.UserID}}
+		message.Sender = &model.Sender{Type: "user", User: &model.CoreUserRef{UserID: user.UserID, Name: user.Name}}
 	} else {
 		message.Sender = &model.Sender{Type: "system"}
 	}
-	storeInInbox := len(message.Subject) > 0 && len(message.Body) > 0
+	storeInInbox := len(message.Subject) > 0 || len(message.Body) > 0
 	if storeInInbox {
 		persistedMessage, err = app.storage.CreateMessage(message)
 		if err != nil {

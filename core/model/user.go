@@ -83,6 +83,7 @@ type CoreToken struct {
 	AppID          *string `json:"app_id" bson:"app_id"`
 	OrganizationID *string `json:"org_id" bson:"org_id"`
 	UserID         *string `json:"sub" bson:"sub"`
+	Name           *string `json:"name" bson:"name"`
 	Scope          *string `json:"scope" bson:"scope"`
 	Permissions    *string `json:"permissions" bson:"permissions"`
 	Anonymous      bool    `json:"anonymous" bson:"anonymous"`
