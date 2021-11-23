@@ -94,11 +94,7 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 	err := sa.db.users.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
 		log.Printf("warning: error while retriving user (%s) - %s", userID, err)
-
-		if result == nil {
-			log.Printf("attempt to create a user with id: %s", userID)
-			result, err = sa.createUserWithContext(nil, &userID, "", nil, nil)
-		}
+		return nil, err
 	}
 
 	return result, err
@@ -142,7 +138,13 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *userRecord.UserID, err)
 				return err
 			}
-			err = sa.addTokenToUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+
+			existingUser, _ := sa.findUserByIDWithContext(sessionContext, *user.UserID)
+			if existingUser != nil {
+				err = sa.addTokenToUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+			} else {
+				_, err = sa.createUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+			}
 			if err != nil {
 				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *user.UserID, err)
 				return err
@@ -172,14 +174,14 @@ func (sa Adapter) createUserWithContext(context context.Context, userID *string,
 
 	now := time.Now().UTC()
 
-	var tokenList []model.FirebaseToken
+	tokenList := []model.FirebaseToken{}
 	if token != "" {
-		tokenList = []model.FirebaseToken{{
+		tokenList = append(tokenList, model.FirebaseToken{
 			Token:       token,
 			AppVersion:  appVersion,
 			AppPlatform: appPlatform,
 			DateCreated: now,
-		}}
+		})
 	}
 	record := &model.User{
 		ID:             uuid.NewString(),
