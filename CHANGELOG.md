@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.25] - 2021-11-23
+- Nil pointer error while trying to retrieve missing user [#55](https://github.com/rokwire/notifications-building-block/issues/55).
+
 ## [0.1.24] - 2021-11-22
 - Message with missing subject must be stored if the body has text [#51](https://github.com/rokwire/notifications-building-block/issues/51).
 
