@@ -17,7 +17,10 @@
 
 package core
 
-import "notifications/core/model"
+import (
+	"context"
+	"notifications/core/model"
+)
 
 // Services exposes APIs for the driver adapters
 type Services interface {
@@ -30,6 +33,7 @@ type Services interface {
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 	FindUserByID(userID string) (*model.User, error)
 	UpdateUserByID(userID string, notificationsEnabled bool) (*model.User, error)
+	DeleteUserWithID(userID string) error
 
 	GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(ID string) (*model.Message, error)
@@ -110,14 +114,20 @@ func (s *servicesImpl) FindUserByID(userID string) (*model.User, error) {
 	return s.app.findUserByID(userID)
 }
 
-func (s *servicesImpl) UpdateUserByID(userID string, notificationsDisabled bool) (*model.User, error) {
-	return s.app.updateUserByID(userID, notificationsDisabled)
+func (s *servicesImpl) UpdateUserByID(userID string, notificationsEnabled bool) (*model.User, error) {
+	return s.app.updateUserByID(userID, notificationsEnabled)
+}
+
+func (s *servicesImpl) DeleteUserWithID(userID string) error {
+	return s.app.deleteUserWithID(userID)
 }
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	FindUserByID(userID string) (*model.User, error)
 	UpdateUserByID(userID string, notificationsEnabled bool) (*model.User, error)
+	DeleteUserWithID(userID string) error
+
 	FindUserByToken(token string) (*model.User, error)
 	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
 	GetFirebaseTokensByRecipients(recipient []model.Recipient, topic *string) ([]string, error)
@@ -133,8 +143,8 @@ type Storage interface {
 	GetMessage(ID string) (*model.Message, error)
 	CreateMessage(message *model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)
-	DeleteUserMessage(userID string, messageID string) error
-	DeleteMessage(ID string) error
+	DeleteUserMessageWithContext(ctx context.Context, userID string, messageID string) error
+	DeleteMessageWithContext(ctx context.Context, ID string) error
 
 	GetAllAppVersions() ([]model.AppVersion, error)
 	GetAllAppPlatforms() ([]model.AppPlatform, error)

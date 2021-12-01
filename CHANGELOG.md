@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Implement DELETE /user API for cleaning user info [#57](https://github.com/rokwire/notifications-building-block/issues/57).
 
 ## [0.1.25] - 2021-11-23
 - Nil pointer error while trying to retrieve missing user [#55](https://github.com/rokwire/notifications-building-block/issues/55).

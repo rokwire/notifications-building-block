@@ -807,6 +807,40 @@
                         }
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "RokwireAuth UserAuth": []
+                    }
+                ],
+                "description": "Deletes user record and unlink all messages",
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "DeleteUser",
+                "parameters": [
+                    {
+                        "description": "body json",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/updateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/User"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/version": {

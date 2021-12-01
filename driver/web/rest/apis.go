@@ -199,6 +199,24 @@ func (h ApisHandler) UpdateUser(user *model.CoreToken, w http.ResponseWriter, r 
 	w.Write(responseData)
 }
 
+// DeleteUser Deletes user record and unlink all messages
+// @Description Deletes user record and unlink all messages
+// @Tags Client
+// @ID DeleteUser
+// @Param data body updateUserRequest true "body json"
+// @Success 200 {array} model.User
+// @Security RokwireAuth UserAuth
+// @Router /user [delete]
+func (h ApisHandler) DeleteUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.DeleteUserWithID(*user.UserID)
+	if err != nil {
+		log.Printf("Error on updating user: %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // Subscribe Subscribes the current user to a topic
 // @Description Subscribes the current user to a topic
 // @Tags Client

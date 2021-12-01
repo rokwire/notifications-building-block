@@ -18,6 +18,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"notifications/core/model"
 )
@@ -182,11 +183,11 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 }
 
 func (app *Application) deleteUserMessage(user *model.CoreToken, messageID string) error {
-	return app.storage.DeleteUserMessage(*user.UserID, messageID)
+	return app.storage.DeleteUserMessageWithContext(context.Background(), *user.UserID, messageID)
 }
 
 func (app *Application) deleteMessage(ID string) error {
-	return app.storage.DeleteMessage(ID)
+	return app.storage.DeleteMessageWithContext(context.Background(), ID)
 }
 
 func (app *Application) getAllAppVersions() ([]model.AppVersion, error) {
@@ -203,4 +204,33 @@ func (app *Application) findUserByID(userID string) (*model.User, error) {
 
 func (app *Application) updateUserByID(userID string, notificationsDisabled bool) (*model.User, error) {
 	return app.storage.UpdateUserByID(userID, notificationsDisabled)
+}
+
+func (app *Application) deleteUserWithID(userID string) error {
+	user, err := app.storage.FindUserByID(userID)
+	if err != nil {
+		return fmt.Errorf("unable to delete user(%s): %s", userID, err)
+	}
+
+	if user != nil {
+		err = app.storage.DeleteUserWithID(userID)
+		if err != nil {
+			return fmt.Errorf("unable to delete user(%s): %s", userID, err)
+		}
+
+		if user.Topics != nil && len(user.Topics) > 0 {
+			for _, topic := range user.Topics {
+				if user.FirebaseTokens != nil && len(user.FirebaseTokens) > 0 {
+					for _, token := range user.FirebaseTokens {
+						err := app.firebase.UnsubscribeToTopic(token.Token, topic)
+						if err != nil {
+							return fmt.Errorf("error unsubscribe user(%s) with token(%s) from topic(%s): %s", userID, token.Token, topic, err)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
