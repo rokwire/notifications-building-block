@@ -380,6 +380,72 @@ func (sa Adapter) UpdateUserByID(userID string, notificationsDisabled bool) (*mo
 	return nil, nil
 }
 
+// DeleteUserWithID Deletes user with ID and all messages
+func (sa Adapter) DeleteUserWithID(userID string) error {
+	if userID != "" {
+
+		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+			err := sessionContext.StartTransaction()
+			if err != nil {
+				log.Printf("error starting a transaction - %s", err)
+				abortTransaction(sessionContext)
+				return err
+			}
+
+			messages, err := sa.GetMessages(&userID, nil, nil, nil, nil, nil, nil, nil)
+			if err != nil {
+				fmt.Printf("warning: unable to retrieve messages for user (%s): %s\n", userID, err)
+				abortTransaction(sessionContext)
+				return err
+			}
+			if len(messages) > 0 {
+				for _, message := range messages {
+					if message.Recipients != nil && len(message.Recipients) > 1 {
+						err = sa.DeleteUserMessageWithContext(sessionContext, userID, *message.ID)
+						if err != nil {
+							fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", *message.ID, userID, err)
+						}
+					} else {
+						err = sa.DeleteMessageWithContext(sessionContext, *message.ID)
+						if err != nil {
+							fmt.Printf("warning: unable to delete message(%s): %s\n", *message.ID, err)
+						}
+					}
+				}
+			}
+
+			filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+			_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
+			if err != nil {
+				fmt.Printf("warning: error while deleting user record (%s): %s\n", userID, err)
+				abortTransaction(sessionContext)
+				return err
+			}
+
+			if err != nil {
+				fmt.Printf("warning: error while delete all messages for user (%s) %s", userID, err)
+				abortTransaction(sessionContext)
+				return err
+			}
+
+			//commit the transaction
+			err = sessionContext.CommitTransaction(sessionContext)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+
+			return nil
+		})
+		if err != nil {
+			fmt.Printf("warning: error while deleting user record (%s): %s\n", userID, err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 // SubscribeToTopic subscribes the token to a topic
 func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) error {
 	var err error
@@ -622,8 +688,11 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 	return message, nil
 }
 
-// DeleteUserMessage removes the desired user from the recipients list
-func (sa Adapter) DeleteUserMessage(userID string, messageID string) error {
+// DeleteUserMessageWithContext removes the desired user from the recipients list
+func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, userID string, messageID string) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	persistedMessage, err := sa.GetMessage(messageID)
 	if err != nil || persistedMessage == nil {
 		return fmt.Errorf("message with id (%s) not found: %s", messageID, err)
@@ -641,10 +710,11 @@ func (sa Adapter) DeleteUserMessage(userID string, messageID string) error {
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "recipients", Value: updatesRecipients},
+				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 			}},
 		}
 
-		_, err = sa.db.messages.UpdateOne(filter, update, nil)
+		_, err = sa.db.messages.UpdateOneWithContext(ctx, filter, update, nil)
 		if err != nil {
 			fmt.Printf("warning: error while delete message (%s) for user (%s) %s", messageID, userID, err)
 			return err
@@ -654,15 +724,18 @@ func (sa Adapter) DeleteUserMessage(userID string, messageID string) error {
 	return nil
 }
 
-// DeleteMessage deletes a message by id
-func (sa Adapter) DeleteMessage(ID string) error {
+// DeleteMessageWithContext deletes a message by id
+func (sa Adapter) DeleteMessageWithContext(ctx context.Context, ID string) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	persistedMessage, err := sa.GetMessage(ID)
 	if err != nil || persistedMessage == nil {
 		return fmt.Errorf("message with id (%s) not found: %s", ID, err)
 	}
 
 	filter := bson.D{primitive.E{Key: "_id", Value: ID}}
-	_, err = sa.db.messages.DeleteOne(filter, nil)
+	_, err = sa.db.messages.DeleteOneWithContext(ctx, filter, nil)
 	if err != nil {
 		fmt.Printf("warning: error while delete message (%s) - %s", ID, err)
 		return err

@@ -612,6 +612,27 @@ paths:
       tags:
       - Client
   /user:
+    delete:
+      description: Deletes user record and unlink all messages
+      operationId: DeleteUser
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/updateUserRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/User'
+            type: array
+      security:
+      - RokwireAuth UserAuth: []
+      tags:
+      - Client
     get:
       description: Gets user record
       operationId: User
