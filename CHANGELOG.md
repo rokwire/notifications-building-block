@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 - Implement DELETE /user API for cleaning user info [#57](https://github.com/rokwire/notifications-building-block/issues/57).
+- Handle all input for recipients, topic and recipient criteria list - do not ignore any of them [#59](https://github.com/rokwire/notifications-building-block/issues/59).
 
 ## [0.1.25] - 2021-11-23
 - Nil pointer error while trying to retrieve missing user [#55](https://github.com/rokwire/notifications-building-block/issues/55).
