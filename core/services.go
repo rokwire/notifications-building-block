@@ -92,58 +92,67 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		}
 	}
 
-	hasRecipients := len(message.Recipients) > 0
-	if hasRecipients {
-		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, message.Topic)
-		if err != nil {
-			return nil, err
-		}
-		if len(tokens) > 0 {
-			for _, token := range tokens {
-				sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
-				if sendErr != nil {
-					fmt.Printf("error send notification to token (%s): %s", token, err)
-				}
-			}
-		}
-	} else if message.Topic != nil {
-		recipients, err := app.storage.GetRecipientsByTopic(*message.Topic)
+	var messageRecipients []model.Recipient
+	checkCriteria := true
+
+	// recipients from message
+	if len(message.Recipients) > 0 {
+		messageRecipients = append(messageRecipients, message.Recipients...)
+	}
+
+	// recipients from topic
+	if message.Topic != nil {
+		topicRecipients, err := app.storage.GetRecipientsByTopic(*message.Topic)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by topic (%s): %s", *message.Topic, err)
 		}
-		if recipients != nil {
-			message.Recipients = recipients
-			if storeInInbox {
-				persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
-				if err != nil {
-					fmt.Printf("error storing the message to topic %s: %s", *message.Topic, err)
-				}
+
+		if len(topicRecipients) > 0 {
+			if len(messageRecipients) > 0 {
+				messageRecipients = app.getCommonRecipients(messageRecipients, topicRecipients)
+			} else {
+				messageRecipients = append(messageRecipients, topicRecipients...)
+			}
+		} else {
+			checkCriteria = false
+			messageRecipients = nil
+		}
+	}
+
+	// recipients from criteria
+	if (message.RecipientsCriteriaList != nil) && (checkCriteria == true) {
+		criteriaRecipients, err := app.storage.GetRecipientsByRecipientCriterias(message.RecipientsCriteriaList)
+		if err != nil {
+			fmt.Printf("error retrieving recipients by criteria: %s", err)
+		}
+
+		if len(criteriaRecipients) > 0 {
+			if len(messageRecipients) > 0 {
+				messageRecipients = app.getCommonRecipients(messageRecipients, criteriaRecipients)
+			} else {
+				messageRecipients = append(messageRecipients, criteriaRecipients...)
+			}
+		} else {
+			messageRecipients = nil
+		}
+	}
+
+	if len(messageRecipients) > 0 {
+		message.Recipients = messageRecipients
+		if storeInInbox {
+			persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
+			if err != nil {
+				fmt.Printf("error storing the message: %s", err)
 			}
 		}
 
-		err = app.firebase.SendNotificationToTopic(*message.Topic, message.Subject, message.Body, message.Data)
-		if err != nil {
-			fmt.Printf("error send notification to topic (%s): %s", *message.Topic, err)
-		}
-	} else if message.RecipientsCriteriaList != nil {
-		recipients, err := app.storage.GetRecipientsByRecipientCriterias(message.RecipientsCriteriaList)
-		if err != nil {
-			fmt.Printf("error retrieving recipients by topic (%s): %s", *message.Topic, err)
-		}
-		if recipients != nil {
-			message.Recipients = recipients
-			if storeInInbox {
-				persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
-				if err != nil {
-					fmt.Printf("error storing the message to topic %s: %s", *message.Topic, err)
-				}
-			}
-		}
-
-		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, nil)
+		// retrieve tokens by recipients
+		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, message.RecipientsCriteriaList)
 		if err != nil {
 			return nil, err
 		}
+
+		// send message to tokens
 		if len(tokens) > 0 {
 			for _, token := range tokens {
 				sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
@@ -233,4 +242,18 @@ func (app *Application) deleteUserWithID(userID string) error {
 	}
 
 	return nil
+}
+
+func (app *Application) getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
+	var common []model.Recipient
+	hash := make(map[model.Recipient]bool)
+	for _, e := range s1 {
+		hash[e] = true
+	}
+	for _, e := range s2 {
+		if hash[e] == true {
+			common = append(common, e)
+		}
+	}
+	return common
 }
