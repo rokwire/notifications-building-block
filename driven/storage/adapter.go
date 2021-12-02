@@ -281,7 +281,7 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, cr
 					if len(criteriaList) > 0 {
 						include := false
 						for _, criteria := range criteriaList {
-							if criteria.AppPlatform == token.AppPlatform || criteria.AppVersion == token.AppVersion {
+							if ((criteria.AppPlatform == nil) || (criteria.AppPlatform == token.AppPlatform)) && ((criteria.AppVersion == nil) || (criteria.AppVersion == token.AppVersion)) {
 								include = true
 								break
 							}
