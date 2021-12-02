@@ -93,7 +93,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	}
 
 	var messageRecipients []model.Recipient
-	var ignoreCriteria bool
+	checkCriteria := true
 
 	// recipients from message
 	if len(message.Recipients) > 0 {
@@ -108,20 +108,19 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		}
 
 		if len(topicRecipients) > 0 {
-			ignoreCriteria = false
 			if len(messageRecipients) > 0 {
 				messageRecipients = app.getCommonRecipients(messageRecipients, topicRecipients)
 			} else {
 				messageRecipients = append(messageRecipients, topicRecipients...)
 			}
 		} else {
-			ignoreCriteria = true
+			checkCriteria = false
 			messageRecipients = nil
 		}
 	}
 
 	// recipients from criteria
-	if (message.RecipientsCriteriaList != nil) && (ignoreCriteria == false) {
+	if (message.RecipientsCriteriaList != nil) && (checkCriteria == true) {
 		criteriaRecipients, err := app.storage.GetRecipientsByRecipientCriterias(message.RecipientsCriteriaList)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by criteria: %s", err)
