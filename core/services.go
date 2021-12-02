@@ -147,7 +147,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		}
 
 		// retrieve tokens by recipients
-		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, nil)
+		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, message.RecipientsCriteriaList)
 		if err != nil {
 			return nil, err
 		}

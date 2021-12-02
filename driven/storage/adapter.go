@@ -255,7 +255,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token stri
 }
 
 // GetFirebaseTokensByRecipients Gets all users mapped to the recipients input list
-func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, topic *string) ([]string, error) {
+func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error) {
 	if len(recipients) > 0 {
 		innerFilter := []string{}
 		for _, recipient := range recipients {
@@ -276,9 +276,22 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, to
 
 		tokens := []string{}
 		for _, tokenMapping := range users {
-			if !tokenMapping.NotificationsDisabled && (topic == nil || tokenMapping.HasTopic(*topic)) {
+			if !tokenMapping.NotificationsDisabled{
 				for _, token := range tokenMapping.FirebaseTokens {
-					tokens = append(tokens, token.Token)
+					if len(criteriaList) > 0 {
+						include := false
+						for _, criteria := range criteriaList{
+							if criteria.AppPlatform == token.AppPlatform || criteria.AppVersion == token.AppVersion{
+								include = true
+								break
+							}
+						}
+						if include{
+							tokens = append(tokens, token.Token)
+						}
+					} else {
+						tokens = append(tokens, token.Token)
+					}
 				}
 			}
 		}

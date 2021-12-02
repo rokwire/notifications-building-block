@@ -130,7 +130,7 @@ type Storage interface {
 
 	FindUserByToken(token string) (*model.User, error)
 	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
-	GetFirebaseTokensByRecipients(recipient []model.Recipient, topic *string) ([]string, error)
+	GetFirebaseTokensByRecipients(recipient []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error)
 	GetRecipientsByTopic(topic string) ([]model.Recipient, error)
 	GetRecipientsByRecipientCriterias(recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error)
 	SubscribeToTopic(token string, userID *string, topic string) error
