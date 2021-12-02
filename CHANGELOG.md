@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.1.2] - 2021-12-02
 - Handle all input for recipients, topic and recipient criteria list - do not ignore any of them [#59](https://github.com/rokwire/notifications-building-block/issues/59).
 
 ## [0.1.26] - 2021-12-01

@@ -92,7 +92,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		}
 	}
 
-	var messageRecipients []model.Recipient
+	messageRecipients := []model.Recipient{}
 	checkCriteria := true
 
 	// recipients from message
@@ -109,7 +109,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 
 		if len(topicRecipients) > 0 {
 			if len(messageRecipients) > 0 {
-				messageRecipients = app.getCommonRecipients(messageRecipients, topicRecipients)
+				messageRecipients = getCommonRecipients(messageRecipients, topicRecipients)
 			} else {
 				messageRecipients = append(messageRecipients, topicRecipients...)
 			}
@@ -120,7 +120,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	}
 
 	// recipients from criteria
-	if (message.RecipientsCriteriaList != nil) && (checkCriteria == true) {
+	if (message.RecipientsCriteriaList != nil) && checkCriteria {
 		criteriaRecipients, err := app.storage.GetRecipientsByRecipientCriterias(message.RecipientsCriteriaList)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by criteria: %s", err)
@@ -128,7 +128,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 
 		if len(criteriaRecipients) > 0 {
 			if len(messageRecipients) > 0 {
-				messageRecipients = app.getCommonRecipients(messageRecipients, criteriaRecipients)
+				messageRecipients = getCommonRecipients(messageRecipients, criteriaRecipients)
 			} else {
 				messageRecipients = append(messageRecipients, criteriaRecipients...)
 			}
@@ -244,14 +244,14 @@ func (app *Application) deleteUserWithID(userID string) error {
 	return nil
 }
 
-func (app *Application) getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
-	var common []model.Recipient
-	hash := make(map[model.Recipient]bool)
+func getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
+	common := []model.Recipient{}
+	hash := make(map[string]bool)
 	for _, e := range s1 {
-		hash[e] = true
+		hash[*e.UserID] = true
 	}
 	for _, e := range s2 {
-		if hash[e] == true {
+		if hash[*e.UserID] == true {
 			common = append(common, e)
 		}
 	}
