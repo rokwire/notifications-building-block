@@ -276,17 +276,17 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, cr
 
 		tokens := []string{}
 		for _, tokenMapping := range users {
-			if !tokenMapping.NotificationsDisabled{
+			if !tokenMapping.NotificationsDisabled {
 				for _, token := range tokenMapping.FirebaseTokens {
 					if len(criteriaList) > 0 {
 						include := false
-						for _, criteria := range criteriaList{
-							if criteria.AppPlatform == token.AppPlatform || criteria.AppVersion == token.AppVersion{
+						for _, criteria := range criteriaList {
+							if criteria.AppPlatform == token.AppPlatform || criteria.AppVersion == token.AppVersion {
 								include = true
 								break
 							}
 						}
-						if include{
+						if include {
 							tokens = append(tokens, token.Token)
 						}
 					} else {
