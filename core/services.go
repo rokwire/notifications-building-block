@@ -157,7 +157,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 			for _, token := range tokens {
 				sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
 				if sendErr != nil {
-					fmt.Printf("error send notification to token (%s): %s", token, err)
+					fmt.Printf("error send notification to token (%s): %s", token, sendErr)
 				}
 			}
 		}

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2022-01-14
+- Fix bad log with wrong error on send Firebase notification  & fix api key log [#63](https://github.com/rokwire/notifications-building-block/issues/63)
+
 ## [1.1.2] - 2021-12-02
 - Handle all input for recipients, topic and recipient criteria list - do not ignore any of them [#59](https://github.com/rokwire/notifications-building-block/issues/59).
 
