@@ -58,6 +58,7 @@ func (fa *Adapter) SendNotificationToToken(token string, title string, body stri
 		}
 		_, err = client.Send(ctx, message)
 		if err != nil {
+			log.Printf("error while sending notification to token (%s): %s", token, err)
 			err = fmt.Errorf("error while sending notification to token (%s): %s", token, err)
 		}
 	}
