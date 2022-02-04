@@ -20,6 +20,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"log"
 	"notifications/core/model"
 )
 
@@ -90,6 +91,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 			fmt.Printf("error on creating a message: %s", err)
 			return nil, fmt.Errorf("error on creating a message: %s", err)
 		}
+		log.Printf("message %s has been created", *persistedMessage.ID)
 	}
 
 	messageRecipients := []model.Recipient{}
@@ -105,6 +107,8 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		topicRecipients, err := app.storage.GetRecipientsByTopic(*message.Topic)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by topic (%s): %s", *message.Topic, err)
+		} else {
+			log.Printf("retrieve recipients (%+v) for topic (%s)", topicRecipients, *message.Topic)
 		}
 
 		if len(topicRecipients) > 0 {
@@ -117,6 +121,8 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 			checkCriteria = false
 			messageRecipients = nil
 		}
+
+		log.Printf("construct recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
 	}
 
 	// recipients from criteria
@@ -135,6 +141,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		} else {
 			messageRecipients = nil
 		}
+		log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
 	}
 
 	if len(messageRecipients) > 0 {
@@ -143,14 +150,18 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 			persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
 			if err != nil {
 				fmt.Printf("error storing the message: %s", err)
+			} else {
+				log.Printf("message %s has been updated", *persistedMessage.ID)
 			}
 		}
 
 		// retrieve tokens by recipients
 		tokens, err := app.storage.GetFirebaseTokensByRecipients(message.Recipients, message.RecipientsCriteriaList)
 		if err != nil {
+			log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
 			return nil, err
 		}
+		log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
 
 		// send message to tokens
 		if len(tokens) > 0 {
@@ -158,12 +169,15 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 				sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
 				if sendErr != nil {
 					fmt.Printf("error send notification to token (%s): %s", token, sendErr)
+				} else {
+					log.Printf("message(%s:%s:%s) has been sent to token: %s", *message.ID, message.Subject, message.Body, token)
 				}
 			}
 		}
 	}
 
 	if err != nil {
+		fmt.Printf("create message finished with error: %s", err)
 		return nil, err
 	}
 
