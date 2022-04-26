@@ -84,6 +84,7 @@ definitions:
         type: array
     type: object
   model.Message:
+    description: wraps all needed information for the notification
     properties:
       body:
         type: string
@@ -296,6 +297,13 @@ paths:
         in: query
         name: end_date
         type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Message'
+            type: array
       security:
       - AdminUserAuth: []
       tags:
