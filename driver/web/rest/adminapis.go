@@ -102,7 +102,8 @@ func (h AdminApisHandler) UpdateTopic(user *model.CoreToken, w http.ResponseWrit
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Possible values: asc, desc. Default: desc"
 // @Param start_date query string false "start_date - Start date filter in milliseconds as an integer epoch value"
-// @Param end_date query string false "end_date - End date filter in milliseconds as an integer epoch value"// @Success 200 {array} model.Message
+// @Param end_date query string false "end_date - End date filter in milliseconds as an integer epoch value"
+// @Success 200 {array} model.Message
 // @Security AdminUserAuth
 // @Router /admin/messages [get]
 func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {

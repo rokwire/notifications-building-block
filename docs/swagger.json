@@ -254,7 +254,18 @@
                         "name": "end_date",
                         "in": "query"
                     }
-                ]
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Message"
+                            }
+                        }
+                    }
+                }
             }
         },
         "/admin/topic": {
@@ -996,6 +1007,7 @@
             }
         },
         "model.Message": {
+            "description": "wraps all needed information for the notification",
             "type": "object",
             "properties": {
                 "body": {

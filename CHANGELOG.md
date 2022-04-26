@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.5] - 2022-04-26
+- Update Swagger library due to security issue [#67](https://github.com/rokwire/notifications-building-block/issues/67)
+
 ## [1.1.4] - 2022-02-04
 - Put more logs for creating notification [#65](https://github.com/rokwire/notifications-building-block/issues/65)
 
