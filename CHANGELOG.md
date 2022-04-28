@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.6] - 2022-04-28
+- Update Core auth library to the latest version [#69](https://github.com/rokwire/notifications-building-block/issues/69)
+
 ## [1.1.5] - 2022-04-26
 - Update Swagger library due to security issue [#67](https://github.com/rokwire/notifications-building-block/issues/67)
 

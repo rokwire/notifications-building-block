@@ -68,13 +68,13 @@ func main() {
 	host := getEnvKey("HOST", true)
 	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
 	coreAuthPrivateKey := getEnvKey("CORE_AUTH_PRIVATE_KEY", true)
-	coreServiceRegLoaderURL := getEnvKey("CORE_SERVICE_REG_LOADER_URL", true)
+	coreBBHost := getEnvKey("CORE_BB_HOST", true)
 	contentServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
 
 	config := &model.Config{
 		InternalAPIKey:          internalAPIKey,
 		CoreAuthPrivateKey:      coreAuthPrivateKey,
-		CoreServiceRegLoaderURL: coreServiceRegLoaderURL,
+		CoreBBHost:              coreBBHost,
 		NotificationsServiceURL: contentServiceURL,
 	}
 

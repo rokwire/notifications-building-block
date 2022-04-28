@@ -10,7 +10,8 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/rokwire/core-auth-library-go v1.0.2
+	github.com/rokwire/core-auth-library-go v1.0.9
+	github.com/rokwire/logging-library-go v1.0.3 // indirect
 	github.com/swaggo/http-swagger v1.2.6
 	github.com/swaggo/swag v1.8.1
 	go.mongodb.org/mongo-driver v1.5.3
