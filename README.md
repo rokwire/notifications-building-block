@@ -24,7 +24,7 @@ FIREBASE_PROJECT_ID | < value > | yes | Firebase project ID
 FIREBASE_AUTH | < value > | yes | Firebase authentication JSON string
 INTERNAL_API_KEY | < value > | yes | Internal API key for invocation of other BBs
 CORE_AUTH_PRIVATE_KEY | < value > | yes | Private key for comunicating with Core
-CORE_SERVICE_REG_LOADER_URL | < value > | yes | Core service reg loader url
+CORE_BB_HOST | < value > | yes | Core service base url
 NOTIFICATIONS_SERVICE_URL | < value > | yes | Notification base URL
 
 

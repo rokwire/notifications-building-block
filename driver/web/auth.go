@@ -19,6 +19,7 @@ package web
 
 import (
 	"fmt"
+	"github.com/rokwire/logging-library-go/logs"
 	"log"
 	"net/http"
 	"notifications/core"
@@ -93,8 +94,11 @@ type CoreAuth struct {
 }
 
 func newCoreAuth(app *core.Application, config *model.Config) *CoreAuth {
+	remoteConfig := authservice.RemoteAuthDataLoaderConfig{
+		AuthServicesHost: config.CoreBBHost,
+	}
 
-	serviceLoader := authservice.NewRemoteServiceRegLoader(config.CoreServiceRegLoaderURL, []string{"core"})
+	serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{"core"}, logs.NewLogger("notifications", &logs.LoggerOpts{}))
 	authService, err := authservice.NewAuthService("notifications", config.NotificationsServiceURL, serviceLoader)
 	if err != nil {
 		log.Fatalf("Error initializing auth service: %v", err)
