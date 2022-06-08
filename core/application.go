@@ -17,6 +17,8 @@
 
 package core
 
+import "notifications/driven/mailer"
+
 // Application represents the core application code based on hexagonal architecture
 type Application struct {
 	version string
@@ -26,6 +28,7 @@ type Application struct {
 
 	storage  Storage
 	firebase Firebase
+	mailer   Mailer
 }
 
 // Start starts the core part of the application
@@ -33,9 +36,9 @@ func (app *Application) Start() {
 }
 
 // NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage, firebase Firebase) *Application {
+func NewApplication(version string, build string, storage Storage, firebase Firebase, mailer *mailer.Adapter) *Application {
 
-	application := Application{version: version, build: build, storage: storage, firebase: firebase}
+	application := Application{version: version, build: build, storage: storage, firebase: firebase, mailer: mailer}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

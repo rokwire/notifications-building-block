@@ -130,6 +130,15 @@ definitions:
       user:
         $ref: '#/definitions/CoreUserRef'
     type: object
+  sendMailRequestBody:
+    properties:
+      body:
+        type: string
+      subject:
+        type: string
+      to_mail:
+        type: string
+    type: object
   tokenBody:
     properties:
       token:
@@ -343,6 +352,26 @@ paths:
       - AdminUserAuth: []
       tags:
       - Admin
+  /int/mail:
+    post:
+      description: Sends an email
+      operationId: InternalSendMail
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/sendMailRequestBody'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ""
+      security:
+      - InternalAuth: []
+      tags:
+      - Internal
   /int/message:
     post:
       description: Sends a message to a user, list of users or a topic

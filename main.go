@@ -22,9 +22,11 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 	"notifications/driven/firebase"
+	"notifications/driven/mailer"
 	storage "notifications/driven/storage"
 	driver "notifications/driver/web"
 	"os"
+	"strconv"
 )
 
 var (
@@ -60,8 +62,16 @@ func main() {
 		log.Fatal("Cannot start the Firebase adapter - " + err.Error())
 	}
 
+	smtpHost := getEnvKey("SMTP_HOST", true)
+	smtpPort := getEnvKey("SMTP_PORT", true)
+	smtpUser := getEnvKey("SMTP_USER", true)
+	smtpPassword := getEnvKey("SMTP_PASSWORD", true)
+	smtpFrom := getEnvKey("SMTP_EMAIL_FROM", true)
+	smtpPortNum, _ := strconv.Atoi(smtpPort)
+	mailAdapter := mailer.NewMailerAdapter(smtpHost, smtpPortNum, smtpUser, smtpPassword, smtpFrom)
+
 	// application
-	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter)
 	application.Start()
 
 	// web adapter
