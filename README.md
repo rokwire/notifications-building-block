@@ -26,6 +26,11 @@ INTERNAL_API_KEY | < value > | yes | Internal API key for invocation of other BB
 CORE_AUTH_PRIVATE_KEY | < value > | yes | Private key for comunicating with Core
 CORE_BB_HOST | < value > | yes | Core service base url
 NOTIFICATIONS_SERVICE_URL | < value > | yes | Notification base URL
+SMTP_EMAIL_FROM | < value > | yes | SMTP email from
+SMTP_HOST | < value > | yes | SMTP host
+SMTP_USER | < value > | yes | SMTP user
+SMTP_PASSWORD | < value > | yes | SMTP password
+SMTP_PORT | < value > | yes | SMTP port (Example 587)
 
 
 ### Run Application

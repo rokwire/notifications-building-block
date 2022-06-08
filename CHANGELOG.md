@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.7] - 2022-06-08
+- Add support for sending emails as an internal API requested by other building blocks [#72](https://github.com/rokwire/notifications-building-block/issues/72)
+
 ## [1.1.6] - 2022-04-28
 - Update Core auth library to the latest version [#69](https://github.com/rokwire/notifications-building-block/issues/69)
 
