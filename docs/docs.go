@@ -330,6 +330,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/int/mail": {
+            "post": {
+                "security": [
+                    {
+                        "InternalAuth": []
+                    }
+                ],
+                "description": "Sends an email",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "InternalSendMail",
+                "parameters": [
+                    {
+                        "description": "body json",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/sendMailRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/int/message": {
             "post": {
                 "security": [
@@ -1078,6 +1111,20 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/CoreUserRef"
+                }
+            }
+        },
+        "sendMailRequestBody": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to_mail": {
+                    "type": "string"
                 }
             }
         },

@@ -44,6 +44,8 @@ type Services interface {
 
 	GetAllAppVersions() ([]model.AppVersion, error)
 	GetAllAppPlatforms() ([]model.AppPlatform, error)
+
+	SendMail(toEmail string, subject string, body string) error
 }
 
 type servicesImpl struct {
@@ -122,6 +124,10 @@ func (s *servicesImpl) DeleteUserWithID(userID string) error {
 	return s.app.deleteUserWithID(userID)
 }
 
+func (s *servicesImpl) SendMail(toEmail string, subject string, body string) error {
+	return s.app.sendMail(toEmail, subject, body)
+}
+
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	FindUserByID(userID string) (*model.User, error)
@@ -156,4 +162,9 @@ type Firebase interface {
 	SendNotificationToTopic(topic string, title string, body string, data map[string]string) error
 	SubscribeToTopic(token string, topic string) error
 	UnsubscribeToTopic(token string, topic string) error
+}
+
+// Mailer is used to wrap all Email Messaging functions
+type Mailer interface {
+	SendMail(toEmail string, subject string, body string) error
 }

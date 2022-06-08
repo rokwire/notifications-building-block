@@ -271,3 +271,7 @@ func getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
 	}
 	return common
 }
+
+func (app *Application) sendMail(toEmail string, subject string, body string) error {
+	return app.mailer.SendMail(toEmail, subject, body)
+}
