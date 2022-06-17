@@ -1,11 +1,14 @@
-# Notifications building block
+# Notifications Building Block
+The Notifications Building Block manages user notifications for the Rokwire platform.
 
-Go project to provide rest service for rokwire notifications building block.
+## Documentation
+The functionality provided by this application is documented in the [Wiki](https://github.com/rokwire/notifications-building-block/ wiki).
+
+The API documentation is available here: https://api.rokwire.illinois.edu/notifications/api/doc/ui/index.html
 
 ## Set Up
 
 ### Prerequisites
-
 MongoDB v4.2.2+
 
 Go v1.16+
@@ -13,24 +16,24 @@ Go v1.16+
 ### Environment variables
 The following Environment variables are supported. The service will not start unless those marked as Required are supplied.
 
-Name|Value|Required|Description
+Name|Format|Required|Description
 ---|---|---|---
-HOST | < value > | yes | Host name
-PORT | < value > | yes | The port number of the listening port
+HOST | < url > | yes | URL where this application is being hosted
+PORT | < int > | yes | Port to be used by this application
 MONGO_AUTH | <mongodb://USER:PASSWORD@HOST:PORT/DATABASE NAME> | yes | MongoDB authentication string. The user must have read/write privileges.
-MONGO_DATABASE | < value > | yes | MongoDB database name
-MONGO_TIMEOUT | < value > | no | MongoDB timeout in milliseconds. Set default value(500 milliseconds) if omitted
-FIREBASE_PROJECT_ID | < value > | yes | Firebase project ID
-FIREBASE_AUTH | < value > | yes | Firebase authentication JSON string
-INTERNAL_API_KEY | < value > | yes | Internal API key for invocation of other BBs
-CORE_AUTH_PRIVATE_KEY | < value > | yes | Private key for comunicating with Core
-CORE_BB_HOST | < value > | yes | Core service base url
-NOTIFICATIONS_SERVICE_URL | < value > | yes | Notification base URL
-SMTP_EMAIL_FROM | < value > | yes | SMTP email from
-SMTP_HOST | < value > | yes | SMTP host
-SMTP_USER | < value > | yes | SMTP user
-SMTP_PASSWORD | < value > | yes | SMTP password
-SMTP_PORT | < value > | yes | SMTP port (Example 587)
+MONGO_DATABASE | < string > | yes | MongoDB database name
+MONGO_TIMEOUT | < int > | no | MongoDB timeout in milliseconds. Defaults to 500.
+FIREBASE_PROJECT_ID | < string > | yes | Firebase project ID
+FIREBASE_AUTH | < json > | yes | Firebase authentication JSON string
+INTERNAL_API_KEY | < string > | yes | Internal API key for invocation by other BBs
+CORE_AUTH_PRIVATE_KEY | < string (PEM) > | yes | Private key for communicating with Core
+CORE_BB_HOST | < url > | yes | Core BB host URL
+NOTIFICATIONS_SERVICE_URL | < url > | yes | Notifications BB base URL
+SMTP_EMAIL_FROM | < email > | yes | SMTP email from
+SMTP_HOST | < string > | yes | SMTP host
+SMTP_USER | < string > | yes | SMTP username
+SMTP_PASSWORD | < string > | yes | SMTP password
+SMTP_PORT | < int > | yes | SMTP port (Example 587)
 
 
 ### Run Application
@@ -123,8 +126,14 @@ Response
 0.1.2
 ```
 
-## Documentation
+## Contributing
+If you would like to contribute to this project, please be sure to read the [Contributing Guidelines](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), and [Conventions](CONVENTIONS.md) before beginning.
 
-The documentation is placed here - https://api-dev.rokwire.illinois.edu/docs/
+### Secret Detection
+This repository is configured with a [pre-commit](https://pre-commit.com/) hook that runs [Yelp's Detect Secrets](https://github.com/Yelp/detect-secrets). If you intend to contribute directly to this repository, you must install pre-commit on your local machine to ensure that no secrets are pushed accidentally.
 
-Alternativelly the documentation is served by the service on the following url - https://api-dev.rokwire.illinois.edu/notifications/doc/ui/
+```
+# Install software 
+$ git pull  # Pull in pre-commit configuration & baseline 
+$ pip install pre-commit 
+$ pre-commit install
