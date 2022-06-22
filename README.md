@@ -2,7 +2,7 @@
 The Notifications Building Block manages user notifications for the Rokwire platform.
 
 ## Documentation
-The functionality provided by this application is documented in the [Wiki](https://github.com/rokwire/notifications-building-block/ wiki).
+The functionality provided by this application is documented in the [Wiki](https://github.com/rokwire/notifications-building-block/wiki).
 
 The API documentation is available here: https://api.rokwire.illinois.edu/notifications/api/doc/ui/index.html
 
