@@ -19,9 +19,6 @@ package web
 
 import (
 	"fmt"
-	"github.com/casbin/casbin"
-	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"net/http"
 	"notifications/core"
@@ -29,6 +26,10 @@ import (
 	"notifications/driver/web/rest"
 	"notifications/utils"
 	"strings"
+
+	"github.com/casbin/casbin"
+	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // Adapter entity
@@ -92,7 +93,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
-	mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
+	// mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
 	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.GetMessage)).Methods("GET")
 	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.DeleteUserMessage)).Methods("DELETE")
 	mainRouter.HandleFunc("/topics", we.coreWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
