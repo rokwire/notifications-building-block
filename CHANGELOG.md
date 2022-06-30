@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Prepare the project to become open source [#71](https://github.com/rokwire/notifications-building-block/issues/71)
+### Security
+- Prevent standard users from sending notifications [#77](https://github.com/rokwire/notifications-building-block/issues/77)
 
 ## [1.1.7] - 2022-06-08
 ### Added
