@@ -19,11 +19,12 @@ package web
 
 import (
 	"fmt"
-	"github.com/rokwire/logging-library-go/logs"
 	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+
+	"github.com/rokwire/logging-library-go/logs"
 
 	"github.com/rokwire/core-auth-library-go/authservice"
 	"github.com/rokwire/core-auth-library-go/tokenauth"
@@ -33,16 +34,18 @@ import (
 type Auth struct {
 	internalAuth *InternalAuth
 	coreAuth     *CoreAuth
+	logger       *logs.Logger
 }
 
 // NewAuth creates new auth handler
-func NewAuth(app *core.Application, config *model.Config) *Auth {
+func NewAuth(app *core.Application, config *model.Config, logger *logs.Logger) *Auth {
 	internalAuth := newInternalAuth(config.InternalAPIKey)
 	coreAuth := newCoreAuth(app, config)
 
 	auth := Auth{
 		internalAuth: internalAuth,
 		coreAuth:     coreAuth,
+		logger:       logger,
 	}
 	return &auth
 }
