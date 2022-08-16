@@ -80,7 +80,9 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
 
 	// Internal APIs
+	//deprecated
 	mainRouter.HandleFunc("/int/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
+	mainRouter.HandleFunc("/int/v2/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessageV2)).Methods("POST")
 	mainRouter.HandleFunc("/int/mail", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMail)).Methods("POST")
 
 	// Client APIs

@@ -43,6 +43,7 @@ func NewInternalApisHandler(app *core.Application) InternalApisHandler {
 // @Success 200 {object} model.Message
 // @Security InternalAuth
 // @Router /int/message [post]
+// @Deprecated
 func (h InternalApisHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -59,15 +60,48 @@ func (h InternalApisHandler) SendMessage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	h.processSendMessage(message, false, w, r)
+}
+
+// SendMessage Sends a message to a user, list of users or a topic
+// @Description Sends a message to a user, list of users or a topic
+// @Tags Internal
+// @ID InternalSendMessageV2
+// @Param data body model.Message true "body json"
+// @Produce plain
+// @Success 200 {object} model.Message
+// @Security InternalAuth
+// @Router /int/v2/message [post]
+func (h InternalApisHandler) SendMessageV2(w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on reading message data - %s\n", err.Error())
+		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
+		return
+	}
+
+	var message *model.Message
+	err = json.Unmarshal(data, &message)
+	if err != nil {
+		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	//TODO
-	message, err = h.app.Services.CreateMessage(nil, message, false)
+	async := true
+	h.processSendMessage(message, async, w, r)
+}
+
+func (h InternalApisHandler) processSendMessage(message *model.Message, async bool, w http.ResponseWriter, r *http.Request) {
+	message, err := h.app.Services.CreateMessage(nil, message, async)
 	if err != nil {
 		log.Printf("Error on sending message: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	data, err = json.Marshal(message)
+	data, err := json.Marshal(message)
 	if err != nil {
 		log.Println("Error on marshal topic")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
