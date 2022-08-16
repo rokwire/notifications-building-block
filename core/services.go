@@ -69,7 +69,7 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
+func (app *Application) createMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error) {
 	var persistedMessage *model.Message
 	var err error
 	if message.ID != nil {
@@ -162,7 +162,11 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 
 		// send message to tokens
 		if len(tokens) > 0 {
-			app.sendNotifications(message, tokens)
+			if async {
+				go app.sendNotifications(message, tokens)
+			} else {
+				app.sendNotifications(message, tokens)
+			}
 		}
 	}
 

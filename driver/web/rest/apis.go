@@ -557,7 +557,7 @@ func (h ApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWriter,
 		return
 	}
 
-	message, err = h.app.Services.CreateMessage(user, message)
+	message, err = h.app.Services.CreateMessage(user, message, false)
 	if err != nil {
 		log.Printf("Error on create message: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
