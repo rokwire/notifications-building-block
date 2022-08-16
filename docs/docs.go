@@ -422,7 +422,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Message"
+                            "$ref": "#/definitions/sendMessageRequestBody"
                         }
                     }
                 ],
@@ -1151,6 +1151,18 @@ var doc = `{
                 },
                 "to_mail": {
                     "type": "string"
+                }
+            }
+        },
+        "sendMessageRequestBody": {
+            "type": "object",
+            "properties": {
+                "async": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.Message"
                 }
             }
         },

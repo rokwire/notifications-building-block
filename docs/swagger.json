@@ -410,7 +410,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Message"
+                            "$ref": "#/definitions/sendMessageRequestBody"
                         }
                     }
                 ],
@@ -1139,6 +1139,18 @@
                 },
                 "to_mail": {
                     "type": "string"
+                }
+            }
+        },
+        "sendMessageRequestBody": {
+            "type": "object",
+            "properties": {
+                "async": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.Message"
                 }
             }
         },

@@ -63,11 +63,17 @@ func (h InternalApisHandler) SendMessage(w http.ResponseWriter, r *http.Request)
 	h.processSendMessage(message, false, w, r)
 }
 
+// sendMessageRequestBody message request body
+type sendMessageRequestBody struct {
+	Async   *bool          `json:"async"`
+	Message *model.Message `json:"message"`
+} // @name sendMessageRequestBody
+
 // SendMessage Sends a message to a user, list of users or a topic
 // @Description Sends a message to a user, list of users or a topic
 // @Tags Internal
 // @ID InternalSendMessageV2
-// @Param data body model.Message true "body json"
+// @Param data body sendMessageRequestBody true "body json"
 // @Produce plain
 // @Success 200 {object} model.Message
 // @Security InternalAuth
@@ -80,16 +86,19 @@ func (h InternalApisHandler) SendMessageV2(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var message *model.Message
-	err = json.Unmarshal(data, &message)
+	var bodyData sendMessageRequestBody
+	err = json.Unmarshal(data, &bodyData)
 	if err != nil {
-		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
+		log.Printf("Error on unmarshal the body request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	//TODO
-	async := true
+	message := bodyData.Message
+	async := false //by default
+	if bodyData.Async != nil {
+		async = *bodyData.Async
+	}
 	h.processSendMessage(message, async, w, r)
 }
 

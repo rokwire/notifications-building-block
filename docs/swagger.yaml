@@ -140,6 +140,14 @@ definitions:
       to_mail:
         type: string
     type: object
+  sendMessageRequestBody:
+    properties:
+      async:
+        type: boolean
+      message:
+        $ref: '#/definitions/model.Message'
+        type: object
+    type: object
   tokenBody:
     properties:
       token:
@@ -402,7 +410,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/model.Message'
+          $ref: '#/definitions/sendMessageRequestBody'
       produces:
       - text/plain
       responses:
