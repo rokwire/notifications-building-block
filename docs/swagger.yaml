@@ -166,7 +166,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Rokwire Notifications Building Block API
-  version: 1.1.8
+  version: 1.2.0
 paths:
   /admin/app_platforms:
     get:
