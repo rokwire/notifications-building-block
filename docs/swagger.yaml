@@ -84,7 +84,6 @@ definitions:
         type: array
     type: object
   model.Message:
-    description: wraps all needed information for the notification
     properties:
       body:
         type: string
@@ -110,6 +109,7 @@ definitions:
         type: array
       sender:
         $ref: '#/definitions/model.Sender'
+        type: object
       subject:
         type: string
       topic:
@@ -129,6 +129,7 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/CoreUserRef'
+        type: object
     type: object
   sendMailRequestBody:
     properties:
@@ -138,6 +139,14 @@ definitions:
         type: string
       to_mail:
         type: string
+    type: object
+  sendMessageRequestBody:
+    properties:
+      async:
+        type: boolean
+      message:
+        $ref: '#/definitions/model.Message'
+        type: object
     type: object
   tokenBody:
     properties:
@@ -166,8 +175,7 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - AdminUserAuth: []
       tags:
@@ -179,8 +187,7 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - AdminUserAuth: []
       tags:
@@ -243,8 +250,7 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - AdminUserAuth: []
       tags:
@@ -366,14 +372,14 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - InternalAuth: []
       tags:
       - Internal
   /int/message:
     post:
+      deprecated: true
       description: Sends a message to a user, list of users or a topic
       operationId: InternalSendMessage
       parameters:
@@ -383,6 +389,28 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/model.Message'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Message'
+      security:
+      - InternalAuth: []
+      tags:
+      - Internal
+  /int/v2/message:
+    post:
+      description: Sends a message to a user, list of users or a topic
+      operationId: InternalSendMessageV2
+      parameters:
+      - description: body json
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/sendMessageRequestBody'
       produces:
       - text/plain
       responses:
@@ -430,8 +458,7 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - UserAuth: []
       tags:
@@ -472,8 +499,7 @@ paths:
         schema:
           $ref: '#/definitions/getMessagesRequestBody'
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - UserAuth: []
       tags:
@@ -536,8 +562,7 @@ paths:
         schema:
           $ref: '#/definitions/TokenInfo'
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - RokwireAuth UserAuth: []
       tags:
@@ -604,8 +629,7 @@ paths:
         schema:
           $ref: '#/definitions/tokenBody'
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - RokwireAuth UserAuth: []
       tags:
@@ -627,8 +651,7 @@ paths:
         schema:
           $ref: '#/definitions/tokenBody'
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - RokwireAuth UserAuth: []
       tags:
@@ -712,8 +735,7 @@ paths:
       produces:
       - text/plain
       responses:
-        "200":
-          description: ""
+        "200": {}
       security:
       - RokwireAuth: []
       tags:

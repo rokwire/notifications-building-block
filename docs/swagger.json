@@ -32,9 +32,7 @@
                 ],
                 "operationId": "GetAllAppPlatforms",
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -54,9 +52,7 @@
                 ],
                 "operationId": "GetAllAppVersions",
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -193,9 +189,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -353,9 +347,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -374,6 +366,7 @@
                     "Internal"
                 ],
                 "operationId": "InternalSendMessage",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "body json",
@@ -382,6 +375,42 @@
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/model.Message"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Message"
+                        }
+                    }
+                }
+            }
+        },
+        "/int/v2/message": {
+            "post": {
+                "security": [
+                    {
+                        "InternalAuth": []
+                    }
+                ],
+                "description": "Sends a message to a user, list of users or a topic",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "InternalSendMessageV2",
+                "parameters": [
+                    {
+                        "description": "body json",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/sendMessageRequestBody"
                         }
                     }
                 ],
@@ -491,9 +520,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -589,9 +616,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -622,9 +647,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -726,9 +749,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -763,9 +784,7 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         },
@@ -903,9 +922,7 @@
                 ],
                 "operationId": "Version",
                 "responses": {
-                    "200": {
-                        "description": ""
-                    }
+                    "200": {}
                 }
             }
         }
@@ -1040,7 +1057,6 @@
             }
         },
         "model.Message": {
-            "description": "wraps all needed information for the notification",
             "type": "object",
             "properties": {
                 "body": {
@@ -1077,6 +1093,7 @@
                     }
                 },
                 "sender": {
+                    "type": "object",
                     "$ref": "#/definitions/model.Sender"
                 },
                 "subject": {
@@ -1106,6 +1123,7 @@
                     "type": "string"
                 },
                 "user": {
+                    "type": "object",
                     "$ref": "#/definitions/CoreUserRef"
                 }
             }
@@ -1121,6 +1139,18 @@
                 },
                 "to_mail": {
                     "type": "string"
+                }
+            }
+        },
+        "sendMessageRequestBody": {
+            "type": "object",
+            "properties": {
+                "async": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.Message"
                 }
             }
         },
