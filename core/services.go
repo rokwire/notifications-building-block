@@ -69,7 +69,7 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
+func (app *Application) createMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error) {
 	var persistedMessage *model.Message
 	var err error
 	if message.ID != nil {
@@ -162,13 +162,10 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 
 		// send message to tokens
 		if len(tokens) > 0 {
-			for _, token := range tokens {
-				sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
-				if sendErr != nil {
-					fmt.Printf("error send notification to token (%s): %s", token, sendErr)
-				} else {
-					log.Printf("message(%s:%s:%s) has been sent to token: %s", *message.ID, message.Subject, message.Body, token)
-				}
+			if async {
+				go app.sendNotifications(message, tokens)
+			} else {
+				app.sendNotifications(message, tokens)
 			}
 		}
 	}
@@ -179,6 +176,17 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	}
 
 	return persistedMessage, err
+}
+
+func (app *Application) sendNotifications(message *model.Message, tokens []string) {
+	for _, token := range tokens {
+		sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
+		if sendErr != nil {
+			fmt.Printf("error send notification to token (%s): %s", token, sendErr)
+		} else {
+			log.Printf("message(%s:%s:%s) has been sent to token: %s", *message.ID, message.Subject, message.Body, token)
+		}
+	}
 }
 
 func (app *Application) getMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
