@@ -69,7 +69,7 @@ type sendMessageRequestBody struct {
 	Message *model.Message `json:"message"`
 } // @name sendMessageRequestBody
 
-// SendMessage Sends a message to a user, list of users or a topic
+// SendMessageV2 Sends a message to a user, list of users or a topic
 // @Description Sends a message to a user, list of users or a topic
 // @Tags Internal
 // @ID InternalSendMessageV2
