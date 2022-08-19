@@ -1,0 +1,205 @@
+openapi: 3.0.3
+info:
+  title: Rokwire Notification Building Block API
+  description: Notification Building Block API Documentation
+  version: 1.24.2
+servers:
+  - url: 'https://api.rokwire.illinois.edu/notifications'
+    description: Production server
+  - url: 'https://api-test.rokwire.illinois.edu/notifications'
+    description: Test server
+  - url: 'https://api-dev.rokwire.illinois.edu/notifications'
+    description: Development server
+  - url: 'http://localhost/notifications'
+    description: Local server
+tags:
+  - name: Admin
+    description: Clients administration applications APIs.
+  - name: Internal
+    description: Internal applications APIs.
+  - name: Client
+    description: Client applications APIs.
+paths:
+  /int/message: !<tag:yaml.org,2002:js/undefined> ''
+  /int/v2/message: !<tag:yaml.org,2002:js/undefined> ''
+  /int/mail: !<tag:yaml.org,2002:js/undefined> ''
+  /token: !<tag:yaml.org,2002:js/undefined> ''
+  /user: !<tag:yaml.org,2002:js/undefined> ''
+  /messages: !<tag:yaml.org,2002:js/undefined> ''
+  '/message/{id}': !<tag:yaml.org,2002:js/undefined> ''
+  /topics: !<tag:yaml.org,2002:js/undefined> ''
+  '/topic/{topic}/messages': !<tag:yaml.org,2002:js/undefined> ''
+  '/topic/{topic}/subscribe': !<tag:yaml.org,2002:js/undefined> ''
+  '/topic/{topic}/unsubscribe': !<tag:yaml.org,2002:js/undefined> ''
+  /admin/app-versions: !<tag:yaml.org,2002:js/undefined> ''
+  /admin/app-platforms: !<tag:yaml.org,2002:js/undefined> ''
+  /admin/topics:
+    $ref: '#/paths/~1admin~1topic'
+  /admin/topic: !<tag:yaml.org,2002:js/undefined> ''
+  /admin/messages:
+    $ref: '#/paths/~1admin~1message'
+  /admin/message: !<tag:yaml.org,2002:js/undefined> ''
+  '/admin/messages{id}': !<tag:yaml.org,2002:js/undefined> ''
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AppPlatform:
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    AppVersion:
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    Config:
+      type: object
+      properties:
+        CoreAuthPrivateKey:
+          type: string
+        CoreBBHost:
+          type: string
+        NotificationsServiceURL:
+          type: string
+        InternalAPIKey:
+          type: string
+    CoreToken:
+      type: object
+      properties:
+        uid:
+          type: string
+        app_id:
+          type: string
+        org_id:
+          type: string
+        sub:
+          type: string
+        name:
+          type: string
+        scope:
+          type: string
+        permissions:
+          type: string
+        anonymous:
+          type: boolean
+    CoreUserRef:
+      type: object
+      properties:
+        user_id:
+          type: string
+        name:
+          type: string
+    FirebaseToken:
+      type: object
+      properties:
+        token:
+          type: string
+        app_platform:
+          type: string
+        app_version:
+          type: string
+        date_created:
+          type: string
+        date_updated:
+          type: string
+    Message:
+      type: object
+      properties:
+        _id:
+          type: string
+        date_created:
+          type: string
+        date_updated:
+          type: string
+        priority:
+          type: string
+        recipients:
+          $ref: '#/components/schemas/Recipient'
+        recipients_criteria_list:
+          $ref: '#/components/schemas/RecipientCriteria'
+        topic:
+          type: string
+        subject:
+          type: string
+        sender:
+          $ref: '#/components/schemas/Sender'
+        body:
+          type: string
+        data:
+          type: array
+          items:
+            type: string
+    Recipient:
+      type: object
+      properties:
+        user_id:
+          type: string
+        name:
+          type: string
+        notification_disabled:
+          type: boolean
+    RecipientCriteria:
+      type: object
+      properties:
+        app_version:
+          type: string
+        app_platform:
+          type: string
+    Sender:
+      type: object
+      properties:
+        type:
+          type: string
+        user:
+          $ref: '#/components/schemas/CoreUserRef'
+    TokenInfo:
+      type: object
+      properties:
+        previous_token:
+          type: string
+        token:
+          type: string
+        app_version:
+          type: string
+        app_platform:
+          type: string
+    Topic:
+      type: object
+      properties:
+        name:
+          type: string
+        app_id:
+          type: string
+        org_id:
+          type: string
+        description:
+          type: string
+        date_created:
+          type: string
+        date_updated:
+          type: string
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        notifications_disabled:
+          type: string
+        firebase_tokens:
+          type: array
+          $ref: '#/components/schemas/FirebaseToken'
+        user_id:
+          type: string
+        topics:
+          type: array
+        date_created:
+          type: string
+        date_updated:
+          type: string

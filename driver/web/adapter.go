@@ -15,6 +15,7 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,6 +24,13 @@ import (
 	"notifications/driver/web/rest"
 	"notifications/utils"
 	"strings"
+
+	"github.com/getkin/kin-openapi/routers"
+
+	"github.com/rokwire/logging-library-go/logs"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/getkin/kin-openapi/routers/gorillamux"
 
 	"github.com/casbin/casbin"
 	"github.com/gorilla/mux"
@@ -35,6 +43,7 @@ type Adapter struct {
 	port          string
 	auth          *Auth
 	authorization *casbin.Enforcer
+	openAPIRouter routers.Router
 
 	apisHandler         rest.ApisHandler
 	adminApisHandler    rest.AdminApisHandler
@@ -197,14 +206,40 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(host string, port string, app *core.Application, config *model.Config) Adapter {
+func NewWebAdapter(host string, port string, app *core.Application, config *model.Config, logger *logs.Logger) Adapter {
+	//openAPI doc
+	loader := &openapi3.Loader{Context: context.Background(), IsExternalRefsAllowed: true}
+	doc, err := loader.LoadFromFile("driver/web/docs/gen/def.yaml")
+	if err != nil {
+		logger.Fatalf("error on openapi3 load from file - %s", err.Error())
+	}
+	err = doc.Validate(loader.Context)
+	if err != nil {
+		logger.Fatalf("error on openapi3 validate - %s", err.Error())
+	}
+
+	//Ignore servers. Validating reqeusts against the documented servers can cause issues when routing traffic through proxies/load-balancers.
+	doc.Servers = nil
+
+	//To correctly route traffic to base path, we must add to all paths since servers are ignored
+	paths := make(openapi3.Paths, len(doc.Paths))
+	for path, obj := range doc.Paths {
+		paths["/core"+path] = obj
+	}
+	doc.Paths = paths
+
+	openAPIRouter, err := gorillamux.NewRouter(doc)
+	if err != nil {
+		logger.Fatalf("error on openapi3 gorillamux router - %s", err.Error())
+	}
+
 	auth := NewAuth(app, config)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port, auth: auth, authorization: authorization,
+	return Adapter{host: host, port: port, openAPIRouter: openAPIRouter, auth: auth, authorization: authorization,
 		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
 }
 

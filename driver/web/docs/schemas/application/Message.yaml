@@ -1,0 +1,26 @@
+type: object
+properties:
+  _id:
+    type: string
+  date_created:
+    type: string
+  date_updated:
+    type: string
+  priority:
+    type: string
+  recipients:
+    $ref: "./Recipients.yaml"
+  recipients_criteria_list:
+    $ref: "./RecipientCriteria.yaml"
+  topic:
+    type: string  
+  subject:
+    type: string
+  sender:
+    $ref: "./Sender.yaml"
+  body:
+    type: string
+  data:
+    type: array
+    items:
+      type: string   

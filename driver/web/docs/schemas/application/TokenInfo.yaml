@@ -1,0 +1,10 @@
+type: object
+properties:
+  previous_token:
+    type: string
+  token:
+    type: string
+  app_version:
+    type: string
+  app_platform:
+    type: string

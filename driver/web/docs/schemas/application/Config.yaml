@@ -1,0 +1,10 @@
+type: object
+properties:
+  CoreAuthPrivateKey:
+    type: string
+  CoreBBHost:
+    type: string
+  NotificationsServiceURL:
+    type: string
+  InternalAPIKey:
+    type: string
