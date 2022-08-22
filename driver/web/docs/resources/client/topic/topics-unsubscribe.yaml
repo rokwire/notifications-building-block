@@ -1,0 +1,33 @@
+post:
+  tags:
+  - Client
+  summary: Unubscribes the current user to a topic
+  description: |
+    Unsubscribes the current user to a topic
+  security:
+    - bearerAuth: []
+  requestBody:
+    description: token
+    content:
+      application/json:
+        schema:
+          $ref: "../../../schemas/apis/token/request/Request.yaml" 
+    required: true
+  parameters:
+    - name: topic
+      in: path
+      description: topic
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string          
+  responses:
+    200:
+      description: Success
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error
