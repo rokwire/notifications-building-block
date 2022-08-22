@@ -364,8 +364,103 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /topics: !<tag:yaml.org,2002:js/undefined> ''
-  '/topic/{topic}/messages': !<tag:yaml.org,2002:js/undefined> ''
+  /topics:
+    get:
+      tags:
+        - Client
+      summary: Gets all topics
+      description: |
+        Gets all topics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  '/topic/{topic}/messages':
+    get:
+      tags:
+        - Client
+      summary: Gets all messages for topic
+      description: |
+        Gets all messages for topic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: topic
+          in: path
+          description: topic
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: offset
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: limit - limit the result
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: 'order - Possible values: asc, desc. Default: desc'
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          description: start_date - Start date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: end_date
+          in: query
+          description: end_date - End date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
   '/topic/{topic}/subscribe': !<tag:yaml.org,2002:js/undefined> ''
   '/topic/{topic}/unsubscribe': !<tag:yaml.org,2002:js/undefined> ''
   /admin/app-versions:
