@@ -122,11 +122,11 @@ func (we Adapter) Start() {
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("access-control-allow-origin", "*")
-	http.ServeFile(w, r, "./docs/swagger.yaml")
+	http.ServeFile(w, r, "./driver/web/docs/gen/def.yaml")
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/notifications/api/doc", we.host)
+	url := fmt.Sprintf("%s/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
