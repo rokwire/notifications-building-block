@@ -107,7 +107,95 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /user: !<tag:yaml.org,2002:js/undefined> ''
+  /user:
+    get:
+      tags:
+        - Client
+      summary: Gets user record
+      description: |
+        Gets user record
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    delete:
+      tags:
+        - Client
+      summary: Deletes user record and unlink all messages
+      description: |
+        Deletes user record and unlink all messages
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: notifications_disabled
+        content:
+          application/json:
+            schema:
+              $ref: '#/paths/~1user/post/requestBody/content/application~1json/schema'
+              type: array
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    post:
+      tags:
+        - Client
+      summary: Updates user record
+      description: |
+        Updates user record
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: notifications_disabled
+        content:
+          application/json:
+            schema:
+              type: array
+              required:
+                - notifications_disabled
+              properties:
+                notifications_disabled:
+                  type: boolean
+        required: trueg
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
   /messages: !<tag:yaml.org,2002:js/undefined> ''
   '/message/{id}': !<tag:yaml.org,2002:js/undefined> ''
   /topics: !<tag:yaml.org,2002:js/undefined> ''
