@@ -224,7 +224,7 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	//To correctly route traffic to base path, we must add to all paths since servers are ignored
 	paths := make(openapi3.Paths, len(doc.Paths))
 	for path, obj := range doc.Paths {
-		paths["/core"+path] = obj
+		paths["/notification"+path] = obj
 	}
 	doc.Paths = paths
 
