@@ -24,8 +24,6 @@ import (
 	"notifications/utils"
 	"strings"
 
-	"github.com/getkin/kin-openapi/routers"
-
 	"github.com/rokwire/logging-library-go/logs"
 
 	"github.com/casbin/casbin"
@@ -35,11 +33,11 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	host          string
-	port          string
-	auth          *Auth
-	authorization *casbin.Enforcer
-	openAPIRouter routers.Router
+	host                   string
+	port                   string
+	notificationServiceURL string
+	auth                   *Auth
+	authorization          *casbin.Enforcer
 
 	apisHandler         rest.ApisHandler
 	adminApisHandler    rest.AdminApisHandler
@@ -126,7 +124,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/doc", we.host)
+	url := fmt.Sprintf("%s/doc", we.notificationServiceURL)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
@@ -203,39 +201,13 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(host string, port string, app *core.Application, config *model.Config, logger *logs.Logger) Adapter {
-	//openAPI doc
-	/*loader := &openapi3.Loader{Context: context.Background(), IsExternalRefsAllowed: true}
-	doc, err := loader.LoadFromFile("driver/web/docs/gen/def.yaml")
-	if err != nil {
-		logger.Fatalf("error on openapi3 load from file - %s", err.Error())
-	}
-	err = doc.Validate(loader.Context)
-	if err != nil {
-		logger.Fatalf("error on openapi3 validate - %s", err.Error())
-	}
-
-	//Ignore servers. Validating reqeusts against the documented servers can cause issues when routing traffic through proxies/load-balancers.
-	doc.Servers = nil
-
-	//To correctly route traffic to base path, we must add to all paths since servers are ignored
-	paths := make(openapi3.Paths, len(doc.Paths))
-	for path, obj := range doc.Paths {
-		paths["/notification"+path] = obj
-	}
-	doc.Paths = paths
-
-	openAPIRouter, err := gorillamux.NewRouter(doc)
-	if err != nil {
-		logger.Fatalf("error on openapi3 gorillamux router - %s", err.Error())
-	}*/
-
 	auth := NewAuth(app, config)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port /*openAPIRouter: openAPIRouter,*/, auth: auth, authorization: authorization,
+	return Adapter{host: host, port: port, notificationServiceURL: config.NotificationsServiceURL, auth: auth, authorization: authorization,
 		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
 }
 
