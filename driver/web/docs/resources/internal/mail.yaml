@@ -1,0 +1,24 @@
+ post:
+  tags:
+  - Admin
+  summary: Stores a firebase token and maps it to a idToken if presents"
+  description: |
+    Stores a firebase token and maps it to a idToken if presents"
+  security:
+    - bearerAuth: []
+  requestBody:
+    description: sending mail
+    content:
+      application/json:
+        schema:
+          $ref: "../../schemas/apis/token/request/Request.yaml"
+    required: true
+  responses:
+    200:
+      description: Success
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error

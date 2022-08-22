@@ -1,0 +1,9 @@
+type: object
+properties:
+  to_mail:
+    type: string
+  subject:
+    type: string
+  body:
+    type: string
+ 

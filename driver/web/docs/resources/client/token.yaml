@@ -1,0 +1,24 @@
+ post:
+  tags:
+  - Client
+  summary: Send mail
+  description: |
+    Send mail
+  security:
+    - bearerAuth: []
+  requestBody:
+    description: sending mail
+    content:
+      application/json:
+        schema:
+          $ref: "../../schemas/apis/mail/request/Request.yaml"
+    required: true
+  responses:
+    200:
+      description: Success
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error
