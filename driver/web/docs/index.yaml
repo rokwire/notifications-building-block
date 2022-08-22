@@ -23,8 +23,6 @@ paths:
   #Internal
   /int/message:
     $ref: "./resources/internal/message.yaml"
-  /int/v2/message:
-    $ref: "./resources/internal/v2/message.yaml"
   /int/mail:
     $ref: "./resources/internal/mail.yaml"
   #Client

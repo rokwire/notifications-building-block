@@ -44,7 +44,6 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /int/v2/message: !<tag:yaml.org,2002:js/undefined> ''
   /int/mail:
     post:
       tags:
