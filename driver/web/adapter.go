@@ -15,7 +15,6 @@
 package web
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,9 +27,6 @@ import (
 	"github.com/getkin/kin-openapi/routers"
 
 	"github.com/rokwire/logging-library-go/logs"
-
-	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/getkin/kin-openapi/routers/gorillamux"
 
 	"github.com/casbin/casbin"
 	"github.com/gorilla/mux"
@@ -208,7 +204,7 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(host string, port string, app *core.Application, config *model.Config, logger *logs.Logger) Adapter {
 	//openAPI doc
-	loader := &openapi3.Loader{Context: context.Background(), IsExternalRefsAllowed: true}
+	/*loader := &openapi3.Loader{Context: context.Background(), IsExternalRefsAllowed: true}
 	doc, err := loader.LoadFromFile("driver/web/docs/gen/def.yaml")
 	if err != nil {
 		logger.Fatalf("error on openapi3 load from file - %s", err.Error())
@@ -231,7 +227,7 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	openAPIRouter, err := gorillamux.NewRouter(doc)
 	if err != nil {
 		logger.Fatalf("error on openapi3 gorillamux router - %s", err.Error())
-	}
+	}*/
 
 	auth := NewAuth(app, config)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
@@ -239,7 +235,7 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port, openAPIRouter: openAPIRouter, auth: auth, authorization: authorization,
+	return Adapter{host: host, port: port /*openAPIRouter: openAPIRouter,*/, auth: auth, authorization: authorization,
 		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
 }
 
