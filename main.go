@@ -40,7 +40,7 @@ func main() {
 		Version = "dev"
 	}
 
-	loggerOpts := logs.LoggerOpts{SuppressRequests: []logs.HttpRequestProperties{logs.NewAwsHealthCheckHttpRequestProperties("/notifications/version")}}
+	loggerOpts := logs.LoggerOpts{SuppressRequests: []logs.HttpRequestProperties{logs.NewAwsHealthCheckHttpRequestProperties("notifications/api/version")}}
 	logger := logs.NewLogger("core", &loggerOpts)
 
 	port := getEnvKey("PORT", true)

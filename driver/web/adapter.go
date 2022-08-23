@@ -48,7 +48,7 @@ type Adapter struct {
 
 // @title Rokwire Notifications Building Block API
 // @description Rokwire Notifications Building Block API Documentation.
-// @version 1.1.8
+// @version 1.2.0
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost
@@ -83,7 +83,9 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
 
 	// Internal APIs
+	//deprecated
 	mainRouter.HandleFunc("/int/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
+	mainRouter.HandleFunc("/int/v2/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessageV2)).Methods("POST")
 	mainRouter.HandleFunc("/int/mail", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMail)).Methods("POST")
 
 	// Client APIs

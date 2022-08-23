@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.5.0 // indirect
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/PuerkitoBio/goquery v1.6.1
+	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/casbin/casbin v1.9.1
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0

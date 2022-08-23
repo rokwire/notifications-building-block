@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Set logger [#80](https://github.com/rokwire/notifications-building-block/issues/80)
 
 
+## [1.2.0] - 2022-08-17
+### Added
+- Async messages capabilities [#83](https://github.com/rokwire/notifications-building-block/issues/83)
+
 ## [1.1.8] - 2022-07-15
 ### Added
 - Prepare the project to become open source [#71](https://github.com/rokwire/notifications-building-block/issues/71)
