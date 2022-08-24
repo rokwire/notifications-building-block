@@ -1,0 +1,6 @@
+type: object
+properties:
+  async:
+    type: boolean
+  message:
+    $ref: "../../../application/Message.yaml"
