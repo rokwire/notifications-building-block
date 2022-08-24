@@ -46,38 +46,13 @@ type Adapter struct {
 	app *core.Application
 }
 
-// @title Rokwire Notifications Building Block API
-// @description Rokwire Notifications Building Block API Documentation.
-// @version 1.24.2
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost
-// @BasePath /notifications/api
-// @schemes https
-
-// @securityDefinitions.apikey RokwireAuth
-// @in header
-// @name ROKWIRE-API-KEY
-
-// @securityDefinitions.apikey InternalAuth
-// @in header
-// @name INTERNAL-API-KEY
-
-// @securityDefinitions.apikey UserAuth
-// @in header (add core access token with Bearer prefix to the Authorization value. The token must represent either anonymous or authenticated user )
-// @name Authorization
-
-// @securityDefinitions.apikey AdminUserAuth
-// @in header (add admin core access token with Bearer prefix to the Authorization value. The token must contain notifications_admin as a permission)
-// @name Authorization
-
 // Start starts the module
 func (we Adapter) Start() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
 	// handle apis
-	mainRouter := router.PathPrefix("/notifications").Subrouter()
+	mainRouter := router.PathPrefix("/notifications/api").Subrouter()
 	mainRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	mainRouter.HandleFunc("/doc", we.serveDoc)
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")

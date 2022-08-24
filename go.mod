@@ -11,7 +11,7 @@ require (
 	github.com/casbin/casbin v1.9.1
 	github.com/deepmap/oapi-codegen v1.11.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/getkin/kin-openapi v0.98.0
+	github.com/getkin/kin-openapi v0.98.0 // indirect
 	github.com/go-chi/chi v1.5.1 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
