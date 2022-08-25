@@ -24,8 +24,6 @@ import (
 	"notifications/utils"
 	"strings"
 
-	"github.com/rokwire/logging-library-go/logs"
-
 	"github.com/casbin/casbin"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -175,7 +173,7 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(host string, port string, app *core.Application, config *model.Config, logger *logs.Logger) Adapter {
+func NewWebAdapter(host string, port string, app *core.Application, config *model.Config) Adapter {
 	auth := NewAuth(app, config)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 

@@ -5,14 +5,9 @@ go 1.16
 require (
 	cloud.google.com/go/firestore v1.5.0 // indirect
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/APIDevTools/swagger-cli v4.0.4+incompatible // indirect
 	github.com/PuerkitoBio/goquery v1.6.1
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/casbin/casbin v1.9.1
-	github.com/deepmap/oapi-codegen v1.11.0 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/getkin/kin-openapi v0.98.0 // indirect
-	github.com/go-chi/chi v1.5.1 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/mailru/easyjson v0.7.7 // indirect
