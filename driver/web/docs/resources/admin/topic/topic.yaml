@@ -1,11 +1,18 @@
-get:
+put:
   tags:
   - Admin
-  summary: Gets all topics
+  summary: Updated the topic
   description: |
-    Gets all topics
+    Updated the topic
   security:
     - bearerAuth: []
+  requestBody:
+    description: token
+    content:
+      application/json:
+        schema:
+          $ref: "../../../schemas/application/Topic.yaml" 
+    required: true    
   responses:
     200:
       description: Success
@@ -20,4 +27,4 @@ get:
     401:
       description: Unauthorized
     500:
-      description: Internal error
+      description: Internal error      

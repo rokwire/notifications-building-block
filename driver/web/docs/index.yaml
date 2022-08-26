@@ -52,11 +52,11 @@ paths:
   /admin/topics:
     $ref: "./resources/admin/topic/topics.yaml"
   /admin/topic:
-    $ref: "./resources/admin/topic/topics.yaml"
+    $ref: "./resources/admin/topic/topic.yaml"
   /admin/messages:
     $ref: "./resources/admin/message/messages.yaml"
   /admin/message:
-    $ref: "./resources/admin/message/messages.yaml"
+    $ref: "./resources/admin/message/message.yaml"
   /admin/messages{id}:
     $ref: "./resources/admin/message/messages-id.yaml"   
     
