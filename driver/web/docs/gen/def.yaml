@@ -21,17 +21,25 @@ tags:
     description: Client applications APIs.
 paths:
   /int/message:
-    get:
+    post:
       tags:
         - Internal
-      summary: Get message
+      deprecated: true
+      summary: Create message
       description: |
-        Gets message
+        Create message
       security:
         - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
       responses:
         '200':
-          description: Successful operation
+          description: Success
           content:
             application/json:
               schema:
