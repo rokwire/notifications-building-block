@@ -83,7 +83,7 @@ paths:
   /int/mail:
     post:
       tags:
-        - Admin
+        - Internal
       summary: Stores a firebase token and maps it to a idToken if presents"
       description: |
         Stores a firebase token and maps it to a idToken if presents"
