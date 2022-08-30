@@ -32,6 +32,8 @@ paths:
     $ref: "./resources/client/token.yaml"
   /user:
     $ref: "./resources/client/user.yaml"
+  /message:
+    $ref: "./resources/client/message/message.yaml"
   /messages:
     $ref: "./resources/client/message/messages.yaml"
   /message/{id}:

@@ -239,6 +239,38 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
+  /message:
+    post:
+      tags:
+        - Client
+      deprecated: true
+      summary: Create message
+      description: |
+        Create message
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
   /messages:
     get:
       tags:
