@@ -1,0 +1,31 @@
+post:
+  tags:
+  - Client
+  deprecated: true
+  summary: Create message
+  description: |
+    Create message
+  security:
+    - bearerAuth: []
+  requestBody:
+    description: message body
+    content:
+      application/json:
+        schema:
+          $ref: "../../../schemas/application/Message.yaml" 
+    required: true    
+  responses:
+    200:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "../../../schemas/application/Message.yaml"
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error  

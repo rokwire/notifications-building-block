@@ -1,0 +1,6 @@
+required:
+  - notifications_disabled
+type: object
+properties:
+  notifications_disabled: 
+    type: boolean

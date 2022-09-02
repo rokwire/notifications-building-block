@@ -1,0 +1,18 @@
+type: object
+properties:
+  uid:
+    type: string
+  app_id:
+    type: string
+  org_id:
+    type: string
+  sub:
+    type: string
+  name:
+    type: string
+  scope:
+    type: string
+  permissions:
+    type: string
+  anonymous:
+    type: boolean    

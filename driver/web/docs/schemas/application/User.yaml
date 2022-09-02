@@ -1,0 +1,17 @@
+type: object
+properties:
+  _id:
+    type: string
+  notifications_disabled:
+    type: string
+  firebase_tokens:
+    type: array  
+    $ref: "./FirebaseToken.yaml"
+  user_id:
+    type: string  
+  topics:
+    type: array
+  date_created:
+    type: string
+  date_updated:
+    type: string 

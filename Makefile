@@ -114,9 +114,14 @@ version:
 vendor:
 	$(GO) mod vendor
 
-.PHONY: swagger
-swagger: ;
-	swag init -g driver/web/adapter.go
+.PHONY: oapi-gen-types
+oapi-gen-types: ;
+	oapi-codegen --generate types -o driver/web/docs/gen/gen_types.go driver/web/docs/gen/def.yaml
+
+.PHONY: oapi-gen-docs
+oapi-gen-docs: ;
+	swagger-cli bundle driver/web/docs/index.yaml --outfile driver/web/docs/gen/def.yaml --type yaml
+	
 .PHONY: log-variables
 log-variables: ; $(info $(M) Log info…) @ ## Log the variables values
 	@echo "DATE:"$(DATE)
