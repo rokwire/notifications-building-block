@@ -23,8 +23,6 @@ PORT | < int > | yes | Port to be used by this application
 MONGO_AUTH | <mongodb://USER:PASSWORD@HOST:PORT/DATABASE NAME> | yes | MongoDB authentication string. The user must have read/write privileges.
 MONGO_DATABASE | < string > | yes | MongoDB database name
 MONGO_TIMEOUT | < int > | no | MongoDB timeout in milliseconds. Defaults to 500.
-FIREBASE_PROJECT_ID | < string > | yes | Firebase project ID
-FIREBASE_AUTH | < json > | yes | Firebase authentication JSON string
 INTERNAL_API_KEY | < string > | yes | Internal API key for invocation by other BBs
 CORE_AUTH_PRIVATE_KEY | < string (PEM) > | yes | Private key for communicating with Core
 CORE_BB_HOST | < url > | yes | Core BB host URL

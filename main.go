@@ -50,10 +50,8 @@ func main() {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
 
-	// firebase credentials
-	firebaseProjectID := getEnvKey("FIREBASE_PROJECT_ID", true)
-	firebaseAuth := getEnvKey("FIREBASE_AUTH", true)
-	firebaseAdapter := firebase.NewFirebaseAdapter(firebaseAuth, firebaseProjectID)
+	// firebase adapter
+	firebaseAdapter := firebase.NewFirebaseAdapter()
 	err = firebaseAdapter.Start()
 	if err != nil {
 		log.Fatal("Cannot start the Firebase adapter - " + err.Error())
