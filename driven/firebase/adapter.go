@@ -18,11 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"notifications/core/model"
 
 	firebase "firebase.google.com/go"
-	"firebase.google.com/go/messaging"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
@@ -82,7 +80,7 @@ func (fa *Adapter) createFirebaseClient(data model.FirebaseConf) (*firebase.App,
 
 // SendNotificationToToken sends a notification to token
 func (fa *Adapter) SendNotificationToToken(token string, title string, body string, data map[string]string) error {
-	ctx := context.Background()
+	/*ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
 	if err == nil {
 		message := &messaging.Message{
@@ -99,12 +97,13 @@ func (fa *Adapter) SendNotificationToToken(token string, title string, body stri
 			err = fmt.Errorf("error while sending notification to token (%s): %s", token, err)
 		}
 	}
-	return err
+	return err */
+	return nil
 }
 
 // SendNotificationToTopic sends a notification to a topic
 func (fa *Adapter) SendNotificationToTopic(topic string, title string, body string, data map[string]string) error {
-	ctx := context.Background()
+	/*ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
 	if err == nil {
 		message := &messaging.Message{
@@ -120,12 +119,13 @@ func (fa *Adapter) SendNotificationToTopic(topic string, title string, body stri
 			err = fmt.Errorf("error while sending notification to topic (%s): %s", topic, err)
 		}
 	}
-	return err
+	return err */
+	return nil
 }
 
 // SubscribeToTopic subscribes to a topic
 func (fa *Adapter) SubscribeToTopic(token string, topic string) error {
-	ctx := context.Background()
+	/*ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
 	if err == nil {
 		_, err = client.SubscribeToTopic(ctx, []string{token}, topic)
@@ -133,12 +133,13 @@ func (fa *Adapter) SubscribeToTopic(token string, topic string) error {
 			err = fmt.Errorf("error while subscribing to Firebase topic (%s): %s", topic, err)
 		}
 	}
-	return err
+	return err */
+	return nil
 }
 
 // UnsubscribeToTopic unsubscribes from a topic
 func (fa *Adapter) UnsubscribeToTopic(token string, topic string) error {
-	ctx := context.Background()
+	/*ctx := context.Background()
 	client, err := fa.firebase.Messaging(ctx)
 	if err == nil {
 		_, err = client.UnsubscribeFromTopic(ctx, []string{token}, topic)
@@ -146,5 +147,6 @@ func (fa *Adapter) UnsubscribeToTopic(token string, topic string) error {
 			err = fmt.Errorf("error while unsubscribing from topic (%s): %s", topic, err)
 		}
 	}
-	return err
+	return err */
+	return nil
 }
