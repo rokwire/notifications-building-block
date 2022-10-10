@@ -40,6 +40,8 @@ type database struct {
 
 	appVersions  *collectionWrapper
 	appPlatforms *collectionWrapper
+
+	firebaseConfigurations *collectionWrapper
 }
 
 func (m *database) start() error {
@@ -96,6 +98,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	firebaseConfigurations := &collectionWrapper{database: m, coll: db.Collection("firebase_configurations")}
+	err = m.applyFirebaseConfigurationsChecks(firebaseConfigurations)
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -105,6 +113,7 @@ func (m *database) start() error {
 	m.messages = messages
 	m.appPlatforms = appPlatforms
 	m.appVersions = appVersions
+	m.firebaseConfigurations = firebaseConfigurations
 
 	return nil
 }
@@ -300,6 +309,19 @@ func (m *database) applyPlatformsChecks(appPlatforms *collectionWrapper) error {
 	}
 
 	log.Println("apply app_platforms passed")
+	return nil
+}
+
+func (m *database) applyFirebaseConfigurationsChecks(fc *collectionWrapper) error {
+	log.Println("apply firebase configurations checks.....")
+
+	//add compound unique index - org_id + app_id
+	err := fc.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, true)
+	if err != nil {
+		return err
+	}
+
+	log.Println("apply firebase configurations passed")
 	return nil
 }
 
