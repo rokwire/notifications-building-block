@@ -51,7 +51,8 @@ func main() {
 	}
 
 	// firebase adapter
-	firebaseAdapter := firebase.NewFirebaseAdapter()
+	firebaseConfs := []model.FirebaseConf{{OrgID: "1234", AppID: "5678", ProjectID: "55", Auth: "auth"}} //todo - get it form the database
+	firebaseAdapter := firebase.NewFirebaseAdapter(firebaseConfs)
 	err = firebaseAdapter.Start()
 	if err != nil {
 		log.Fatal("Cannot start the Firebase adapter - " + err.Error())
