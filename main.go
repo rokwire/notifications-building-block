@@ -51,7 +51,10 @@ func main() {
 	}
 
 	// firebase adapter
-	firebaseConfs := []model.FirebaseConf{{OrgID: "1234", AppID: "5678", ProjectID: "55", Auth: "auth"}} //todo - get it form the database
+	firebaseConfs, err := storageAdapter.LoadFirebaseConfigurations()
+	if err != nil {
+		log.Fatal("Error loading the firebase confogirations form the storage - " + err.Error())
+	}
 	firebaseAdapter := firebase.NewFirebaseAdapter(firebaseConfs)
 	err = firebaseAdapter.Start()
 	if err != nil {

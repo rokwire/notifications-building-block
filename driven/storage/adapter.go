@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rokwire/logging-library-go/errors"
+	"github.com/rokwire/logging-library-go/logutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -51,6 +53,17 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS}
 	return &Adapter{db: db}
+}
+
+// LoadFirebaseConfigurations loads all firebase configurations
+func (sa Adapter) LoadFirebaseConfigurations() ([]model.FirebaseConf, error) {
+	filter := bson.D{}
+	var result []model.FirebaseConf
+	err := sa.db.firebaseConfigurations.Find(filter, &result, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "firebase configuration", nil, err)
+	}
+	return result, nil
 }
 
 // FindUserByToken finds firebase token

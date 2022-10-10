@@ -29,13 +29,13 @@ import (
 type Adapter struct {
 	firebaseConfs []model.FirebaseConf
 
-	//key is org_id-app_id construction
+	//key is org-id_app-id construction
 	firebaseClients map[string]firebase.App
 }
 
 // NewFirebaseAdapter instance a new Firebase adapter
 func NewFirebaseAdapter(firebaseConfs []model.FirebaseConf) *Adapter {
-	return &Adapter{firebaseConfs: firebaseConfs}
+	return &Adapter{firebaseConfs: firebaseConfs, firebaseClients: make(map[string]firebase.App)}
 }
 
 // Start starts the firebase adapter
@@ -53,7 +53,7 @@ func (fa *Adapter) Start() error {
 			return err
 		}
 
-		key := fmt.Sprintf("%s-%s", current.OrgID, current.AppID)
+		key := fmt.Sprintf("%s_%s", current.OrgID, current.AppID)
 		fa.firebaseClients[key] = *client
 	}
 	return nil
