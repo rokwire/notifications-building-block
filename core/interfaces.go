@@ -155,10 +155,10 @@ type Storage interface {
 
 // Firebase is used to wrap all Firebase Messaging API functions
 type Firebase interface {
-	SendNotificationToToken(token string, title string, body string, data map[string]string) error
-	SendNotificationToTopic(topic string, title string, body string, data map[string]string) error
-	SubscribeToTopic(token string, topic string) error
-	UnsubscribeToTopic(token string, topic string) error
+	SendNotificationToToken(orgID string, appID string, token string, title string, body string, data map[string]string) error
+	SendNotificationToTopic(orgID string, appID string, topic string, title string, body string, data map[string]string) error
+	SubscribeToTopic(orgID string, appID string, token string, topic string) error
+	UnsubscribeToTopic(orgID string, appID string, token string, topic string) error
 }
 
 // Mailer is used to wrap all Email Messaging functions
