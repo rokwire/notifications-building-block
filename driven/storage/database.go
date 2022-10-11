@@ -121,6 +121,12 @@ func (m *database) start() error {
 func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	log.Println("apply messages checks.....")
 
+	//add compound unique index - org_id + app_id
+	err := messages.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
 	indexes, _ := messages.ListIndexes()
 	indexMapping := map[string]interface{}{}
 	if indexes != nil {
@@ -176,6 +182,12 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 
 func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	log.Println("apply users checks.....")
+
+	//add compound unique index - org_id + app_id
+	err := users.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
 
 	indexes, _ := users.ListIndexes()
 	indexMapping := map[string]interface{}{}
@@ -256,12 +268,24 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 func (m *database) applyTopicsChecks(topics *collectionWrapper) error {
 	log.Println("apply topics checks.....")
 
+	//add compound unique index - org_id + app_id
+	err := topics.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
 	log.Println("apply topics passed")
 	return nil
 }
 
 func (m *database) applyVersionsChecks(appVersions *collectionWrapper) error {
 	log.Println("apply app_versions checks.....")
+
+	//add compound unique index - org_id + app_id
+	err := appVersions.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
 
 	indexes, _ := appVersions.ListIndexes()
 	indexMapping := map[string]interface{}{}
@@ -288,6 +312,12 @@ func (m *database) applyVersionsChecks(appVersions *collectionWrapper) error {
 
 func (m *database) applyPlatformsChecks(appPlatforms *collectionWrapper) error {
 	log.Println("apply app_platforms checks.....")
+
+	//add compound unique index - org_id + app_id
+	err := appPlatforms.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
 
 	indexes, _ := appPlatforms.ListIndexes()
 	indexMapping := map[string]interface{}{}
