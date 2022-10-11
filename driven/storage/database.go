@@ -16,6 +16,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -71,12 +72,6 @@ func (m *database) start() error {
 	//apply checks
 	db := client.Database(m.mongoDBName)
 
-	//apply multi-tenancy data manipulation
-	err = m.fixMultiTenancyData()
-	if err != nil {
-		return err
-	}
-
 	users := &collectionWrapper{database: m, coll: db.Collection("users")}
 	err = m.applyUsersChecks(users)
 	if err != nil {
@@ -124,15 +119,39 @@ func (m *database) start() error {
 	m.appVersions = appVersions
 	m.firebaseConfigurations = firebaseConfigurations
 
+	//apply multi-tenancy data manipulation
+	err = m.fixMultiTenancyData(client, users, topics, messages, appVersions, appPlatforms)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 //it adds org id and app id for the current data to match the multi-tenancy requirements
-func (m *database) fixMultiTenancyData() error {
-	log.Printf("org_id:%s", m.multiTenancyOrgID)
-	log.Printf("app_id:%s", m.multiTenancyAppId)
+func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWrapper, topics *collectionWrapper,
+	messages *collectionWrapper, appVersions *collectionWrapper, appPlatforms *collectionWrapper) error {
 
-	return nil
+	fn := func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a multi-tenancy data fix transaction - %s", err)
+			return err
+		}
+
+		//TODO
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			abortTransaction(sessionContext)
+			fmt.Printf("error on commiting multi-tenancy data fix transaction - %s", err)
+			return err
+		}
+		return nil
+	}
+	err := client.UseSession(context.Background(), fn)
+	return err
 }
 
 func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
