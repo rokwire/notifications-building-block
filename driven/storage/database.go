@@ -217,6 +217,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			fmt.Printf("error on commiting multi-tenancy data fix transaction - %s", err)
 			return err
 		}
+		log.Println("multi-tenancy data fix completed")
 		return nil
 	}
 	err := client.UseSession(context.Background(), fn)
