@@ -132,14 +132,81 @@ func (m *database) start() error {
 func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWrapper, topics *collectionWrapper,
 	messages *collectionWrapper, appVersions *collectionWrapper, appPlatforms *collectionWrapper) error {
 
+	orgID := m.multiTenancyOrgID
+	appID := m.multiTenancyAppId
 	fn := func(sessionContext mongo.SessionContext) error {
+		//start transaction
 		err := sessionContext.StartTransaction()
 		if err != nil {
 			log.Printf("error starting a multi-tenancy data fix transaction - %s", err)
 			return err
 		}
 
-		//TODO
+		/// check if the data fix has been applied
+		filter := bson.D{primitive.E{Key: "org_id", Value: orgID}, primitive.E{Key: "app_id", Value: appID}}
+		// check users collection
+		usersCount, err := users.CountDocumentsWithContext(sessionContext, filter)
+		if err != nil {
+			log.Println("error checking users count")
+			return err
+		}
+		// check messages collection
+		messagesCount, err := messages.CountDocumentsWithContext(sessionContext, filter)
+		if err != nil {
+			log.Println("error checking messages count")
+			return err
+		}
+
+		//checking only one collection is enough as all this fixing data happens in a transaction.
+		if usersCount == 0 && messagesCount == 0 {
+			log.Printf("multi-tenancy data has NOT been applied, users:%d messages:%d - applying data fix..", usersCount, messagesCount)
+
+			updatefilter := bson.D{}
+			update := bson.D{
+				primitive.E{Key: "$set", Value: bson.D{
+					primitive.E{Key: "org_id", Value: orgID},
+					primitive.E{Key: "app_id", Value: appID},
+				}},
+			}
+
+			//users
+			_, err := users.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
+			if err != nil {
+				log.Printf("error updating users - %s", err)
+				return err
+			}
+
+			//topics
+			_, err = topics.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
+			if err != nil {
+				log.Printf("error updating topics - %s", err)
+				return err
+			}
+
+			//messages
+			_, err = messages.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
+			if err != nil {
+				log.Printf("error updating messages - %s", err)
+				return err
+			}
+
+			//app versions
+			_, err = appVersions.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
+			if err != nil {
+				log.Printf("error updating app versions - %s", err)
+				return err
+			}
+
+			//app platforms
+			_, err = appPlatforms.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
+			if err != nil {
+				log.Printf("error updating app platforms - %s", err)
+				return err
+			}
+		} else {
+			log.Println("multi-tenancy data has been applied, nothing to do")
+			return nil
+		}
 
 		//commit the transaction
 		err = sessionContext.CommitTransaction(sessionContext)
