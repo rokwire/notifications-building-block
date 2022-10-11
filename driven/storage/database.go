@@ -42,6 +42,9 @@ type database struct {
 	appPlatforms *collectionWrapper
 
 	firebaseConfigurations *collectionWrapper
+
+	multiTenancyOrgID string
+	multiTenancyAppId string
 }
 
 func (m *database) start() error {
@@ -67,6 +70,12 @@ func (m *database) start() error {
 
 	//apply checks
 	db := client.Database(m.mongoDBName)
+
+	//apply multi-tenancy data manipulation
+	err = m.fixMultiTenancyData()
+	if err != nil {
+		return err
+	}
 
 	users := &collectionWrapper{database: m, coll: db.Collection("users")}
 	err = m.applyUsersChecks(users)
@@ -114,6 +123,14 @@ func (m *database) start() error {
 	m.appPlatforms = appPlatforms
 	m.appVersions = appVersions
 	m.firebaseConfigurations = firebaseConfigurations
+
+	return nil
+}
+
+//it adds org id and app id for the current data to match the multi-tenancy requirements
+func (m *database) fixMultiTenancyData() error {
+	log.Printf("org_id:%s", m.multiTenancyOrgID)
+	log.Printf("app_id:%s", m.multiTenancyAppId)
 
 	return nil
 }
