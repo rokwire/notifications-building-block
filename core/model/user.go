@@ -18,6 +18,9 @@ import "time"
 
 // User represents user entity and all its relationship with firebase tokens and topics
 type User struct {
+	OrgID string `json:"org_id" bson:"org_id"`
+	AppID string `json:"app_id" bson:"app_id"`
+
 	ID                    string          `json:"id" bson:"_id"`
 	NotificationsDisabled bool            `json:"notifications_disabled" bson:"notifications_disabled"`
 	FirebaseTokens        []FirebaseToken `json:"firebase_tokens" bson:"firebase_tokens"`

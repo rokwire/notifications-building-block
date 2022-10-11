@@ -16,10 +16,16 @@ package model
 
 // AppVersion wraps app version number
 type AppVersion struct {
+	OrgID string `json:"org_id" bson:"org_id"`
+	AppID string `json:"app_id" bson:"app_id"`
+
 	Name *string `json:"name" bson:"name"`
 } //@name AppVersion
 
 // AppPlatform wraps app platform name
 type AppPlatform struct {
+	OrgID string `json:"org_id" bson:"org_id"`
+	AppID string `json:"app_id" bson:"app_id"`
+
 	Name *string `json:"name" bson:"name"`
 } //@name AppPlatform
