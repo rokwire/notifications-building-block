@@ -170,7 +170,8 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			}
 
 			//users
-			_, err := users.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
+			usersTimeout := time.Minute * time.Duration(2)
+			_, err := users.UpdateManyWithContextTimeout(sessionContext, updatefilter, update, nil, usersTimeout) //long timeout
 			if err != nil {
 				log.Printf("error updating users - %s", err)
 				return err
@@ -184,7 +185,8 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			}
 
 			//messages
-			_, err = messages.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
+			messagesTimeout := time.Minute * time.Duration(2)
+			_, err = messages.UpdateManyWithContextTimeout(sessionContext, updatefilter, update, nil, messagesTimeout) //long timeout
 			if err != nil {
 				log.Printf("error updating messages - %s", err)
 				return err

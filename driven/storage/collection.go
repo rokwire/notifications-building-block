@@ -208,10 +208,15 @@ func (collWrapper *collectionWrapper) UpdateMany(filter interface{}, update inte
 }
 
 func (collWrapper *collectionWrapper) UpdateManyWithContext(ctx context.Context, filter interface{}, update interface{}, opts *options.UpdateOptions) (*mongo.UpdateResult, error) {
+	return collWrapper.UpdateManyWithContextTimeout(ctx, filter, update, opts, collWrapper.database.mongoTimeout)
+}
+
+func (collWrapper *collectionWrapper) UpdateManyWithContextTimeout(ctx context.Context, filter interface{}, update interface{},
+	opts *options.UpdateOptions, timeout time.Duration) (*mongo.UpdateResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	updateResult, err := collWrapper.coll.UpdateMany(ctx, filter, update, opts)
