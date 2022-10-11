@@ -31,7 +31,7 @@ func (app *Application) storeFirebaseToken(tokenInfo *model.TokenInfo, user *mod
 
 func (app *Application) subscribeToTopic(token string, user *model.CoreToken, topic string) error {
 	var err error
-	if user != nil {
+	/*if user != nil {
 		err = app.storage.SubscribeToTopic(token, user.UserID, topic)
 		if err == nil {
 			err = app.firebase.SubscribeToTopic(token, topic)
@@ -39,13 +39,13 @@ func (app *Application) subscribeToTopic(token string, user *model.CoreToken, to
 	} else if token != "" {
 		// Treat this user as anonymous.
 		err = app.firebase.SubscribeToTopic(token, topic)
-	}
+	} */
 	return err
 }
 
 func (app *Application) unsubscribeToTopic(token string, user *model.CoreToken, topic string) error {
 	var err error
-	if user != nil {
+	/*if user != nil {
 		err = app.storage.UnsubscribeToTopic(token, user.UserID, topic)
 		if err == nil {
 			err = app.firebase.UnsubscribeToTopic(token, topic)
@@ -53,7 +53,7 @@ func (app *Application) unsubscribeToTopic(token string, user *model.CoreToken, 
 	} else if token != "" {
 		// Treat this user as anonymous.
 		err = app.firebase.UnsubscribeToTopic(token, topic)
-	}
+	}*/
 	return err
 }
 
@@ -179,14 +179,14 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 }
 
 func (app *Application) sendNotifications(message *model.Message, tokens []string) {
-	for _, token := range tokens {
+	/*for _, token := range tokens {
 		sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
 		if sendErr != nil {
 			fmt.Printf("error send notification to token (%s): %s", token, sendErr)
 		} else {
 			log.Printf("message(%s:%s:%s) has been sent to token: %s", *message.ID, message.Subject, message.Body, token)
 		}
-	}
+	} */
 }
 
 func (app *Application) getMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
@@ -235,7 +235,7 @@ func (app *Application) updateUserByID(userID string, notificationsDisabled bool
 }
 
 func (app *Application) deleteUserWithID(userID string) error {
-	user, err := app.storage.FindUserByID(userID)
+	/*user, err := app.storage.FindUserByID(userID)
 	if err != nil {
 		return fmt.Errorf("unable to delete user(%s): %s", userID, err)
 	}
@@ -258,7 +258,7 @@ func (app *Application) deleteUserWithID(userID string) error {
 				}
 			}
 		}
-	}
+	} */
 
 	return nil
 }
