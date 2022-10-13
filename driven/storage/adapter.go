@@ -69,14 +69,16 @@ func (sa Adapter) LoadFirebaseConfigurations() ([]model.FirebaseConf, error) {
 }
 
 // FindUserByToken finds firebase token
-func (sa Adapter) FindUserByToken(token string) (*model.User, error) {
-	return sa.findUserByTokenWithContext(context.Background(), token)
+func (sa Adapter) FindUserByToken(orgID string, appID string, token string) (*model.User, error) {
+	return sa.findUserByTokenWithContext(context.Background(), orgID, appID, token)
 }
 
-func (sa Adapter) findUserByTokenWithContext(context context.Context, token string) (*model.User, error) {
+func (sa Adapter) findUserByTokenWithContext(context context.Context, orgID string, appID string, token string) (*model.User, error) {
 	filter := bson.D{}
 	if len(token) > 0 {
 		filter = bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
 			primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 		}
 	}
@@ -91,14 +93,16 @@ func (sa Adapter) findUserByTokenWithContext(context context.Context, token stri
 }
 
 // FindUserByID finds user by id
-func (sa Adapter) FindUserByID(userID string) (*model.User, error) {
-	return sa.findUserByIDWithContext(context.Background(), userID)
+func (sa Adapter) FindUserByID(orgID string, appID string, userID string) (*model.User, error) {
+	return sa.findUserByIDWithContext(context.Background(), orgID, appID, userID)
 }
 
-func (sa Adapter) findUserByIDWithContext(context context.Context, userID string) (*model.User, error) {
+func (sa Adapter) findUserByIDWithContext(context context.Context, orgID string, appID string, userID string) (*model.User, error) {
 	filter := bson.D{}
 	if len(userID) > 0 {
 		filter = bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
 			primitive.E{Key: "user_id", Value: userID},
 		}
 	}
@@ -114,7 +118,7 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, userID string
 }
 
 // StoreFirebaseToken stores firebase token
-func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
+func (sa Adapter) StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error {
 
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -125,9 +129,9 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 
 		// Remove previous token no matter on with user is linked
 		if tokenInfo.PreviousToken != nil {
-			existingUser, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.PreviousToken)
+			existingUser, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.PreviousToken)
 			if existingUser != nil {
-				err = sa.removeTokenFromUserWithContext(sessionContext, *tokenInfo.PreviousToken, existingUser.UserID)
+				err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.PreviousToken, existingUser.UserID)
 				if err != nil {
 					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *tokenInfo.PreviousToken, *user.UserID, err)
 					return err
@@ -135,28 +139,28 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 			}
 		}
 
-		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, *tokenInfo.Token)
+		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.Token)
 		if userRecord == nil {
 			if user.UserID != nil {
-				existingUser, _ := sa.findUserByIDWithContext(sessionContext, *user.UserID)
+				existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, *user.UserID)
 				if existingUser != nil {
-					err = sa.addTokenToUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+					err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
 				} else {
-					_, err = sa.createUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+					_, err = sa.createUserWithContext(sessionContext, orgID, appID, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
 				}
 			}
 		} else if userRecord.UserID != nil && userRecord.UserID != user.UserID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, *tokenInfo.Token, userRecord.UserID)
+			err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.Token, userRecord.UserID)
 			if err != nil {
 				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *userRecord.UserID, err)
 				return err
 			}
 
-			existingUser, _ := sa.findUserByIDWithContext(sessionContext, *user.UserID)
+			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, *user.UserID)
 			if existingUser != nil {
-				err = sa.addTokenToUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
 			} else {
-				_, err = sa.createUserWithContext(sessionContext, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+				_, err = sa.createUserWithContext(sessionContext, orgID, appID, user.UserID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
 			}
 			if err != nil {
 				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", *tokenInfo.Token, *user.UserID, err)
@@ -183,7 +187,7 @@ func (sa Adapter) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.Cor
 	return err
 }
 
-func (sa Adapter) createUserWithContext(context context.Context, userID *string, token string, appPlatform *string, appVersion *string) (*model.User, error) {
+func (sa Adapter) createUserWithContext(context context.Context, orgID string, appID string, userID *string, token string, appPlatform *string, appVersion *string) (*model.User, error) {
 
 	now := time.Now().UTC()
 
@@ -197,6 +201,8 @@ func (sa Adapter) createUserWithContext(context context.Context, userID *string,
 		})
 	}
 	record := &model.User{
+		OrgID:          orgID,
+		AppID:          appID,
 		ID:             uuid.NewString(),
 		UserID:         userID,
 		FirebaseTokens: tokenList,
@@ -213,10 +219,14 @@ func (sa Adapter) createUserWithContext(context context.Context, userID *string,
 	return record, err
 }
 
-func (sa Adapter) addTokenToUserWithContext(ctx context.Context, userID *string, token string, appPlatform *string, appVersion *string) error {
+func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, appID string, userID *string, token string, appPlatform *string, appVersion *string) error {
 	if userID != nil {
 		// transaction
-		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+		filter := bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
+			primitive.E{Key: "user_id", Value: userID},
+		}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
@@ -237,19 +247,27 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, userID *string,
 		}
 
 		sa.db.appVersions.InsertOne(map[string]string{
-			"name": *appVersion,
+			"org_id": orgID,
+			"app_id": appID,
+			"name":   *appVersion,
 		})
 
 		sa.db.appPlatforms.InsertOne(map[string]string{
-			"name": *appPlatform,
+			"org_id": orgID,
+			"app_id": appID,
+			"name":   *appPlatform,
 		})
 	}
 	return nil
 }
 
-func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, token string, userID *string) error {
+func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID string, appID string, token string, userID *string) error {
 	if userID != nil {
-		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+		filter := bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
+			primitive.E{Key: "user_id", Value: userID},
+		}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
