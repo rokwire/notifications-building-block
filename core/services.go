@@ -26,7 +26,8 @@ func (app *Application) getVersion() string {
 }
 
 func (app *Application) storeFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
-	return app.storage.StoreFirebaseToken(tokenInfo, user)
+	//return app.storage.StoreFirebaseToken(tokenInfo, user)
+	return nil
 }
 
 func (app *Application) subscribeToTopic(token string, user *model.CoreToken, topic string) error {
@@ -227,11 +228,13 @@ func (app *Application) getAllAppPlatforms() ([]model.AppPlatform, error) {
 }
 
 func (app *Application) findUserByID(userID string) (*model.User, error) {
-	return app.storage.FindUserByID(userID)
+	//return app.storage.FindUserByID(userID)
+	return nil, nil
 }
 
 func (app *Application) updateUserByID(userID string, notificationsDisabled bool) (*model.User, error) {
-	return app.storage.UpdateUserByID(userID, notificationsDisabled)
+	//return app.storage.UpdateUserByID(userID, notificationsDisabled)
+	return nil, nil
 }
 
 func (app *Application) deleteUserWithID(userID string) error {

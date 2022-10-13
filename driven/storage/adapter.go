@@ -401,9 +401,13 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(recipientCriterias []model.R
 }
 
 // UpdateUserByID Updates users notification enabled flag
-func (sa Adapter) UpdateUserByID(userID string, notificationsDisabled bool) (*model.User, error) {
+func (sa Adapter) UpdateUserByID(orgID string, appID string, userID string, notificationsDisabled bool) (*model.User, error) {
 	if userID != "" {
-		filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+		filter := bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
+			primitive.E{Key: "user_id", Value: userID},
+		}
 
 		innerUpdate := bson.D{
 			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
@@ -420,7 +424,7 @@ func (sa Adapter) UpdateUserByID(userID string, notificationsDisabled bool) (*mo
 			return nil, err
 		}
 
-		return sa.FindUserByID(userID)
+		return sa.FindUserByID(orgID, appID, userID)
 	}
 	return nil, nil
 }
@@ -492,13 +496,17 @@ func (sa Adapter) DeleteUserWithID(userID string) error {
 }
 
 // SubscribeToTopic subscribes the token to a topic
-func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) error {
+func (sa Adapter) SubscribeToTopic(orgID string, appID string, token string, userID *string, topic string) error {
 	var err error
 	if userID != nil {
-		record, err := sa.FindUserByID(*userID)
+		record, err := sa.FindUserByID(orgID, appID, *userID)
 		if err == nil && record != nil {
 			if err == nil && record != nil && !record.HasTopic(topic) {
-				filter := bson.D{primitive.E{Key: "user_id", Value: record.UserID}}
+				filter := bson.D{
+					primitive.E{Key: "org_id", Value: orgID},
+					primitive.E{Key: "app_id", Value: appID},
+					primitive.E{Key: "user_id", Value: record.UserID},
+				}
 				update := bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
 						primitive.E{Key: "date_updated", Value: time.Now().UTC()},
@@ -508,9 +516,9 @@ func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) e
 				_, err = sa.db.users.UpdateOne(filter, update, nil)
 				if err == nil {
 					var topicRecord *model.Topic
-					topicRecord, _ = sa.GetTopicByName(topic)
+					topicRecord, _ = sa.GetTopicByName(orgID, appID, topic)
 					if topicRecord == nil {
-						sa.InsertTopic(&model.Topic{Name: topic}) // just try to append within the topics collection
+						sa.InsertTopic(&model.Topic{OrgID: orgID, AppID: appID, Name: topic}) // just try to append within the topics collection
 					}
 				}
 			}
@@ -523,13 +531,17 @@ func (sa Adapter) SubscribeToTopic(token string, userID *string, topic string) e
 }
 
 // UnsubscribeToTopic unsubscribes the token from a topic
-func (sa Adapter) UnsubscribeToTopic(token string, userID *string, topic string) error {
+func (sa Adapter) UnsubscribeToTopic(orgID string, appID string, token string, userID *string, topic string) error {
 	var err error
 	if userID != nil {
-		record, err := sa.FindUserByID(*userID)
+		record, err := sa.FindUserByID(orgID, appID, *userID)
 		if err == nil && record != nil {
 			if err == nil && record != nil && record.HasTopic(topic) {
-				filter := bson.D{primitive.E{Key: "user_id", Value: record.UserID}}
+				filter := bson.D{
+					primitive.E{Key: "org_id", Value: orgID},
+					primitive.E{Key: "app_id", Value: appID},
+					primitive.E{Key: "user_id", Value: record.UserID},
+				}
 				update := bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
 						primitive.E{Key: "date_updated", Value: time.Now().UTC()},
@@ -539,9 +551,9 @@ func (sa Adapter) UnsubscribeToTopic(token string, userID *string, topic string)
 				_, err = sa.db.users.UpdateOne(filter, update, nil)
 				if err == nil {
 					var topicRecord *model.Topic
-					topicRecord, _ = sa.GetTopicByName(topic)
+					topicRecord, _ = sa.GetTopicByName(orgID, appID, topic)
 					if topicRecord == nil {
-						sa.InsertTopic(&model.Topic{Name: topic}) // just try to append within the topics collection in case it's missing
+						sa.InsertTopic(&model.Topic{OrgID: orgID, AppID: appID, Name: topic}) // just try to append within the topics collection in case it's missing
 					}
 				}
 			}
@@ -567,9 +579,13 @@ func (sa Adapter) GetTopics() ([]model.Topic, error) {
 }
 
 // GetTopicByName appends a new topic within the topics collection
-func (sa Adapter) GetTopicByName(name string) (*model.Topic, error) {
+func (sa Adapter) GetTopicByName(orgID string, appID string, name string) (*model.Topic, error) {
 	if name != "" {
-		filter := bson.D{primitive.E{Key: "_id", Value: name}}
+		filter := bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
+			primitive.E{Key: "_id", Value: name},
+		}
 		var topic model.Topic
 		err := sa.db.topics.FindOne(filter, &topic, nil)
 		if err == nil {

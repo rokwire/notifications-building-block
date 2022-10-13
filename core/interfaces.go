@@ -128,7 +128,7 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
-	UpdateUserByID(userID string, notificationsEnabled bool) (*model.User, error)
+	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(userID string) error
 
 	FindUserByToken(orgID string, appID string, token string) (*model.User, error)
@@ -136,8 +136,8 @@ type Storage interface {
 	GetFirebaseTokensByRecipients(recipient []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error)
 	GetRecipientsByTopic(topic string) ([]model.Recipient, error)
 	GetRecipientsByRecipientCriterias(recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error)
-	SubscribeToTopic(token string, userID *string, topic string) error
-	UnsubscribeToTopic(token string, userID *string, topic string) error
+	SubscribeToTopic(orgID string, appID string, token string, userID *string, topic string) error
+	UnsubscribeToTopic(orgID string, appID string, token string, userID *string, topic string) error
 	GetTopics() ([]model.Topic, error)
 	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
