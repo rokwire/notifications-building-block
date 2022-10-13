@@ -430,7 +430,7 @@ func (sa Adapter) UpdateUserByID(orgID string, appID string, userID string, noti
 }
 
 // DeleteUserWithID Deletes user with ID and all messages
-func (sa Adapter) DeleteUserWithID(userID string) error {
+func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) error {
 	if userID != "" {
 
 		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -441,7 +441,7 @@ func (sa Adapter) DeleteUserWithID(userID string) error {
 				return err
 			}
 
-			messages, err := sa.GetMessages(&userID, nil, nil, nil, nil, nil, nil, nil)
+			messages, err := sa.GetMessages(orgID, appID, &userID, nil, nil, nil, nil, nil, nil, nil)
 			if err != nil {
 				fmt.Printf("warning: unable to retrieve messages for user (%s): %s\n", userID, err)
 				abortTransaction(sessionContext)
@@ -450,12 +450,12 @@ func (sa Adapter) DeleteUserWithID(userID string) error {
 			if len(messages) > 0 {
 				for _, message := range messages {
 					if message.Recipients != nil && len(message.Recipients) > 1 {
-						err = sa.DeleteUserMessageWithContext(sessionContext, userID, *message.ID)
+						err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, *message.ID)
 						if err != nil {
 							fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", *message.ID, userID, err)
 						}
 					} else {
-						err = sa.DeleteMessageWithContext(sessionContext, *message.ID)
+						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, *message.ID)
 						if err != nil {
 							fmt.Printf("warning: unable to delete message(%s): %s\n", *message.ID, err)
 						}
@@ -463,7 +463,11 @@ func (sa Adapter) DeleteUserWithID(userID string) error {
 				}
 			}
 
-			filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+			filter := bson.D{
+				primitive.E{Key: "org_id", Value: orgID},
+				primitive.E{Key: "app_id", Value: appID},
+				primitive.E{Key: "user_id", Value: userID},
+			}
 			_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
 			if err != nil {
 				fmt.Printf("warning: error while deleting user record (%s): %s\n", userID, err)
@@ -638,8 +642,11 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 }
 
 // GetMessages Gets all messages according to the filter
-func (sa Adapter) GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	filter := bson.D{}
+func (sa Adapter) GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+	}
 	innerFilter := []interface{}{}
 	if userID != nil {
 		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: userID}})
@@ -687,8 +694,12 @@ func (sa Adapter) GetMessages(userID *string, messageIDs []string, startDateEpoc
 }
 
 // GetMessage gets a message by id
-func (sa Adapter) GetMessage(ID string) (*model.Message, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: ID}}
+func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Message, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "_id", Value: ID},
+	}
 
 	var message *model.Message
 	err := sa.db.messages.FindOne(filter, &message, nil)
@@ -721,12 +732,16 @@ func (sa Adapter) CreateMessage(message *model.Message) (*model.Message, error) 
 // UpdateMessage updates a message
 func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) {
 	if message != nil && message.ID != nil {
-		persistedMessage, err := sa.GetMessage(*message.ID)
+		persistedMessage, err := sa.GetMessage(message.OrgID, message.AppID, *message.ID)
 		if err != nil || persistedMessage == nil {
 			return nil, fmt.Errorf("Message with id (%s) not found: %w", *message.ID, err)
 		}
 
-		filter := bson.D{primitive.E{Key: "_id", Value: message.ID}}
+		filter := bson.D{
+			primitive.E{Key: "org_id", Value: message.OrgID},
+			primitive.E{Key: "app_id", Value: message.AppID},
+			primitive.E{Key: "_id", Value: message.ID},
+		}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
@@ -750,11 +765,11 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 }
 
 // DeleteUserMessageWithContext removes the desired user from the recipients list
-func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, userID string, messageID string) error {
+func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	persistedMessage, err := sa.GetMessage(messageID)
+	persistedMessage, err := sa.GetMessage(orgID, appID, messageID)
 	if err != nil || persistedMessage == nil {
 		return fmt.Errorf("message with id (%s) not found: %s", messageID, err)
 	}
@@ -767,7 +782,10 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, userID strin
 	}
 
 	if len(updatesRecipients) != len(persistedMessage.Recipients) {
-		filter := bson.D{primitive.E{Key: "_id", Value: messageID}}
+		filter := bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
+			primitive.E{Key: "_id", Value: messageID}}
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "recipients", Value: updatesRecipients},
@@ -786,16 +804,20 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, userID strin
 }
 
 // DeleteMessageWithContext deletes a message by id
-func (sa Adapter) DeleteMessageWithContext(ctx context.Context, ID string) error {
+func (sa Adapter) DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	persistedMessage, err := sa.GetMessage(ID)
+	persistedMessage, err := sa.GetMessage(orgID, appID, ID)
 	if err != nil || persistedMessage == nil {
 		return fmt.Errorf("message with id (%s) not found: %s", ID, err)
 	}
 
-	filter := bson.D{primitive.E{Key: "_id", Value: ID}}
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "_id", Value: ID},
+	}
 	_, err = sa.db.messages.DeleteOneWithContext(ctx, filter, nil)
 	if err != nil {
 		fmt.Printf("warning: error while delete message (%s) - %s", ID, err)
@@ -806,8 +828,11 @@ func (sa Adapter) DeleteMessageWithContext(ctx context.Context, ID string) error
 }
 
 // GetAllAppVersions gets all registered versions
-func (sa Adapter) GetAllAppVersions() ([]model.AppVersion, error) {
-	filter := bson.D{}
+func (sa Adapter) GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+	}
 
 	var versions []model.AppVersion
 	err := sa.db.appVersions.Find(filter, &versions, nil)
@@ -819,8 +844,11 @@ func (sa Adapter) GetAllAppVersions() ([]model.AppVersion, error) {
 }
 
 // GetAllAppPlatforms gets all registered platforms
-func (sa Adapter) GetAllAppPlatforms() ([]model.AppPlatform, error) {
-	filter := bson.D{}
+func (sa Adapter) GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+	}
 
 	var platforms []model.AppPlatform
 	err := sa.db.appPlatforms.Find(filter, &platforms, nil)

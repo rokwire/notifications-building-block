@@ -15,7 +15,6 @@
 package core
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"notifications/core/model"
@@ -191,15 +190,17 @@ func (app *Application) sendNotifications(message *model.Message, tokens []strin
 }
 
 func (app *Application) getMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return app.storage.GetMessages(userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
+	//return app.storage.GetMessages(userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
+	return nil, nil
 }
 
 func (app *Application) getMessage(ID string) (*model.Message, error) {
-	return app.storage.GetMessage(ID)
+	return nil, nil
+	//return app.storage.GetMessage(ID)
 }
 
 func (app *Application) updateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
-	if message.ID != nil {
+	/*if message.ID != nil {
 		persistedMessage, err := app.storage.GetMessage(*message.ID)
 		if err == nil && persistedMessage != nil {
 			if persistedMessage.Sender.User != nil && persistedMessage.Sender.User.UserID == user.UserID {
@@ -208,23 +209,28 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 			return nil, fmt.Errorf("only creator can update the original message")
 		}
 	}
-	return nil, fmt.Errorf("missing id or record")
+	return nil, fmt.Errorf("missing id or record") */
+	return nil, nil
 }
 
 func (app *Application) deleteUserMessage(user *model.CoreToken, messageID string) error {
-	return app.storage.DeleteUserMessageWithContext(context.Background(), *user.UserID, messageID)
+	return nil
+	//return app.storage.DeleteUserMessageWithContext(context.Background(), *user.UserID, messageID)
 }
 
 func (app *Application) deleteMessage(ID string) error {
-	return app.storage.DeleteMessageWithContext(context.Background(), ID)
+	return nil
+	//return app.storage.DeleteMessageWithContext(context.Background(), ID)
 }
 
 func (app *Application) getAllAppVersions() ([]model.AppVersion, error) {
-	return app.storage.GetAllAppVersions()
+	//return app.storage.GetAllAppVersions()
+	return nil, nil
 }
 
 func (app *Application) getAllAppPlatforms() ([]model.AppPlatform, error) {
-	return app.storage.GetAllAppPlatforms()
+	//return app.storage.GetAllAppPlatforms()
+	return nil, nil
 }
 
 func (app *Application) findUserByID(userID string) (*model.User, error) {

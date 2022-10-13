@@ -129,7 +129,7 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 type Storage interface {
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
-	DeleteUserWithID(userID string) error
+	DeleteUserWithID(orgID string, appID string, userID string) error
 
 	FindUserByToken(orgID string, appID string, token string) (*model.User, error)
 	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error
@@ -142,15 +142,15 @@ type Storage interface {
 	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
-	GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
-	GetMessage(ID string) (*model.Message, error)
+	GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessage(message *model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)
-	DeleteUserMessageWithContext(ctx context.Context, userID string, messageID string) error
-	DeleteMessageWithContext(ctx context.Context, ID string) error
+	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
+	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
 
-	GetAllAppVersions() ([]model.AppVersion, error)
-	GetAllAppPlatforms() ([]model.AppPlatform, error)
+	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
+	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
