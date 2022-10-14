@@ -286,7 +286,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID stri
 }
 
 // GetFirebaseTokensByRecipients Gets all users mapped to the recipients input list
-func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error) {
+func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, recipients []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error) {
 	if len(recipients) > 0 {
 		innerFilter := []string{}
 		for _, recipient := range recipients {
@@ -296,6 +296,8 @@ func (sa Adapter) GetFirebaseTokensByRecipients(recipients []model.Recipient, cr
 		}
 
 		filter := bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
 			primitive.E{Key: "user_id", Value: bson.M{"$in": innerFilter}},
 		}
 
