@@ -22,7 +22,7 @@ import (
 // Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
-	StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error
+	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error
 	SubscribeToTopic(token string, user *model.CoreToken, topic string) error
 	UnsubscribeToTopic(token string, user *model.CoreToken, topic string) error
 	GetTopics() ([]model.Topic, error)
@@ -53,8 +53,8 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
-func (s *servicesImpl) StoreFirebaseToken(tokenInfo *model.TokenInfo, user *model.CoreToken) error {
-	return s.app.storeFirebaseToken(tokenInfo, user)
+func (s *servicesImpl) StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error {
+	return s.app.storeFirebaseToken(orgID, appID, tokenInfo, user)
 }
 
 func (s *servicesImpl) SubscribeToTopic(token string, user *model.CoreToken, topic string) error {

@@ -100,7 +100,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
-	err = h.app.Services.StoreFirebaseToken(&tokenInfo, user)
+	err = h.app.Services.StoreFirebaseToken(user.OrgID, user.AppID, &tokenInfo, user)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
