@@ -192,9 +192,8 @@ func (app *Application) getMessages(orgID string, appID string, userID *string, 
 	return app.storage.GetMessages(orgID, appID, userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
-func (app *Application) getMessage(ID string) (*model.Message, error) {
-	return nil, nil
-	//return app.storage.GetMessage(ID)
+func (app *Application) getMessage(orgID string, appID string, ID string) (*model.Message, error) {
+	return app.storage.GetMessage(orgID, appID, ID)
 }
 
 func (app *Application) updateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {

@@ -33,7 +33,7 @@ type Services interface {
 	DeleteUserWithID(orgID string, appID string, userID string) error
 
 	GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
-	GetMessage(ID string) (*model.Message, error)
+	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error)
 	UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(user *model.CoreToken, messageID string) error
@@ -81,8 +81,8 @@ func (s *servicesImpl) GetMessages(orgID string, appID string, userID *string, m
 	return s.app.getMessages(orgID, appID, userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
-func (s *servicesImpl) GetMessage(ID string) (*model.Message, error) {
-	return s.app.getMessage(ID)
+func (s *servicesImpl) GetMessage(orgID string, appID string, ID string) (*model.Message, error) {
+	return s.app.getMessage(orgID, appID, ID)
 }
 
 func (s *servicesImpl) CreateMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error) {

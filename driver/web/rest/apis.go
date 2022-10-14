@@ -464,7 +464,7 @@ func (h ApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWriter, r 
 		return
 	}
 
-	message, err := h.app.Services.GetMessage(id)
+	message, err := h.app.Services.GetMessage(user.OrgID, user.AppID, id)
 	if err != nil {
 		log.Printf("Error on get message with id (%s): %s\n", id, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
