@@ -44,8 +44,7 @@ func NewAdminApisHandler(app *core.Application) AdminApisHandler {
 // @Security AdminUserAuth
 // @Router /admin/topics [get]
 func (h AdminApisHandler) GetTopics(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-
-	topics, err := h.app.Services.GetTopics()
+	topics, err := h.app.Services.GetTopics(user.OrgID, user.AppID)
 	if err != nil {
 		log.Printf("Error on retrieving all topics: %s\n", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)

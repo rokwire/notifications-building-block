@@ -255,7 +255,7 @@ func (h ApisHandler) Subscribe(user *model.CoreToken, w http.ResponseWriter, r *
 		return
 	}
 
-	err = h.app.Services.SubscribeToTopic(*body.Token, user, topic)
+	err = h.app.Services.SubscribeToTopic(user.OrgID, user.AppID, *body.Token, user, topic)
 	if err != nil {
 		log.Printf("Error on subscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -304,7 +304,7 @@ func (h ApisHandler) Unsubscribe(user *model.CoreToken, w http.ResponseWriter, r
 		return
 	}
 
-	err = h.app.Services.UnsubscribeToTopic(*body.Token, user, topic)
+	err = h.app.Services.UnsubscribeToTopic(user.OrgID, user.AppID, *body.Token, user, topic)
 	if err != nil {
 		log.Printf("Error on unsubscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -378,9 +378,8 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 // @Success 200 {array} model.Topic
 // @Security RokwireAuth
 // @Router /topics [get]
-func (h ApisHandler) GetTopics(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-
-	topics, err := h.app.Services.GetTopics()
+func (h ApisHandler) GetTopics(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
+	topics, err := h.app.Services.GetTopics(coreToken.OrgID, coreToken.AppID)
 	if err != nil {
 		log.Printf("Error on retrieving all topics: %s\n", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)

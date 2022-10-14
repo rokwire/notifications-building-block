@@ -26,37 +26,36 @@ func (app *Application) storeFirebaseToken(orgID string, appID string, tokenInfo
 	return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, user)
 }
 
-func (app *Application) subscribeToTopic(token string, user *model.CoreToken, topic string) error {
+func (app *Application) subscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error {
 	var err error
-	/*if user != nil {
-		err = app.storage.SubscribeToTopic(token, user.UserID, topic)
+	if user != nil {
+		err = app.storage.SubscribeToTopic(orgID, appID, token, user.UserID, topic)
 		if err == nil {
-			err = app.firebase.SubscribeToTopic(token, topic)
+			err = app.firebase.SubscribeToTopic(orgID, appID, token, topic)
 		}
 	} else if token != "" {
 		// Treat this user as anonymous.
-		err = app.firebase.SubscribeToTopic(token, topic)
-	} */
+		err = app.firebase.SubscribeToTopic(orgID, appID, token, topic)
+	}
 	return err
 }
 
-func (app *Application) unsubscribeToTopic(token string, user *model.CoreToken, topic string) error {
+func (app *Application) unsubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error {
 	var err error
-	/*if user != nil {
-		err = app.storage.UnsubscribeToTopic(token, user.UserID, topic)
+	if user != nil {
+		err = app.storage.UnsubscribeToTopic(orgID, appID, token, user.UserID, topic)
 		if err == nil {
-			err = app.firebase.UnsubscribeToTopic(token, topic)
+			err = app.firebase.UnsubscribeToTopic(orgID, appID, token, topic)
 		}
 	} else if token != "" {
 		// Treat this user as anonymous.
-		err = app.firebase.UnsubscribeToTopic(token, topic)
-	}*/
+		err = app.firebase.UnsubscribeToTopic(orgID, appID, token, topic)
+	}
 	return err
 }
 
-func (app *Application) getTopics() ([]model.Topic, error) {
-	return nil, nil
-	//return app.storage.GetTopics()
+func (app *Application) getTopics(orgID string, appID string) ([]model.Topic, error) {
+	return app.storage.GetTopics(orgID, appID)
 }
 
 func (app *Application) appendTopic(topic *model.Topic) (*model.Topic, error) {

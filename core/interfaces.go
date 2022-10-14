@@ -23,9 +23,9 @@ import (
 type Services interface {
 	GetVersion() string
 	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error
-	SubscribeToTopic(token string, user *model.CoreToken, topic string) error
-	UnsubscribeToTopic(token string, user *model.CoreToken, topic string) error
-	GetTopics() ([]model.Topic, error)
+	SubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error
+	UnsubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error
+	GetTopics(orgID string, appID string) ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 	FindUserByID(userID string) (*model.User, error)
@@ -57,16 +57,16 @@ func (s *servicesImpl) StoreFirebaseToken(orgID string, appID string, tokenInfo 
 	return s.app.storeFirebaseToken(orgID, appID, tokenInfo, user)
 }
 
-func (s *servicesImpl) SubscribeToTopic(token string, user *model.CoreToken, topic string) error {
-	return s.app.subscribeToTopic(token, user, topic)
+func (s *servicesImpl) SubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error {
+	return s.app.subscribeToTopic(orgID, appID, token, user, topic)
 }
 
-func (s *servicesImpl) UnsubscribeToTopic(token string, user *model.CoreToken, topic string) error {
-	return s.app.unsubscribeToTopic(token, user, topic)
+func (s *servicesImpl) UnsubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error {
+	return s.app.unsubscribeToTopic(orgID, appID, token, user, topic)
 }
 
-func (s *servicesImpl) GetTopics() ([]model.Topic, error) {
-	return s.app.getTopics()
+func (s *servicesImpl) GetTopics(orgID string, appID string) ([]model.Topic, error) {
+	return s.app.getTopics(orgID, appID)
 }
 
 func (s *servicesImpl) AppendTopic(topic *model.Topic) (*model.Topic, error) {
