@@ -183,14 +183,14 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 }
 
 func (app *Application) sendNotifications(message *model.Message, tokens []string) {
-	/*for _, token := range tokens {
-		sendErr := app.firebase.SendNotificationToToken(token, message.Subject, message.Body, message.Data)
+	for _, token := range tokens {
+		sendErr := app.firebase.SendNotificationToToken(message.OrgID, message.AppID, token, message.Subject, message.Body, message.Data)
 		if sendErr != nil {
 			fmt.Printf("error send notification to token (%s): %s", token, sendErr)
 		} else {
 			log.Printf("message(%s:%s:%s) has been sent to token: %s", *message.ID, message.Subject, message.Body, token)
 		}
-	} */
+	}
 }
 
 func (app *Application) getMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
@@ -222,14 +222,12 @@ func (app *Application) deleteMessage(orgID string, appID string, ID string) err
 	return app.storage.DeleteMessageWithContext(context.Background(), orgID, appID, ID)
 }
 
-func (app *Application) getAllAppVersions() ([]model.AppVersion, error) {
-	//return app.storage.GetAllAppVersions()
-	return nil, nil
+func (app *Application) getAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
+	return app.storage.GetAllAppVersions(orgID, appID)
 }
 
-func (app *Application) getAllAppPlatforms() ([]model.AppPlatform, error) {
-	//return app.storage.GetAllAppPlatforms()
-	return nil, nil
+func (app *Application) getAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error) {
+	return app.storage.GetAllAppPlatforms(orgID, appID)
 }
 
 func (app *Application) findUserByID(orgID string, appID string, userID string) (*model.User, error) {

@@ -39,8 +39,8 @@ type Services interface {
 	DeleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
 
-	GetAllAppVersions() ([]model.AppVersion, error)
-	GetAllAppPlatforms() ([]model.AppPlatform, error)
+	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
+	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
 
 	SendMail(toEmail string, subject string, body string) error
 }
@@ -101,12 +101,12 @@ func (s *servicesImpl) DeleteMessage(orgID string, appID string, messageID strin
 	return s.app.deleteMessage(orgID, appID, messageID)
 }
 
-func (s *servicesImpl) GetAllAppVersions() ([]model.AppVersion, error) {
-	return s.app.getAllAppVersions()
+func (s *servicesImpl) GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
+	return s.app.getAllAppVersions(orgID, appID)
 }
 
-func (s *servicesImpl) GetAllAppPlatforms() ([]model.AppPlatform, error) {
-	return s.app.getAllAppPlatforms()
+func (s *servicesImpl) GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error) {
+	return s.app.getAllAppPlatforms(orgID, appID)
 }
 
 func (s *servicesImpl) FindUserByID(orgID string, appID string, userID string) (*model.User, error) {

@@ -330,8 +330,8 @@ func (h AdminApisHandler) DeleteMessage(user *model.CoreToken, w http.ResponseWr
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/app_versions [get]
-func (h AdminApisHandler) GetAllAppVersions(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-	appVersions, err := h.app.Services.GetAllAppVersions()
+func (h AdminApisHandler) GetAllAppVersions(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
+	appVersions, err := h.app.Services.GetAllAppVersions(coreToken.OrgID, coreToken.AppID)
 	if err != nil {
 		log.Printf("Error on get app versions: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -358,8 +358,8 @@ func (h AdminApisHandler) GetAllAppVersions(_ *model.CoreToken, w http.ResponseW
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/app_platforms [get]
-func (h AdminApisHandler) GetAllAppPlatforms(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-	appPlatforms, err := h.app.Services.GetAllAppPlatforms()
+func (h AdminApisHandler) GetAllAppPlatforms(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
+	appPlatforms, err := h.app.Services.GetAllAppPlatforms(coreToken.OrgID, coreToken.AppID)
 	if err != nil {
 		log.Printf("Error on get app platforms: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
