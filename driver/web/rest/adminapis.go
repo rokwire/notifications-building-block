@@ -312,7 +312,7 @@ func (h AdminApisHandler) DeleteMessage(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
-	err := h.app.Services.DeleteMessage(id)
+	err := h.app.Services.DeleteMessage(user.OrgID, user.AppID, id)
 	if err != nil {
 		log.Printf("Error on delete message with id (%s): %s\n", id, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

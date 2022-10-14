@@ -15,6 +15,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"notifications/core/model"
@@ -213,14 +214,12 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 	return nil, fmt.Errorf("missing id or record")
 }
 
-func (app *Application) deleteUserMessage(user *model.CoreToken, messageID string) error {
-	return nil
-	//return app.storage.DeleteUserMessageWithContext(context.Background(), *user.UserID, messageID)
+func (app *Application) deleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error {
+	return app.storage.DeleteUserMessageWithContext(context.Background(), orgID, appID, *user.UserID, messageID)
 }
 
-func (app *Application) deleteMessage(ID string) error {
-	return nil
-	//return app.storage.DeleteMessageWithContext(context.Background(), ID)
+func (app *Application) deleteMessage(orgID string, appID string, ID string) error {
+	return app.storage.DeleteMessageWithContext(context.Background(), orgID, appID, ID)
 }
 
 func (app *Application) getAllAppVersions() ([]model.AppVersion, error) {

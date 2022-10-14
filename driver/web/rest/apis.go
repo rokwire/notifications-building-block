@@ -512,7 +512,7 @@ func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWr
 	errStrings := []string{}
 	if len(messageIDs) > 0 {
 		for _, id := range messageIDs {
-			err := h.app.Services.DeleteUserMessage(user, id)
+			err := h.app.Services.DeleteUserMessage(user.OrgID, user.AppID, user, id)
 			if err != nil {
 				errStrings = append(errStrings, fmt.Sprintf("%s\n", err.Error()))
 				log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UserID, err)
@@ -596,7 +596,7 @@ func (h ApisHandler) DeleteUserMessage(user *model.CoreToken, w http.ResponseWri
 		return
 	}
 
-	err := h.app.Services.DeleteUserMessage(user, id)
+	err := h.app.Services.DeleteUserMessage(user.OrgID, user.AppID, user, id)
 	if err != nil {
 		log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UserID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

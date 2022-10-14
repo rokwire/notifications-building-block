@@ -36,8 +36,8 @@ type Services interface {
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error)
 	UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
-	DeleteUserMessage(user *model.CoreToken, messageID string) error
-	DeleteMessage(ID string) error
+	DeleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error
+	DeleteMessage(orgID string, appID string, ID string) error
 
 	GetAllAppVersions() ([]model.AppVersion, error)
 	GetAllAppPlatforms() ([]model.AppPlatform, error)
@@ -93,12 +93,12 @@ func (s *servicesImpl) UpdateMessage(user *model.CoreToken, message *model.Messa
 	return s.app.updateMessage(user, message)
 }
 
-func (s *servicesImpl) DeleteUserMessage(user *model.CoreToken, messageID string) error {
-	return s.app.deleteUserMessage(user, messageID)
+func (s *servicesImpl) DeleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error {
+	return s.app.deleteUserMessage(orgID, appID, user, messageID)
 }
 
-func (s *servicesImpl) DeleteMessage(messageID string) error {
-	return s.app.deleteMessage(messageID)
+func (s *servicesImpl) DeleteMessage(orgID string, appID string, messageID string) error {
+	return s.app.deleteMessage(orgID, appID, messageID)
 }
 
 func (s *servicesImpl) GetAllAppVersions() ([]model.AppVersion, error) {
