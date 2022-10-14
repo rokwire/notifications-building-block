@@ -348,7 +348,7 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	var err error
 	var messages []model.Message
 	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.UserID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+		messages, err = h.app.Services.GetMessages(user.OrgID, user.AppID, user.UserID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -411,7 +411,7 @@ func (h ApisHandler) GetTopics(coreToken *model.CoreToken, w http.ResponseWriter
 // @Success 200 {array} model.Message
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/messages [get]
-func (h ApisHandler) GetTopicMessages(_ *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopicMessages(coreToken *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
@@ -426,7 +426,7 @@ func (h ApisHandler) GetTopicMessages(_ *model.CoreToken, w http.ResponseWriter,
 		return
 	}
 
-	messages, err := h.app.Services.GetMessages(nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(coreToken.OrgID, coreToken.AppID, nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, fmt.Sprintf("Error on getting messages: %s", err), http.StatusInternalServerError)
