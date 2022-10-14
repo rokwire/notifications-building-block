@@ -103,6 +103,17 @@ func (h InternalApisHandler) SendMessageV2(w http.ResponseWriter, r *http.Reques
 }
 
 func (h InternalApisHandler) processSendMessage(message *model.Message, async bool, w http.ResponseWriter, r *http.Request) {
+	if message == nil {
+		log.Println("Message is nil")
+		http.Error(w, "Message is nil", http.StatusBadRequest)
+		return
+	}
+	if len(message.OrgID) == 0 && len(message.AppID) == 0 {
+		log.Println("org or app is not passed")
+		http.Error(w, "org or app is not passed", http.StatusBadRequest)
+		return
+	}
+
 	message, err := h.app.Services.CreateMessage(nil, message, async)
 	if err != nil {
 		log.Printf("Error on sending message: %s\n", err)

@@ -180,6 +180,9 @@ func (h AdminApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
+	message.OrgID = user.OrgID
+	message.AppID = user.AppID
+
 	message, err = h.app.Services.CreateMessage(user, message, false)
 	if err != nil {
 		log.Printf("Error on create message: %s\n", err)
@@ -229,6 +232,9 @@ func (h AdminApisHandler) UpdateMessage(user *model.CoreToken, w http.ResponseWr
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	message.OrgID = user.OrgID
+	message.AppID = user.AppID
 
 	message, err = h.app.Services.UpdateMessage(user, message)
 	if err != nil {
