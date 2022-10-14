@@ -336,9 +336,13 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 }
 
 // GetRecipientsByTopic Gets all users recipients by topic
-func (sa Adapter) GetRecipientsByTopic(topic string) ([]model.Recipient, error) {
+func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string) ([]model.Recipient, error) {
 	if len(topic) > 0 {
-		filter := bson.D{primitive.E{Key: "topics", Value: topic}}
+		filter := bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
+			primitive.E{Key: "topics", Value: topic},
+		}
 
 		var tokenMappings []model.User
 		err := sa.db.users.Find(filter, &tokenMappings, nil)
@@ -362,7 +366,7 @@ func (sa Adapter) GetRecipientsByTopic(topic string) ([]model.Recipient, error) 
 }
 
 // GetRecipientsByRecipientCriterias gets recipients list by list of criteria
-func (sa Adapter) GetRecipientsByRecipientCriterias(recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error) {
+func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error) {
 	if len(recipientCriterias) > 0 {
 		var tokenMappings []model.User
 		innerFilter := []interface{}{}
@@ -381,6 +385,8 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(recipientCriterias []model.R
 		}
 
 		filter := bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
 			primitive.E{Key: "$or", Value: innerFilter},
 		}
 
@@ -572,8 +578,11 @@ func (sa Adapter) UnsubscribeToTopic(orgID string, appID string, token string, u
 }
 
 // GetTopics gets all topics
-func (sa Adapter) GetTopics() ([]model.Topic, error) {
-	filter := bson.D{}
+func (sa Adapter) GetTopics(orgID string, appID string) ([]model.Topic, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+	}
 	var result []model.Topic
 
 	err := sa.db.topics.Find(filter, &result, nil)
@@ -622,7 +631,11 @@ func (sa Adapter) InsertTopic(topic *model.Topic) (*model.Topic, error) {
 
 // UpdateTopic updates a topic (for now only description is updatable)
 func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: topic.Name}}
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: topic.OrgID},
+		primitive.E{Key: "app_id", Value: topic.AppID},
+		primitive.E{Key: "_id", Value: topic.Name},
+	}
 
 	now := time.Now().UTC()
 	topic.DateUpdated = now

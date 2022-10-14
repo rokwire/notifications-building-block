@@ -56,7 +56,8 @@ func (app *Application) unsubscribeToTopic(token string, user *model.CoreToken, 
 }
 
 func (app *Application) getTopics() ([]model.Topic, error) {
-	return app.storage.GetTopics()
+	return nil, nil
+	//return app.storage.GetTopics()
 }
 
 func (app *Application) appendTopic(topic *model.Topic) (*model.Topic, error) {
