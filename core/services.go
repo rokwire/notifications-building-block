@@ -15,6 +15,7 @@
 package core
 
 import (
+	"fmt"
 	"notifications/core/model"
 )
 
@@ -231,24 +232,22 @@ func (app *Application) getAllAppPlatforms() ([]model.AppPlatform, error) {
 	return nil, nil
 }
 
-func (app *Application) findUserByID(userID string) (*model.User, error) {
-	//return app.storage.FindUserByID(userID)
-	return nil, nil
+func (app *Application) findUserByID(orgID string, appID string, userID string) (*model.User, error) {
+	return app.storage.FindUserByID(orgID, appID, userID)
 }
 
-func (app *Application) updateUserByID(userID string, notificationsDisabled bool) (*model.User, error) {
-	//return app.storage.UpdateUserByID(userID, notificationsDisabled)
-	return nil, nil
+func (app *Application) updateUserByID(orgID string, appID string, userID string, notificationsDisabled bool) (*model.User, error) {
+	return app.storage.UpdateUserByID(orgID, appID, userID, notificationsDisabled)
 }
 
-func (app *Application) deleteUserWithID(userID string) error {
-	/*user, err := app.storage.FindUserByID(userID)
+func (app *Application) deleteUserWithID(orgID string, appID string, userID string) error {
+	user, err := app.storage.FindUserByID(orgID, appID, userID)
 	if err != nil {
 		return fmt.Errorf("unable to delete user(%s): %s", userID, err)
 	}
 
 	if user != nil {
-		err = app.storage.DeleteUserWithID(userID)
+		err = app.storage.DeleteUserWithID(orgID, appID, userID)
 		if err != nil {
 			return fmt.Errorf("unable to delete user(%s): %s", userID, err)
 		}
@@ -257,7 +256,7 @@ func (app *Application) deleteUserWithID(userID string) error {
 			for _, topic := range user.Topics {
 				if user.FirebaseTokens != nil && len(user.FirebaseTokens) > 0 {
 					for _, token := range user.FirebaseTokens {
-						err := app.firebase.UnsubscribeToTopic(token.Token, topic)
+						err := app.firebase.UnsubscribeToTopic(orgID, appID, token.Token, topic)
 						if err != nil {
 							return fmt.Errorf("error unsubscribe user(%s) with token(%s) from topic(%s): %s", userID, token.Token, topic, err)
 						}
@@ -265,7 +264,7 @@ func (app *Application) deleteUserWithID(userID string) error {
 				}
 			}
 		}
-	} */
+	}
 
 	return nil
 }

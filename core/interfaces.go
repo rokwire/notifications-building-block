@@ -28,9 +28,9 @@ type Services interface {
 	GetTopics(orgID string, appID string) ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
-	FindUserByID(userID string) (*model.User, error)
-	UpdateUserByID(userID string, notificationsEnabled bool) (*model.User, error)
-	DeleteUserWithID(userID string) error
+	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
+	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
+	DeleteUserWithID(orgID string, appID string, userID string) error
 
 	GetMessages(userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(ID string) (*model.Message, error)
@@ -109,16 +109,16 @@ func (s *servicesImpl) GetAllAppPlatforms() ([]model.AppPlatform, error) {
 	return s.app.getAllAppPlatforms()
 }
 
-func (s *servicesImpl) FindUserByID(userID string) (*model.User, error) {
-	return s.app.findUserByID(userID)
+func (s *servicesImpl) FindUserByID(orgID string, appID string, userID string) (*model.User, error) {
+	return s.app.findUserByID(orgID, appID, userID)
 }
 
-func (s *servicesImpl) UpdateUserByID(userID string, notificationsEnabled bool) (*model.User, error) {
-	return s.app.updateUserByID(userID, notificationsEnabled)
+func (s *servicesImpl) UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error) {
+	return s.app.updateUserByID(orgID, appID, userID, notificationsEnabled)
 }
 
-func (s *servicesImpl) DeleteUserWithID(userID string) error {
-	return s.app.deleteUserWithID(userID)
+func (s *servicesImpl) DeleteUserWithID(orgID string, appID string, userID string) error {
+	return s.app.deleteUserWithID(orgID, appID, userID)
 }
 
 func (s *servicesImpl) SendMail(toEmail string, subject string, body string) error {

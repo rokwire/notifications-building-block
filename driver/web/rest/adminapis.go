@@ -87,6 +87,9 @@ func (h AdminApisHandler) UpdateTopic(user *model.CoreToken, w http.ResponseWrit
 		return
 	}
 
+	topic.OrgID = user.OrgID
+	topic.AppID = user.AppID
+
 	_, err = h.app.Services.UpdateTopic(topic)
 	if err != nil {
 		log.Printf("Error on update topic (%s): %s\n", topic.Name, err)

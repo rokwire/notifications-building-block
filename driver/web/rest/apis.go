@@ -118,7 +118,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 // @Security RokwireAuth UserAuth
 // @Router /user [get]
 func (h ApisHandler) GetUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	userMapping, err := h.app.Services.FindUserByID(*user.UserID)
+	userMapping, err := h.app.Services.FindUserByID(user.OrgID, user.AppID, *user.UserID)
 	if err != nil {
 		log.Printf("Error on retrieving user mapping: %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -172,7 +172,7 @@ func (h ApisHandler) UpdateUser(user *model.CoreToken, w http.ResponseWriter, r 
 		return
 	}
 
-	userMapping, err := h.app.Services.UpdateUserByID(*user.UserID, bodyData.NotificationsDisabled)
+	userMapping, err := h.app.Services.UpdateUserByID(user.OrgID, user.AppID, *user.UserID, bodyData.NotificationsDisabled)
 	if err != nil {
 		log.Printf("Error on updating user: %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -206,7 +206,7 @@ func (h ApisHandler) UpdateUser(user *model.CoreToken, w http.ResponseWriter, r 
 // @Security RokwireAuth UserAuth
 // @Router /user [delete]
 func (h ApisHandler) DeleteUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.DeleteUserWithID(*user.UserID)
+	err := h.app.Services.DeleteUserWithID(user.OrgID, user.AppID, *user.UserID)
 	if err != nil {
 		log.Printf("Error on updating user: %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
