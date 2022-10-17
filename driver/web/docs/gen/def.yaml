@@ -56,7 +56,6 @@ paths:
     post:
       tags:
         - Internal
-      deprecated: true
       summary: Create message
       description: |
         Create message
