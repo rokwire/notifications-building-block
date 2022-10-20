@@ -42,6 +42,11 @@ func (sa *Adapter) Start() error {
 	return err
 }
 
+// RegisterStorageListener registers a data change listener with the storage adapter
+func (sa *Adapter) RegisterStorageListener(storageListener Listener) {
+	sa.db.listeners = append(sa.db.listeners, storageListener)
+}
+
 // NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string,
 	multiTenancyOrgID string, multiTenancyAppID string) *Adapter {
@@ -879,4 +884,9 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 	if err != nil {
 		log.Printf("error on aborting a transaction - %s", err)
 	}
+}
+
+// Listener represents storage listener
+type Listener interface {
+	OnFirebaseConfigurationsUpdated()
 }

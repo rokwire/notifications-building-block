@@ -17,6 +17,7 @@ package core
 import (
 	"context"
 	"notifications/core/model"
+	"notifications/driven/storage"
 )
 
 // Services exposes APIs for the driver adapters
@@ -127,6 +128,10 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
+	RegisterStorageListener(storageListener storage.Listener)
+
+	LoadFirebaseConfigurations() ([]model.FirebaseConf, error)
+
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
@@ -155,6 +160,7 @@ type Storage interface {
 
 // Firebase is used to wrap all Firebase Messaging API functions
 type Firebase interface {
+	UpdateFirebaseConfigurations(firebaseConfs []model.FirebaseConf) error
 	SendNotificationToToken(orgID string, appID string, token string, title string, body string, data map[string]string) error
 	SendNotificationToTopic(orgID string, appID string, topic string, title string, body string, data map[string]string) error
 	SubscribeToTopic(orgID string, appID string, token string, topic string) error

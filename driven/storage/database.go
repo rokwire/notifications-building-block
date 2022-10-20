@@ -44,6 +44,8 @@ type database struct {
 
 	firebaseConfigurations *collectionWrapper
 
+	listeners []Listener
+
 	multiTenancyOrgID string
 	multiTenancyAppID string
 }
@@ -124,6 +126,8 @@ func (m *database) start() error {
 	if err != nil {
 		return err
 	}
+
+	go m.firebaseConfigurations.Watch(nil)
 
 	return nil
 }
@@ -473,9 +477,12 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 	nsMap := ns.(map[string]interface{})
 	coll := nsMap["coll"]
 
-	if "configs" == coll {
-		log.Println("configs collection changed")
-	} else {
-		log.Println("other collection changed")
+	switch coll {
+	case "firebase_configurations":
+		log.Println("firebase_configurations collection changed")
+
+		for _, listener := range m.listeners {
+			go listener.OnFirebaseConfigurationsUpdated()
+		}
 	}
 }

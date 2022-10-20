@@ -29,21 +29,27 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	firebaseConfs []model.FirebaseConf
-
 	//key is org-id_app-id construction
 	firebaseClients map[string]firebase.App
 }
 
 // NewFirebaseAdapter instance a new Firebase adapter
-func NewFirebaseAdapter(firebaseConfs []model.FirebaseConf) *Adapter {
-	return &Adapter{firebaseConfs: firebaseConfs, firebaseClients: make(map[string]firebase.App)}
+func NewFirebaseAdapter() *Adapter {
+	return &Adapter{firebaseClients: make(map[string]firebase.App)}
 }
 
 // Start starts the firebase adapter
-func (fa *Adapter) Start() error {
+func (fa *Adapter) Start(firebaseConfs []model.FirebaseConf) error {
+	return fa.setFirebaseClients(firebaseConfs)
+}
+
+// UpdateFirebaseConfigurations sets new firebase configurations
+func (fa *Adapter) UpdateFirebaseConfigurations(firebaseConfs []model.FirebaseConf) error {
+	return fa.setFirebaseClients(firebaseConfs)
+}
+
+func (fa *Adapter) setFirebaseClients(firebaseConfs []model.FirebaseConf) error {
 	//1. check if there are configs data
-	firebaseConfs := fa.firebaseConfs
 	if len(firebaseConfs) == 0 {
 		return errors.New("there is no firebase configurations")
 	}
