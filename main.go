@@ -55,7 +55,7 @@ func main() {
 	// firebase adapter
 	firebaseConfs, err := storageAdapter.LoadFirebaseConfigurations()
 	if err != nil {
-		log.Fatal("Error loading the firebase confogirations form the storage - " + err.Error())
+		log.Fatal("Error loading the firebase confogirations from the storage - " + err.Error())
 	}
 	firebaseAdapter := firebase.NewFirebaseAdapter()
 	err = firebaseAdapter.Start(firebaseConfs)
