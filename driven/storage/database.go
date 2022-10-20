@@ -45,7 +45,7 @@ type database struct {
 	firebaseConfigurations *collectionWrapper
 
 	multiTenancyOrgID string
-	multiTenancyAppId string
+	multiTenancyAppID string
 }
 
 func (m *database) start() error {
@@ -133,7 +133,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 	messages *collectionWrapper, appVersions *collectionWrapper, appPlatforms *collectionWrapper) error {
 
 	orgID := m.multiTenancyOrgID
-	appID := m.multiTenancyAppId
+	appID := m.multiTenancyAppID
 	fn := func(sessionContext mongo.SessionContext) error {
 		//start transaction
 		err := sessionContext.StartTransaction()

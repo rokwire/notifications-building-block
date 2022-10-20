@@ -44,7 +44,7 @@ func (sa *Adapter) Start() error {
 
 // NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string,
-	multiTenancyOrgID string, multiTenancyAppId string) *Adapter {
+	multiTenancyOrgID string, multiTenancyAppID string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
 	if err != nil {
 		log.Println("Set default timeout - 2000")
@@ -53,7 +53,7 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 	timeoutMS := time.Millisecond * time.Duration(timeout)
 
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS,
-		multiTenancyOrgID: multiTenancyOrgID, multiTenancyAppId: multiTenancyAppId}
+		multiTenancyOrgID: multiTenancyOrgID, multiTenancyAppID: multiTenancyAppID}
 	return &Adapter{db: db}
 }
 
