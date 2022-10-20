@@ -108,7 +108,7 @@ func (h InternalApisHandler) processSendMessage(message *model.Message, async bo
 		http.Error(w, "Message is nil", http.StatusBadRequest)
 		return
 	}
-	if len(message.OrgID) == 0 && len(message.AppID) == 0 {
+	if len(message.OrgID) == 0 || len(message.AppID) == 0 {
 		log.Println("org or app is not passed")
 		http.Error(w, "org or app is not passed", http.StatusBadRequest)
 		return
