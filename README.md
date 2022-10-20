@@ -32,6 +32,8 @@ SMTP_HOST | < string > | yes | SMTP host
 SMTP_USER | < string > | yes | SMTP username
 SMTP_PASSWORD | < string > | yes | SMTP password
 SMTP_PORT | < int > | yes | SMTP port (Example 587)
+NOTIFICATIONS_MULTI_TENANCY_ORG_ID | < string > | yes | Organization id for preparing the currently existing data to meet the multi-tenancy requirments(temporary field)
+NOTIFICATIONS_MULTI_TENANCY_APP_ID | < string > | yes | Application id for preparing the currently existing data to meet the multi-tenancy requirments(temporary field)
 
 
 ### Run Application
