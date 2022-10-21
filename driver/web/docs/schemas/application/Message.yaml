@@ -1,5 +1,9 @@
 type: object
 properties:
+  org_id:
+    type: string
+  app_id:
+    type: string
   _id:
     type: string
   date_created:

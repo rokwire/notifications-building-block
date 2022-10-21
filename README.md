@@ -23,8 +23,6 @@ PORT | < int > | yes | Port to be used by this application
 MONGO_AUTH | <mongodb://USER:PASSWORD@HOST:PORT/DATABASE NAME> | yes | MongoDB authentication string. The user must have read/write privileges.
 MONGO_DATABASE | < string > | yes | MongoDB database name
 MONGO_TIMEOUT | < int > | no | MongoDB timeout in milliseconds. Defaults to 500.
-FIREBASE_PROJECT_ID | < string > | yes | Firebase project ID
-FIREBASE_AUTH | < json > | yes | Firebase authentication JSON string
 INTERNAL_API_KEY | < string > | yes | Internal API key for invocation by other BBs
 CORE_AUTH_PRIVATE_KEY | < string (PEM) > | yes | Private key for communicating with Core
 CORE_BB_HOST | < url > | yes | Core BB host URL
@@ -34,6 +32,8 @@ SMTP_HOST | < string > | yes | SMTP host
 SMTP_USER | < string > | yes | SMTP username
 SMTP_PASSWORD | < string > | yes | SMTP password
 SMTP_PORT | < int > | yes | SMTP port (Example 587)
+NOTIFICATIONS_MULTI_TENANCY_ORG_ID | < string > | yes | Organization id for preparing the currently existing data to meet the multi-tenancy requirments(temporary field)
+NOTIFICATIONS_MULTI_TENANCY_APP_ID | < string > | yes | Application id for preparing the currently existing data to meet the multi-tenancy requirments(temporary field)
 
 
 ### Run Application

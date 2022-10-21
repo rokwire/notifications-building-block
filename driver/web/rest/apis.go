@@ -100,7 +100,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
-	err = h.app.Services.StoreFirebaseToken(&tokenInfo, user)
+	err = h.app.Services.StoreFirebaseToken(user.OrgID, user.AppID, &tokenInfo, user)
 	if err != nil {
 		log.Printf("Error on creating student guide: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -118,7 +118,7 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 // @Security RokwireAuth UserAuth
 // @Router /user [get]
 func (h ApisHandler) GetUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	userMapping, err := h.app.Services.FindUserByID(*user.UserID)
+	userMapping, err := h.app.Services.FindUserByID(user.OrgID, user.AppID, *user.UserID)
 	if err != nil {
 		log.Printf("Error on retrieving user mapping: %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -172,7 +172,7 @@ func (h ApisHandler) UpdateUser(user *model.CoreToken, w http.ResponseWriter, r 
 		return
 	}
 
-	userMapping, err := h.app.Services.UpdateUserByID(*user.UserID, bodyData.NotificationsDisabled)
+	userMapping, err := h.app.Services.UpdateUserByID(user.OrgID, user.AppID, *user.UserID, bodyData.NotificationsDisabled)
 	if err != nil {
 		log.Printf("Error on updating user: %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -206,7 +206,7 @@ func (h ApisHandler) UpdateUser(user *model.CoreToken, w http.ResponseWriter, r 
 // @Security RokwireAuth UserAuth
 // @Router /user [delete]
 func (h ApisHandler) DeleteUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.DeleteUserWithID(*user.UserID)
+	err := h.app.Services.DeleteUserWithID(user.OrgID, user.AppID, *user.UserID)
 	if err != nil {
 		log.Printf("Error on updating user: %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -255,7 +255,7 @@ func (h ApisHandler) Subscribe(user *model.CoreToken, w http.ResponseWriter, r *
 		return
 	}
 
-	err = h.app.Services.SubscribeToTopic(*body.Token, user, topic)
+	err = h.app.Services.SubscribeToTopic(user.OrgID, user.AppID, *body.Token, user, topic)
 	if err != nil {
 		log.Printf("Error on subscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -304,7 +304,7 @@ func (h ApisHandler) Unsubscribe(user *model.CoreToken, w http.ResponseWriter, r
 		return
 	}
 
-	err = h.app.Services.UnsubscribeToTopic(*body.Token, user, topic)
+	err = h.app.Services.UnsubscribeToTopic(user.OrgID, user.AppID, *body.Token, user, topic)
 	if err != nil {
 		log.Printf("Error on unsubscribe to topic (%s): %s\n", topic, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -348,7 +348,7 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	var err error
 	var messages []model.Message
 	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.UserID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+		messages, err = h.app.Services.GetMessages(user.OrgID, user.AppID, user.UserID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -378,9 +378,8 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 // @Success 200 {array} model.Topic
 // @Security RokwireAuth
 // @Router /topics [get]
-func (h ApisHandler) GetTopics(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-
-	topics, err := h.app.Services.GetTopics()
+func (h ApisHandler) GetTopics(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
+	topics, err := h.app.Services.GetTopics(coreToken.OrgID, coreToken.AppID)
 	if err != nil {
 		log.Printf("Error on retrieving all topics: %s\n", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -412,7 +411,7 @@ func (h ApisHandler) GetTopics(_ *model.CoreToken, w http.ResponseWriter, _ *htt
 // @Success 200 {array} model.Message
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/messages [get]
-func (h ApisHandler) GetTopicMessages(_ *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopicMessages(coreToken *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
@@ -427,7 +426,7 @@ func (h ApisHandler) GetTopicMessages(_ *model.CoreToken, w http.ResponseWriter,
 		return
 	}
 
-	messages, err := h.app.Services.GetMessages(nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(coreToken.OrgID, coreToken.AppID, nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, fmt.Sprintf("Error on getting messages: %s", err), http.StatusInternalServerError)
@@ -465,7 +464,7 @@ func (h ApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWriter, r 
 		return
 	}
 
-	message, err := h.app.Services.GetMessage(id)
+	message, err := h.app.Services.GetMessage(user.OrgID, user.AppID, id)
 	if err != nil {
 		log.Printf("Error on get message with id (%s): %s\n", id, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -513,7 +512,7 @@ func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWr
 	errStrings := []string{}
 	if len(messageIDs) > 0 {
 		for _, id := range messageIDs {
-			err := h.app.Services.DeleteUserMessage(user, id)
+			err := h.app.Services.DeleteUserMessage(user.OrgID, user.AppID, user, id)
 			if err != nil {
 				errStrings = append(errStrings, fmt.Sprintf("%s\n", err.Error()))
 				log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UserID, err)
@@ -557,6 +556,9 @@ func (h ApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWriter,
 		return
 	}
 
+	message.OrgID = user.OrgID
+	message.AppID = user.AppID
+
 	message, err = h.app.Services.CreateMessage(user, message, false)
 	if err != nil {
 		log.Printf("Error on create message: %s\n", err)
@@ -594,7 +596,7 @@ func (h ApisHandler) DeleteUserMessage(user *model.CoreToken, w http.ResponseWri
 		return
 	}
 
-	err := h.app.Services.DeleteUserMessage(user, id)
+	err := h.app.Services.DeleteUserMessage(user.OrgID, user.AppID, user, id)
 	if err != nil {
 		log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UserID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

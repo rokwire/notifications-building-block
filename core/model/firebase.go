@@ -14,15 +14,10 @@
 
 package model
 
-import "time"
-
-// Topic wraps a firebase topic and description
-type Topic struct {
-	OrgID string `json:"org_id" bson:"org_id"`
-	AppID string `json:"app_id" bson:"app_id"`
-
-	Name        string    `json:"name" bson:"_id"`
-	Description *string   `json:"description" bson:"description"`
-	DateCreated time.Time `json:"date_created" bson:"date_created"`
-	DateUpdated time.Time `json:"date_updated" bson:"date_updated"`
-} // @name Topic
+// FirebaseConf represents the firebase configuration for org/app pair.
+type FirebaseConf struct {
+	OrgID     string `bson:"org_id"`
+	AppID     string `bson:"app_id"`
+	ProjectID string `bson:"project_id"`
+	Auth      string `bson:"auth"`
+}

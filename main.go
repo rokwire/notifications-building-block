@@ -44,17 +44,21 @@ func main() {
 	mongoDBAuth := getEnvKey("MONGO_AUTH", true)
 	mongoDBName := getEnvKey("MONGO_DATABASE", true)
 	mongoTimeout := getEnvKey("MONGO_TIMEOUT", false)
-	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout)
+	mtOrgID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_ORG_ID", true)
+	mtAppID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_APP_ID", true)
+	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout, mtOrgID, mtAppID)
 	err := storageAdapter.Start()
 	if err != nil {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
 
-	// firebase credentials
-	firebaseProjectID := getEnvKey("FIREBASE_PROJECT_ID", true)
-	firebaseAuth := getEnvKey("FIREBASE_AUTH", true)
-	firebaseAdapter := firebase.NewFirebaseAdapter(firebaseAuth, firebaseProjectID)
-	err = firebaseAdapter.Start()
+	// firebase adapter
+	firebaseConfs, err := storageAdapter.LoadFirebaseConfigurations()
+	if err != nil {
+		log.Fatal("Error loading the firebase confogirations from the storage - " + err.Error())
+	}
+	firebaseAdapter := firebase.NewFirebaseAdapter()
+	err = firebaseAdapter.Start(firebaseConfs)
 	if err != nil {
 		log.Fatal("Cannot start the Firebase adapter - " + err.Error())
 	}
