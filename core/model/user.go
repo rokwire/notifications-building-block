@@ -23,8 +23,6 @@ type User struct {
 
 	ID                    string          `json:"id" bson:"_id"`
 	NotificationsDisabled bool            `json:"notifications_disabled" bson:"notifications_disabled"`
-	Mute                  bool            `json:"mute" bson:"mute"`
-	Read                  bool            `json:"read" bson:"read"`
 	FirebaseTokens        []FirebaseToken `json:"firebase_tokens" bson:"firebase_tokens"`
 	UserID                *string         `json:"user_id" bson:"user_id"`
 	Topics                []string        `json:"topics" bson:"topics"`

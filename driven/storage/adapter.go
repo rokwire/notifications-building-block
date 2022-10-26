@@ -361,8 +361,6 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string)
 				recipients = append(recipients, model.Recipient{
 					UserID:               user.UserID,
 					NotificationDisabled: user.NotificationsDisabled,
-					Mute:                 user.Mute,
-					Read:                 user.Read,
 				})
 			}
 		}
@@ -407,8 +405,6 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, 
 			recipients = append(recipients, model.Recipient{
 				UserID:               user.UserID,
 				NotificationDisabled: user.NotificationsDisabled,
-				Mute:                 user.Mute,
-				Read:                 user.Read,
 			})
 		}
 
