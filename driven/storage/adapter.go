@@ -295,7 +295,7 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 	if len(recipients) > 0 {
 		innerFilter := []string{}
 		for _, recipient := range recipients {
-			if recipient.UserID != nil {
+			if recipient.UserID != nil && recipient.Mute == false {
 				innerFilter = append(innerFilter, *recipient.UserID)
 			}
 		}
@@ -361,6 +361,8 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string)
 				recipients = append(recipients, model.Recipient{
 					UserID:               user.UserID,
 					NotificationDisabled: user.NotificationsDisabled,
+					Mute:                 user.Mute,
+					Read:                 user.Read,
 				})
 			}
 		}
@@ -405,6 +407,8 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, 
 			recipients = append(recipients, model.Recipient{
 				UserID:               user.UserID,
 				NotificationDisabled: user.NotificationsDisabled,
+				Mute:                 user.Mute,
+				Read:                 user.Read,
 			})
 		}
 
