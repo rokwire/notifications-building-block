@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Add a new flag for skipping FCM push notification on creating a new message [#92](https://github.com/rokwire/notifications-building-block/issues/92)
 - Support multi-tenancy [#76](https://github.com/rokwire/notifications-building-block/issues/76)
 
 ## Fixed
