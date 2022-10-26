@@ -1012,6 +1012,10 @@ components:
           type: string
         notification_disabled:
           type: boolean
+        mute:
+          type: boolean
+        read:
+          type: boolean
     RecipientCriteria:
       type: object
       properties:
