@@ -13,8 +13,10 @@ properties:
   priority:
     type: string
   recipients:
+    type: array
     $ref: "./Recipients.yaml"
   recipients_criteria_list:
+    type: array
     $ref: "./RecipientCriteria.yaml"
   topic:
     type: string  

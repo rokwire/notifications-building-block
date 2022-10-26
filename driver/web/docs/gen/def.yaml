@@ -988,8 +988,10 @@ components:
         priority:
           type: string
         recipients:
+          type: array
           $ref: '#/components/schemas/Recipient'
         recipients_criteria_list:
+          type: array
           $ref: '#/components/schemas/RecipientCriteria'
         topic:
           type: string
