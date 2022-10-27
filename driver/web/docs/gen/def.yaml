@@ -988,8 +988,10 @@ components:
         priority:
           type: string
         recipients:
+          type: array
           $ref: '#/components/schemas/Recipient'
         recipients_criteria_list:
+          type: array
           $ref: '#/components/schemas/RecipientCriteria'
         topic:
           type: string
@@ -1011,6 +1013,10 @@ components:
         name:
           type: string
         notification_disabled:
+          type: boolean
+        mute:
+          type: boolean
+        read:
           type: boolean
     RecipientCriteria:
       type: object

@@ -6,3 +6,7 @@ properties:
     type: string  
   notification_disabled:
     type: boolean 
+  mute:
+    type: boolean
+  read:
+    type: boolean
