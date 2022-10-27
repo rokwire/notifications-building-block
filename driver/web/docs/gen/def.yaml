@@ -381,6 +381,89 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
+  /messages/count:
+    get:
+      tags:
+        - Client
+      summary: Count the unread messages
+      description: |
+        Count the unread messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          description: user_id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: mute
+          in: query
+          description: mute
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: bool
+        - name: read
+          in: query
+          description: read
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: bool
+        - name: offset
+          in: query
+          description: offset
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: limit
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: 'order - Possible values: asc, desc. Default: desc'
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          description: start_date - Start date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: end_date
+          in: query
+          description: end_date - End date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
   '/message/{id}':
     get:
       tags:
