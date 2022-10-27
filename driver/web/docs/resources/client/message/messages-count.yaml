@@ -7,14 +7,6 @@ get:
   security:
     - bearerAuth: []
   parameters:
-    - name: user_id
-      in: query
-      description: user_id
-      required: true
-      style: simple
-      explode: false
-      schema:
-        type: string
     - name: mute
       in: query
       description: mute
@@ -22,7 +14,7 @@ get:
       style: simple
       explode: false
       schema:
-        type: bool  
+        type: boolean  
     - name: read
       in: query
       description: read
@@ -30,7 +22,7 @@ get:
       style: simple
       explode: false
       schema:
-        type: bool 
+        type: boolean 
     - name: offset
       in: query
       description: offset
