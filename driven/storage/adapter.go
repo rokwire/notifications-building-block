@@ -295,7 +295,7 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 	if len(recipients) > 0 {
 		innerFilter := []string{}
 		for _, recipient := range recipients {
-			if recipient.UserID != nil {
+			if recipient.UserID != nil && recipient.Mute == false {
 				innerFilter = append(innerFilter, *recipient.UserID)
 			}
 		}
