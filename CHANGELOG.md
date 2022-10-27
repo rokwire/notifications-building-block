@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- API for retrieving the count of the unread messages [#95](https://github.com/rokwire/notifications-building-block/issues/95)
 - Support multi-tenancy [#76](https://github.com/rokwire/notifications-building-block/issues/76)
 
 ## Fixed
