@@ -391,14 +391,6 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: read
-          in: query
-          description: read
-          required: true
-          style: simple
-          explode: false
-          schema:
-            type: boolean
         - name: offset
           in: query
           description: offset
