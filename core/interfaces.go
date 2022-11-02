@@ -34,6 +34,7 @@ type Services interface {
 	DeleteUserWithID(orgID string, appID string, userID string) error
 
 	GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetUnreadMessages(orgID string, appID string, userID *string, read *bool, mute *bool) (*int64, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error)
 	UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
@@ -80,6 +81,10 @@ func (s *servicesImpl) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 
 func (s *servicesImpl) GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
 	return s.app.getMessages(orgID, appID, userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
+}
+
+func (s *servicesImpl) GetUnreadMessages(orgID string, appID string, userID *string, read *bool, mute *bool) (*int64, error) {
+	return s.app.getUnreadMessages(orgID, appID, userID, read, mute)
 }
 
 func (s *servicesImpl) GetMessage(orgID string, appID string, ID string) (*model.Message, error) {
@@ -153,6 +158,7 @@ type Storage interface {
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
+	CountMessagesStatus(userID *string, read *bool, mute *bool) (*int64, error)
 
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
