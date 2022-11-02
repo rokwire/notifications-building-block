@@ -381,7 +381,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /messages/count/unread:
+  /messages/count:
     get:
       tags:
         - Client
