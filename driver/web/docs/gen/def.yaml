@@ -381,7 +381,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /messages/count:
+  /messages/count/unread:
     get:
       tags:
         - Client
@@ -391,14 +391,6 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: mute
-          in: query
-          description: mute
-          required: true
-          style: simple
-          explode: false
-          schema:
-            type: boolean
         - name: read
           in: query
           description: read

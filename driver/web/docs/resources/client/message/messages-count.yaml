@@ -7,14 +7,6 @@ get:
   security:
     - bearerAuth: []
   parameters:
-    - name: mute
-      in: query
-      description: mute
-      required: true
-      style: simple
-      explode: false
-      schema:
-        type: boolean  
     - name: read
       in: query
       description: read
