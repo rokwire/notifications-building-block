@@ -512,6 +512,27 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 	return nil
 }
 
+// CountMessagesStatus counts read/unread and muted/unmuted messages
+func (sa *Adapter) CountMessagesStatus(userID *string, read *bool, mute *bool) (*int64, error) {
+
+	filter := bson.D{
+		primitive.E{Key: "recipients.user_id", Value: userID},
+	}
+
+	if read != nil {
+		filter = append(filter, primitive.E{Key: "recipients.read", Value: *read})
+	}
+
+	if mute != nil {
+		filter = append(filter, primitive.E{Key: "recipients.mute", Value: *mute})
+	}
+	c, err := sa.db.messages.CountDocuments(filter)
+	if err != nil {
+		return nil, nil
+	}
+	return &c, nil
+}
+
 // SubscribeToTopic subscribes the token to a topic
 func (sa Adapter) SubscribeToTopic(orgID string, appID string, token string, userID *string, topic string) error {
 	var err error
