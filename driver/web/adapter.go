@@ -68,6 +68,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
+	mainRouter.HandleFunc("/messages/count", we.coreWrapFunc(we.apisHandler.GetUserMessagesCount)).Methods("GET")
 	// mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
 	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.GetMessage)).Methods("GET")
 	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.DeleteUserMessage)).Methods("DELETE")

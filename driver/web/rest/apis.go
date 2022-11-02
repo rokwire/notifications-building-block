@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -363,6 +364,53 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	if err != nil {
 		log.Printf("Error on marshal messages: %s\n", err)
 		http.Error(w, fmt.Sprintf("Error on marshal messages: %s\n", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// @Description Count the unread messages.
+// @Tags Client
+// @ID GetUserMessagesCount
+// @Param read query bool "read"
+// @Param mute query bool "mute"
+// @Accept  json
+// @Success 200
+// @Security UserAuth
+// @Router /messages/count [get]
+func (h ApisHandler) GetUserMessagesCount(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+	readFromQuery := r.URL.Query().Get("read")
+	var read *bool
+	if len(readFromQuery) > 0 {
+		result, _ := strconv.ParseBool(readFromQuery)
+		read = &result
+	}
+
+	muteFromQuery := r.URL.Query().Get("mute")
+	var mute *bool
+	if len(muteFromQuery) > 0 {
+		result, _ := strconv.ParseBool(muteFromQuery)
+		mute = &result
+	}
+
+	var err error
+	var unreadMessages *int64
+	if user != nil {
+		unreadMessages, err = h.app.Services.GetUnreadMessages(user.OrgID, user.AppID, user.UserID, read, mute)
+		if err != nil {
+			log.Printf("Error on getting the count of the messages: %s", err)
+			http.Error(w, fmt.Sprintf("Error on getting the count of the message: %s", err), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	data, err := json.Marshal(unreadMessages)
+	if err != nil {
+		log.Printf("Error on getting the count: %s\n", err)
+		http.Error(w, fmt.Sprintf("Error on getting the count: %s\n", err), http.StatusInternalServerError)
 		return
 	}
 
