@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
-	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -132,20 +131,8 @@ func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWrit
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
 	endDateFilter := getInt64QueryParam(r, "end_date")
-
-	readFromQuery := r.URL.Query().Get("read")
-	var read *bool
-	if len(readFromQuery) > 0 {
-		result, _ := strconv.ParseBool(readFromQuery)
-		read = &result
-	}
-
-	muteFromQuery := r.URL.Query().Get("mute")
-	var mute *bool
-	if len(muteFromQuery) > 0 {
-		result, _ := strconv.ParseBool(muteFromQuery)
-		mute = &result
-	}
+	read := getBoolQueryParam(r, "read")
+	mute := getBoolQueryParam(r, "mute")
 
 	messages, err := h.app.Services.GetMessages(user.OrgID, user.AppID, userIDFilter, read, mute, nil, startDateFilter, endDateFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
 	if err != nil {

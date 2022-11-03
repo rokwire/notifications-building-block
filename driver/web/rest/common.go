@@ -38,3 +38,14 @@ func getInt64QueryParam(r *http.Request, paramName string) *int64 {
 	}
 	return nil
 }
+
+func getBoolQueryParam(r *http.Request, paramName string) *bool {
+	readFromQuery, ok := r.URL.Query()[paramName]
+	if ok && len(readFromQuery[0]) > 0 {
+		val, err := strconv.ParseBool(readFromQuery[0])
+		if err == nil {
+			return &val
+		}
+	}
+	return nil
+}
