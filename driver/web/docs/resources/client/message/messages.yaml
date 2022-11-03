@@ -14,6 +14,20 @@ get:
           $ref: "../../../schemas/apis/message/request/Request.yaml" 
     required: true
   parameters:
+    - name: read
+      in: query
+      description: read
+      style: simple
+      explode: false
+      schema:
+        type: boolean
+    - name: mute
+      in: query
+      description: mute
+      style: simple
+      explode: false
+      schema:
+        type: boolean
     - name: offset
       in: query
       description: offset
