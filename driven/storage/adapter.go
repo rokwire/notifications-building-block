@@ -520,11 +520,11 @@ func (sa *Adapter) CountMessagesStatus(userID *string, read *bool, mute *bool) (
 	}
 
 	if read != nil {
-		filter = append(filter, primitive.E{Key: "recipients.read", Value: *read})
+		filter = append(filter, primitive.E{Key: "recipients.read", Value: bson.M{"$ne": true}})
 	}
 
 	if mute != nil {
-		filter = append(filter, primitive.E{Key: "recipients.mute", Value: *mute})
+		filter = append(filter, primitive.E{Key: "recipients.mute", Value: bson.M{"$ne": true}})
 	}
 	c, err := sa.db.messages.CountDocuments(filter)
 	if err != nil {

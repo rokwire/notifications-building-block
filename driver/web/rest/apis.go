@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
-	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -382,19 +381,8 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 // @Security UserAuth
 // @Router /messages/count [get]
 func (h ApisHandler) GetUserMessagesCount(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	readFromQuery := r.URL.Query().Get("read")
-	var read *bool
-	if len(readFromQuery) > 0 {
-		result, _ := strconv.ParseBool(readFromQuery)
-		read = &result
-	}
-
-	muteFromQuery := r.URL.Query().Get("mute")
-	var mute *bool
-	if len(muteFromQuery) > 0 {
-		result, _ := strconv.ParseBool(muteFromQuery)
-		mute = &result
-	}
+	read := getBoolQueryParam(r, "read")
+	mute := getBoolQueryParam(r, "mute")
 
 	var err error
 	var unreadMessages *int64
