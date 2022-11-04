@@ -683,11 +683,21 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *
 	}
 
 	if read != nil {
-		filter = append(filter, primitive.E{Key: "recipients.read", Value: bson.M{"$ne": true}})
+		if *read {
+			filter = append(filter, primitive.E{Key: "recipients.read", Value: true})
+		} else {
+			// support of existing records where "read" field is missing
+			filter = append(filter, primitive.E{Key: "recipients.read", Value: bson.M{"$ne": true}})
+		}
 	}
 
 	if mute != nil {
-		filter = append(filter, primitive.E{Key: "recipients.mute", Value: bson.M{"$ne": true}})
+		if *mute {
+			filter = append(filter, primitive.E{Key: "recipients.mute", Value: true})
+		} else {
+			// support of existing records where "mute" field is missing
+			filter = append(filter, primitive.E{Key: "recipients.mute", Value: bson.M{"$ne": true}})
+		}
 	}
 
 	if startDateEpoch != nil {
