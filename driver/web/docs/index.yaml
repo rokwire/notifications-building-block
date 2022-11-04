@@ -38,6 +38,8 @@ paths:
     $ref: "./resources/client/message/messages.yaml"
   /message/{id}:
     $ref: "./resources/client/message/messages-id.yaml"
+  message/read/{message_id}:
+    $ref: "./resources/client/message/message-read.yaml"
   /topics:
     $ref: "./resources/client/topic/topics.yaml"
   /topic/{topic}/messages:
