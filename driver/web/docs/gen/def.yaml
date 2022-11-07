@@ -440,7 +440,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  'message/read/{message_id}':
+  'message/{message_id}/read':
     put:
       tags:
         - Client
