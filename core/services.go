@@ -214,6 +214,18 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 	return nil, fmt.Errorf("missing id or record")
 }
 
+func (app *Application) updateReadMessage(orgID string, appID string, ID string, userID *string) (*model.Message, error) {
+	message, err := app.storage.GetMessage(orgID, appID, ID)
+	if err != nil {
+		return nil, nil
+	}
+	updateReadMessage, err := app.storage.UpdateUnreadMessage(message, userID)
+	if err != nil {
+		return nil, nil
+	}
+	return updateReadMessage, nil
+}
+
 func (app *Application) deleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error {
 	return app.storage.DeleteUserMessageWithContext(context.Background(), orgID, appID, *user.UserID, messageID)
 }
