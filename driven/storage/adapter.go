@@ -848,33 +848,22 @@ func (sa Adapter) DeleteMessageWithContext(ctx context.Context, orgID string, ap
 }
 
 // UpdateUnreadMessage updates a unread message in the recipients to read
-func (sa Adapter) UpdateUnreadMessage(message *model.Message, userID *string) (*model.Message, error) {
-	if message != nil {
-		updateRecipients := []model.Recipient{}
-		for _, recipient := range message.Recipients {
-			if *userID == *recipient.UserID {
-				if recipient.Read == false {
-					recipient.Read = true
-					updateRecipients = append(updateRecipients, recipient)
-					filter := bson.D{
-						primitive.E{Key: "org_id", Value: message.OrgID},
-						primitive.E{Key: "app_id", Value: message.AppID},
-						primitive.E{Key: "_id", Value: message.ID}}
-					update := bson.D{
-						primitive.E{Key: "$set", Value: bson.D{
-							primitive.E{Key: "recipients", Value: updateRecipients},
-							primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-						}},
-					}
-					_, err := sa.db.messages.UpdateOne(filter, update, nil)
-					if err != nil {
-						fmt.Printf("warning: error while updating massage", *message.ID, userID, err)
-						return nil, err
-					}
-				}
-			}
-		}
-		return message, nil
+func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID *string) (*model.Message, error) {
+	read := true
+	filter := bson.D{primitive.E{Key: "_id", Value: ID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "recipients.user_id", Value: userID}}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "recipients.$.read", Value: read},
+			primitive.E{Key: "recipients.$.date_updated", Value: time.Now().UTC()},
+		}},
+	}
+	_, err := sa.db.messages.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		fmt.Printf("warning: error while updating massage", ID, userID, err)
+		return nil, err
 	}
 	return nil, nil
 }
@@ -921,4 +910,9 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 // Listener represents storage listener
 type Listener interface {
 	OnFirebaseConfigurationsUpdated()
+}
+
+// TransactionContext wraps mongo.SessionContext for use by external packages
+type TransactionContext interface {
+	mongo.SessionContext
 }

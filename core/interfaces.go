@@ -158,7 +158,7 @@ type Storage interface {
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
-	UpdateUnreadMessage(message *model.Message, userID *string) (*model.Message, error)
+	UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID *string) (*model.Message, error)
 
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)

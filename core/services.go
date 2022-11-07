@@ -215,12 +215,8 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 }
 
 func (app *Application) updateReadMessage(orgID string, appID string, ID string, userID *string) (*model.Message, error) {
-	message, err := app.storage.GetMessage(orgID, appID, ID)
-	if err != nil {
-		return nil, nil
-	}
-	updateReadMessage, err := app.storage.UpdateUnreadMessage(message, userID)
-	if err != nil {
+	updateReadMessage, _ := app.storage.UpdateUnreadMessage(context.Background(), orgID, appID, ID, userID)
+	if updateReadMessage == nil {
 		return nil, nil
 	}
 	return updateReadMessage, nil
