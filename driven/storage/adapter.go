@@ -862,7 +862,7 @@ func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID s
 	}
 	_, err := sa.db.messages.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
-		fmt.Printf("warning: error while updating massage", ID, userID, err)
+		fmt.Println("warning: error while updating massage", ID, userID, err)
 		return nil, err
 	}
 	return nil, nil
