@@ -911,8 +911,3 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 type Listener interface {
 	OnFirebaseConfigurationsUpdated()
 }
-
-// TransactionContext wraps mongo.SessionContext for use by external packages
-type TransactionContext interface {
-	mongo.SessionContext
-}
