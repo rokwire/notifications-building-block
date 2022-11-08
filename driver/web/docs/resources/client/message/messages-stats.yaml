@@ -6,21 +6,6 @@ get:
     Count the unread messages
   security:
     - bearerAuth: []  
-  parameters:
-    - name: read
-      in: query
-      description: read
-      style: simple
-      explode: false
-      schema:
-        type: boolean
-    - name: mute
-      in: query
-      description: mute
-      style: simple
-      explode: false
-      schema:
-        type: boolean     
   responses:
     200:
       description: Success
