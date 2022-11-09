@@ -512,8 +512,8 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 	return nil
 }
 
-// CountMessagesStatus counts read/unread and muted/unmuted messages
-func (sa *Adapter) CountMessagesStatus(userID *string, read bool, mute bool) (*model.MessagesStats, error) {
+// GetMessagesStats counts read/unread and muted/unmuted messages
+func (sa *Adapter) GetMessagesStats(userID *string, read bool, mute bool) (*model.MessagesStats, error) {
 	pipeline := bson.A{
 		bson.D{{"$match", bson.D{{"recipients.user_id", userID}}}},
 		bson.D{
