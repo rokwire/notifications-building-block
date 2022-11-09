@@ -512,6 +512,116 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 	return nil
 }
 
+// GetMessagesStats counts read/unread and muted/unmuted messages
+func (sa *Adapter) GetMessagesStats(userID *string, read bool, mute bool) (*model.MessagesStats, error) {
+	pipeline := bson.A{
+		bson.D{{"$match", bson.D{{"recipients.user_id", userID}}}},
+		bson.D{
+			{"$facet",
+				bson.D{
+					{"total_count",
+						bson.A{
+							bson.D{{"$count", "total_count"}},
+						},
+					},
+					{"muted_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"recipients.mute", true}}}},
+							bson.D{{"$count", "muted_count"}},
+						},
+					},
+					{"not_muted_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"recipients.mute", bson.D{{"$ne", true}}}}}},
+							bson.D{{"$count", "not_muted_count"}},
+						},
+					},
+					{"read_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"recipients.read", true}}}},
+							bson.D{{"$count", "read_count"}},
+						},
+					},
+					{"not_read_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"recipients.read", bson.D{{"$ne", true}}}}}},
+							bson.D{{"$count", "not_read_count"}},
+						},
+					},
+				},
+			},
+		},
+		bson.D{
+			{"$project",
+				bson.D{
+					{"total_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$total_count.total_count",
+									0,
+								},
+							},
+						},
+					},
+					{"muted_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$muted_count.muted_count",
+									0,
+								},
+							},
+						},
+					},
+					{"not_muted_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$not_muted_count.not_muted_count",
+									0,
+								},
+							},
+						},
+					},
+					{"read_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$read_count.read_count",
+									0,
+								},
+							},
+						},
+					},
+					{"not_read_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$not_read_count.not_read_count",
+									0,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	var stats []model.MessagesStats
+	err := sa.db.messages.AggregateWithContext(nil, pipeline, &stats, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(stats) > 0 {
+		stat := stats[0]
+		return &stat, err
+	}
+	return nil, nil
+}
+
 // SubscribeToTopic subscribes the token to a topic
 func (sa Adapter) SubscribeToTopic(orgID string, appID string, token string, userID *string, topic string) error {
 	var err error

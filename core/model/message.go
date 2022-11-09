@@ -70,3 +70,14 @@ type RecipientCriteria struct {
 	AppVersion  *string `json:"app_version" bson:"app_version"`
 	AppPlatform *string `json:"app_platform" bson:"app_platform"`
 }
+
+// MessagesStats wraps messages statistics aggregation result
+// @name MessagesStats
+// @ID MessagesStats
+type MessagesStats struct {
+	TotalCount *int64 `json:"total_count" bson:"total_count"`
+	Muted      *int64 `json:"muted_count" bson:"muted_count"`
+	Unmuted    *int64 `json:"not_muted_count" bson:"not_muted_count"`
+	Read       *int64 `json:"read_count" bson:"read_count"`
+	Unread     *int64 `json:"not_read_count" bson:"not_read_count"`
+}

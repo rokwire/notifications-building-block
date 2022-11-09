@@ -375,6 +375,38 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	w.Write(data)
 }
 
+// GetUserMessagesStats Count the messages stats
+// @Description Count the messages stats.
+// @Tags Client
+// @ID GetUserMessagesStats
+// @Accept  json
+// @Success 200
+// @Security UserAuth
+// @Router /messages/stats[get]
+func (h ApisHandler) GetUserMessagesStats(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+	var err error
+	var unreadMessages *model.MessagesStats
+	if user != nil {
+		unreadMessages, err = h.app.Services.GetMessagesStats(user.OrgID, user.AppID, user.UserID)
+		if err != nil {
+			log.Printf("Error on getting the count of the messages: %s", err)
+			http.Error(w, fmt.Sprintf("Error on getting the count of the message: %s", err), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	data, err := json.Marshal(unreadMessages)
+	if err != nil {
+		log.Printf("Error on getting the count: %s\n", err)
+		http.Error(w, fmt.Sprintf("Error on getting the count: %s\n", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // GetTopics Gets all topics
 // @Description Gets all topics
 // @Tags Client
