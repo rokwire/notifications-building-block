@@ -193,8 +193,8 @@ func (app *Application) sendNotifications(message *model.Message, tokens []strin
 	}
 }
 
-func (app *Application) getMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return app.storage.GetMessages(orgID, appID, userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
+func (app *Application) getMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return app.storage.GetMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
 func (app *Application) getMessagesStats(orgID string, appID string, userID *string) (*model.MessagesStats, error) {
@@ -219,6 +219,14 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 		}
 	}
 	return nil, fmt.Errorf("missing id or record")
+}
+
+func (app *Application) updateReadMessage(orgID string, appID string, ID string, userID *string) (*model.Message, error) {
+	updateReadMessage, _ := app.storage.UpdateUnreadMessage(context.Background(), orgID, appID, ID, userID)
+	if updateReadMessage == nil {
+		return nil, nil
+	}
+	return updateReadMessage, nil
 }
 
 func (app *Application) deleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error {

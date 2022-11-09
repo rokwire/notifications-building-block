@@ -296,6 +296,20 @@ paths:
                     type: string
         required: true
       parameters:
+        - name: read
+          in: query
+          description: read
+          style: simple
+          explode: false
+          schema:
+            type: boolean
+        - name: mute
+          in: query
+          description: mute
+          style: simple
+          explode: false
+          schema:
+            type: boolean
         - name: offset
           in: query
           description: offset
@@ -452,6 +466,39 @@ paths:
       responses:
         '200':
           description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  'message/{message_id}/read':
+    put:
+      tags:
+        - Client
+      summary: Update message
+      description: |
+        Update message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: offset
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
         '400':
           description: Bad request
         '401':

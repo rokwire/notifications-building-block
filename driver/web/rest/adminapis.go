@@ -131,8 +131,10 @@ func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWrit
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
 	endDateFilter := getInt64QueryParam(r, "end_date")
+	read := getBoolQueryParam(r, "read")
+	mute := getBoolQueryParam(r, "mute")
 
-	messages, err := h.app.Services.GetMessages(user.OrgID, user.AppID, userIDFilter, nil, startDateFilter, endDateFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(user.OrgID, user.AppID, userIDFilter, read, mute, nil, startDateFilter, endDateFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

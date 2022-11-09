@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - API for retrieving the count of the unread messages [#95](https://github.com/rokwire/notifications-building-block/issues/95)
+- API for filtering "muted" and "unread" [#96](https://github.com/rokwire/notifications-building-block/issues/96)
+- API for marking a message as "read" [#94](https://github.com/rokwire/notifications-building-block/issues/94)
 - Add a new flag for skipping FCM push notification on creating a new message [#92](https://github.com/rokwire/notifications-building-block/issues/92)
 - Support multi-tenancy [#76](https://github.com/rokwire/notifications-building-block/issues/76)
 

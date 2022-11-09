@@ -33,13 +33,14 @@ type Services interface {
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
 
-	GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessagesStats(orgID string, appID string, userID *string) (*model.MessagesStats, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error)
 	UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
+	UpdateReadMessage(orgID string, appID string, ID string, userID *string) (*model.Message, error)
 
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
@@ -79,8 +80,8 @@ func (s *servicesImpl) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return s.app.updateTopic(topic)
 }
 
-func (s *servicesImpl) GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return s.app.getMessages(orgID, appID, userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
+func (s *servicesImpl) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return s.app.getMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
 func (s *servicesImpl) GetMessagesStats(orgID string, appID string, userID *string) (*model.MessagesStats, error) {
@@ -97,6 +98,10 @@ func (s *servicesImpl) CreateMessage(user *model.CoreToken, message *model.Messa
 
 func (s *servicesImpl) UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
 	return s.app.updateMessage(user, message)
+}
+
+func (s *servicesImpl) UpdateReadMessage(orgID string, appID string, ID string, userID *string) (*model.Message, error) {
+	return s.app.updateReadMessage(orgID, appID, ID, userID)
 }
 
 func (s *servicesImpl) DeleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error {
@@ -152,13 +157,14 @@ type Storage interface {
 	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
-	GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessage(message *model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
 	GetMessagesStats(userID *string, read bool, mute bool) (*model.MessagesStats, error)
+	UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID *string) (*model.Message, error)
 
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)

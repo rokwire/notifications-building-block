@@ -318,6 +318,8 @@ func (h ApisHandler) Unsubscribe(user *model.CoreToken, w http.ResponseWriter, r
 // @Description Gets all messages to the authenticated user.
 // @Tags Client
 // @ID GetUserMessages
+// @Param read query bool "read"
+// @Param mute query bool "mute"
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Possible values: asc, desc. Default: desc"
@@ -334,6 +336,8 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
 	endDateFilter := getInt64QueryParam(r, "end_date")
+	read := getBoolQueryParam(r, "read")
+	mute := getBoolQueryParam(r, "mute")
 
 	var messageIDs []string
 	bodyData, _ := ioutil.ReadAll(r.Body)
@@ -348,7 +352,7 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	var err error
 	var messages []model.Message
 	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.OrgID, user.AppID, user.UserID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+		messages, err = h.app.Services.GetMessages(user.OrgID, user.AppID, user.UserID, read, mute, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -458,7 +462,7 @@ func (h ApisHandler) GetTopicMessages(coreToken *model.CoreToken, w http.Respons
 		return
 	}
 
-	messages, err := h.app.Services.GetMessages(coreToken.OrgID, coreToken.AppID, nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(coreToken.OrgID, coreToken.AppID, nil, nil, nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, fmt.Sprintf("Error on getting messages: %s", err), http.StatusInternalServerError)
@@ -551,8 +555,8 @@ func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWr
 			}
 		}
 	} else {
-		log.Printf("Missing ids inthe request body")
-		http.Error(w, "Missing ids inthe request body", http.StatusBadRequest)
+		log.Printf("Missing ids in the request body")
+		http.Error(w, "Missing ids in the request body", http.StatusBadRequest)
 		return
 	}
 	if len(errStrings) > 0 {
@@ -636,4 +640,41 @@ func (h ApisHandler) DeleteUserMessage(user *model.CoreToken, w http.ResponseWri
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// UpdateReadMessage marking an "unread" message as "read"
+// @Description marking an "unread" message as "read"
+// @Tags Client
+// @ID UpdateReadMessage
+// @Param id path string true "id"
+// @Accept  json
+// @Success 200 {object} model.Message
+// @Security UserAuth
+// @Router message/{id}/read [put]
+func (h ApisHandler) UpdateReadMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) == 0 {
+		log.Println("Message id is required")
+		http.Error(w, "Message id is required", http.StatusBadRequest)
+		return
+	}
+
+	message, err := h.app.Services.UpdateReadMessage(user.OrgID, user.AppID, id, user.UserID)
+	if err != nil {
+		log.Printf("Error on get message with id (%s): %s\n", id, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Println("Error on marshal message")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
