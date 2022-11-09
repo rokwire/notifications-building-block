@@ -371,7 +371,8 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	w.Write(data)
 }
 
-// @Description Count the unread messages.
+// GetUserMessagesStats Count the messages stats
+// @Description Count the messages stats.
 // @Tags Client
 // @ID GetUserMessagesStats
 // @Accept  json
