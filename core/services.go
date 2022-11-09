@@ -197,9 +197,11 @@ func (app *Application) getMessages(orgID string, appID string, userID *string, 
 	return app.storage.GetMessages(orgID, appID, userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
-func (app *Application) getUnreadMessages(orgID string, appID string, userID *string, read *bool, mute *bool) (*int64, error) {
-	count, _ := app.storage.CountMessagesStatus(userID, read, mute)
-	return count, nil
+func (app *Application) getMessagesStats(orgID string, appID string, userID *string) (*model.MessagesStats, error) {
+	read := false
+	mute := true
+	stats, _ := app.storage.CountMessagesStatus(userID, read, mute)
+	return stats, nil
 }
 
 func (app *Application) getMessage(orgID string, appID string, ID string) (*model.Message, error) {
