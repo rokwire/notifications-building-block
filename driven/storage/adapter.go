@@ -847,6 +847,27 @@ func (sa Adapter) DeleteMessageWithContext(ctx context.Context, orgID string, ap
 	return nil
 }
 
+// UpdateUnreadMessage updates a unread message in the recipients to read
+func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID *string) (*model.Message, error) {
+	read := true
+	filter := bson.D{primitive.E{Key: "_id", Value: ID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "recipients.user_id", Value: userID}}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "recipients.$.read", Value: read},
+			primitive.E{Key: "recipients.$.date_updated", Value: time.Now().UTC()},
+		}},
+	}
+	_, err := sa.db.messages.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		fmt.Println("warning: error while updating massage", ID, userID, err)
+		return nil, err
+	}
+	return nil, nil
+}
+
 // GetAllAppVersions gets all registered versions
 func (sa Adapter) GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
 	filter := bson.D{

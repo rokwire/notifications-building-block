@@ -605,3 +605,40 @@ func (h ApisHandler) DeleteUserMessage(user *model.CoreToken, w http.ResponseWri
 
 	w.WriteHeader(http.StatusOK)
 }
+
+// UpdateReadMessage marking an "unread" message as "read"
+// @Description marking an "unread" message as "read"
+// @Tags Client
+// @ID UpdateReadMessage
+// @Param id path string true "id"
+// @Accept  json
+// @Success 200 {object} model.Message
+// @Security UserAuth
+// @Router message/{id}/read [put]
+func (h ApisHandler) UpdateReadMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) == 0 {
+		log.Println("Message id is required")
+		http.Error(w, "Message id is required", http.StatusBadRequest)
+		return
+	}
+
+	message, err := h.app.Services.UpdateReadMessage(user.OrgID, user.AppID, id, user.UserID)
+	if err != nil {
+		log.Printf("Error on get message with id (%s): %s\n", id, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Println("Error on marshal message")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
