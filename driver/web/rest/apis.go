@@ -373,21 +373,16 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 
 // @Description Count the unread messages.
 // @Tags Client
-// @ID GetUserMessagesCount
-// @Param read query bool "read"
-// @Param mute query bool "mute"
+// @ID GetUserMessagesStats
 // @Accept  json
 // @Success 200
 // @Security UserAuth
-// @Router /messages/count [get]
-func (h ApisHandler) GetUserMessagesCount(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	read := getBoolQueryParam(r, "read")
-	mute := getBoolQueryParam(r, "mute")
-
+// @Router /messages/stats[get]
+func (h ApisHandler) GetUserMessagesStats(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
 	var err error
-	var unreadMessages *int64
+	var unreadMessages *model.MessagesStats
 	if user != nil {
-		unreadMessages, err = h.app.Services.GetUnreadMessages(user.OrgID, user.AppID, user.UserID, read, mute)
+		unreadMessages, err = h.app.Services.GetMessagesStats(user.OrgID, user.AppID, user.UserID)
 		if err != nil {
 			log.Printf("Error on getting the count of the messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting the count of the message: %s", err), http.StatusInternalServerError)
