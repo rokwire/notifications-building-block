@@ -318,6 +318,8 @@ func (h ApisHandler) Unsubscribe(user *model.CoreToken, w http.ResponseWriter, r
 // @Description Gets all messages to the authenticated user.
 // @Tags Client
 // @ID GetUserMessages
+// @Param read query bool "read"
+// @Param mute query bool "mute"
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Possible values: asc, desc. Default: desc"
@@ -334,6 +336,8 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
 	endDateFilter := getInt64QueryParam(r, "end_date")
+	read := getBoolQueryParam(r, "read")
+	mute := getBoolQueryParam(r, "mute")
 
 	var messageIDs []string
 	bodyData, _ := ioutil.ReadAll(r.Body)
@@ -348,7 +352,7 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 	var err error
 	var messages []model.Message
 	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.OrgID, user.AppID, user.UserID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+		messages, err = h.app.Services.GetMessages(user.OrgID, user.AppID, user.UserID, read, mute, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 		if err != nil {
 			log.Printf("Error on getting user messages: %s", err)
 			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
@@ -426,7 +430,7 @@ func (h ApisHandler) GetTopicMessages(coreToken *model.CoreToken, w http.Respons
 		return
 	}
 
-	messages, err := h.app.Services.GetMessages(coreToken.OrgID, coreToken.AppID, nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(coreToken.OrgID, coreToken.AppID, nil, nil, nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, fmt.Sprintf("Error on getting messages: %s", err), http.StatusInternalServerError)
@@ -519,8 +523,8 @@ func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWr
 			}
 		}
 	} else {
-		log.Printf("Missing ids inthe request body")
-		http.Error(w, "Missing ids inthe request body", http.StatusBadRequest)
+		log.Printf("Missing ids in the request body")
+		http.Error(w, "Missing ids in the request body", http.StatusBadRequest)
 		return
 	}
 	if len(errStrings) > 0 {

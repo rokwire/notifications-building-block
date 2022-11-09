@@ -193,8 +193,8 @@ func (app *Application) sendNotifications(message *model.Message, tokens []strin
 	}
 }
 
-func (app *Application) getMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return app.storage.GetMessages(orgID, appID, userID, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
+func (app *Application) getMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	return app.storage.GetMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
 func (app *Application) getMessage(orgID string, appID string, ID string) (*model.Message, error) {

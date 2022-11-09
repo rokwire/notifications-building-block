@@ -454,7 +454,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 				return err
 			}
 
-			messages, err := sa.GetMessages(orgID, appID, &userID, nil, nil, nil, nil, nil, nil, nil)
+			messages, err := sa.GetMessages(orgID, appID, &userID, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			if err != nil {
 				fmt.Printf("warning: unable to retrieve messages for user (%s): %s\n", userID, err)
 				abortTransaction(sessionContext)
@@ -662,7 +662,7 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 }
 
 // GetMessages Gets all messages according to the filter
-func (sa Adapter) GetMessages(orgID string, appID string, userID *string, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
 	filter := bson.D{
 		primitive.E{Key: "org_id", Value: orgID},
 		primitive.E{Key: "app_id", Value: appID},
@@ -671,6 +671,7 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, messag
 	if userID != nil {
 		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: userID}})
 	}
+
 	if len(innerFilter) > 0 {
 		filter = append(filter, primitive.E{Key: "recipients", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "$or", Value: innerFilter}}}}})
 	}
@@ -680,6 +681,25 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, messag
 	if len(messageIDs) > 0 {
 		filter = append(filter, primitive.E{Key: "_id", Value: bson.M{"$in": messageIDs}})
 	}
+
+	if read != nil {
+		if *read {
+			filter = append(filter, primitive.E{Key: "recipients.read", Value: true})
+		} else {
+			// support of existing records where "read" field is missing
+			filter = append(filter, primitive.E{Key: "recipients.read", Value: bson.M{"$ne": true}})
+		}
+	}
+
+	if mute != nil {
+		if *mute {
+			filter = append(filter, primitive.E{Key: "recipients.mute", Value: true})
+		} else {
+			// support of existing records where "mute" field is missing
+			filter = append(filter, primitive.E{Key: "recipients.mute", Value: bson.M{"$ne": true}})
+		}
+	}
+
 	if startDateEpoch != nil {
 		seconds := *startDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)

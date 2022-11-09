@@ -296,6 +296,20 @@ paths:
                     type: string
         required: true
       parameters:
+        - name: read
+          in: query
+          description: read
+          style: simple
+          explode: false
+          schema:
+            type: boolean
+        - name: mute
+          in: query
+          description: mute
+          style: simple
+          explode: false
+          schema:
+            type: boolean
         - name: offset
           in: query
           description: offset
