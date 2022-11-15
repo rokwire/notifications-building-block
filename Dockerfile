@@ -14,7 +14,7 @@ FROM alpine:3.13
 RUN apk --no-cache add tzdata
 
 COPY --from=builder /notifications-app/bin/notifications /
-#COPY --from=builder /notifications-app/docs/swagger.yaml /docs/swagger.yaml
+COPY --from=builder /notifications-app/docs/swagger.yaml /docs/swagger.yaml
 
 COPY --from=builder /notifications-app/driver/web/authorization_model.conf /driver/web/authorization_model.conf
 COPY --from=builder /notifications-app/driver/web/authorization_policy.csv /driver/web/authorization_policy.csv
