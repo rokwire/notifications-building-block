@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - Fix docs path and the Dockerfile [#104](https://github.com/rokwire/notifications-building-block/issues/104)
+- Fix inappropriate store of mute and read flags which lose the original values [#106](https://github.com/rokwire/notifications-building-block/issues/106)
 
 ## [1.3.0] - 2022-11-10
 ### Added
