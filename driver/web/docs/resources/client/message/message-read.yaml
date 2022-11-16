@@ -9,7 +9,7 @@ put:
   parameters:
     - name: id
       in: path
-      description: id
+      description: offset
       required: true
       style: simple
       explode: false
