@@ -472,7 +472,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  'message/{message_id}/read':
+  '/message/{message_id}/read':
     put:
       tags:
         - Client
@@ -484,7 +484,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: id
+          description: offset
           required: true
           style: simple
           explode: false
