@@ -285,13 +285,13 @@ func (app *Application) deleteUserWithID(orgID string, appID string, userID stri
 
 func getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
 	common := []model.Recipient{}
-	hash := make(map[string]bool)
+	messageReciepientsMap := map[string]model.Recipient{}
 	for _, e := range s1 {
-		hash[e.UserID] = true
+		messageReciepientsMap[e.UserID] = e
 	}
 	for _, e := range s2 {
-		if hash[e.UserID] == true {
-			common = append(common, e)
+		if val, ok := messageReciepientsMap[e.UserID]; ok {
+			common = append(common, val)
 		}
 	}
 	return common

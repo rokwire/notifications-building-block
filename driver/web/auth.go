@@ -34,6 +34,8 @@ type Auth struct {
 	client   tokenauth.Handlers
 	admin    tokenauth.Handlers
 	internal InternalAuth
+
+	logger *logs.Logger
 }
 
 // NewAuth creates new auth handler
@@ -56,6 +58,7 @@ func NewAuth(app *core.Application, config *model.Config, serviceRegManager *aut
 		client:   clientHandlers,
 		admin:    adminHandlers,
 		internal: internal,
+		logger:   logger,
 	}
 	return &auth, nil
 }

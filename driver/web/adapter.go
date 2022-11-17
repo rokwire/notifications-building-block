@@ -64,7 +64,14 @@ func (we Adapter) Start() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// handle apis
-	mainRouter := router.PathPrefix("/notifications/api").Subrouter()
+	baseRouter := router.PathPrefix("/notifications").Subrouter()
+	baseRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
+	baseRouter.HandleFunc("/doc", we.serveDoc)
+	baseRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+
+	mainRouter := baseRouter.PathPrefix("/api").Subrouter()
+
+	// DEPRECATED
 	mainRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	mainRouter.HandleFunc("/doc", we.serveDoc)
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")

@@ -40,6 +40,9 @@ func main() {
 		Version = "dev"
 	}
 
+	loggerOpts := logs.LoggerOpts{SuppressRequests: []logs.HttpRequestProperties{logs.NewAwsHealthCheckHttpRequestProperties("notifications/version"), logs.NewAwsHealthCheckHttpRequestProperties("notifications/api/version")}}
+	logger := logs.NewLogger("core", &loggerOpts)
+
 	port := getEnvKey("PORT", true)
 
 	// mongoDB adapter
@@ -48,7 +51,7 @@ func main() {
 	mongoTimeout := getEnvKey("MONGO_TIMEOUT", false)
 	mtOrgID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_ORG_ID", true)
 	mtAppID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_APP_ID", true)
-	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout, mtOrgID, mtAppID)
+	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout, mtOrgID, mtAppID, logger)
 	err := storageAdapter.Start()
 	if err != nil {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
@@ -74,7 +77,7 @@ func main() {
 	mailAdapter := mailer.NewMailerAdapter(smtpHost, smtpPortNum, smtpUser, smtpPassword, smtpFrom)
 
 	// application
-	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter, logger)
 	application.Start()
 
 	// web adapter
@@ -108,7 +111,7 @@ func main() {
 		NotificationsServiceURL: notificationsServiceURL,
 	}
 
-	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager)
+	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, logger)
 
 	webAdapter.Start()
 }
