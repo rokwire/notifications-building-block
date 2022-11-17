@@ -41,9 +41,11 @@ func main() {
 		Version = "dev"
 	}
 
+	serviceID := "notifications"
+
 	loggerOpts := logs.LoggerOpts{SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties("notifications/version")}
 	loggerOpts.SuppressRequests = append(loggerOpts.SuppressRequests, logs.NewStandardHealthCheckHTTPRequestProperties("notifications/api/version")...)
-	logger := logs.NewLogger("core", &loggerOpts)
+	logger := logs.NewLogger(serviceID, &loggerOpts)
 
 	port := getEnvKey("PORT", false)
 	if len(port) == 0 {
@@ -93,7 +95,7 @@ func main() {
 	notificationsServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
 
 	authService := authservice.AuthService{
-		ServiceID:   "notifications",
+		ServiceID:   serviceID,
 		ServiceHost: notificationsServiceURL,
 		FirstParty:  true,
 		AuthBaseURL: coreBBHost,
