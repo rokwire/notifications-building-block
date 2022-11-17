@@ -15,7 +15,7 @@
 package core
 
 import (
-	"github.com/rokwire/logging-library-go/logs"
+	"github.com/rokwire/logging-library-go/v2/logs"
 	"log"
 	"notifications/driven/mailer"
 )

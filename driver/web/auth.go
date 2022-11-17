@@ -15,7 +15,6 @@
 package web
 
 import (
-	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
@@ -74,6 +73,7 @@ func newInternalAuth(internalAPIKey string) InternalAuth {
 	return InternalAuth{internalAPIKey: internalAPIKey}
 }
 
+// Check verifies the internal API key
 func (auth InternalAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
 	apiKey := req.Header.Get("INTERNAL-API-KEY")
 
@@ -91,36 +91,18 @@ func (auth InternalAuth) Check(req *http.Request) (int, *tokenauth.Claims, error
 	return http.StatusOK, nil, nil
 }
 
+// GetTokenAuth returns nil
 func (auth InternalAuth) GetTokenAuth() *tokenauth.TokenAuth {
 	return nil
 }
 
-////////////////////////////////////
-
-// CoreAuth implementation
-type CoreAuth struct {
-	app                *core.Application
-	tokenAuth          *tokenauth.TokenAuth
-	coreAuthPrivateKey *string
-}
-
-func newCoreAuth(app *core.Application, config *model.Config, serviceRegManager authservice.ServiceRegManager) *CoreAuth {
-
-	tokenAuth, err := tokenauth.NewTokenAuth(true, &serviceRegManager, nil, nil)
-	if err != nil {
-		log.Fatalf("Error intitializing token auth: %v", err)
-	}
-
-	auth := CoreAuth{app: app, tokenAuth: tokenAuth, coreAuthPrivateKey: &config.CoreAuthPrivateKey}
-	return &auth
-}
-
-// ServicesAuth entity
+// ClientAuth entity
 type ClientAuth struct {
 	tokenAuth *tokenauth.TokenAuth
 	logger    *logs.Logger
 }
 
+// Check validates the request contains a valid client token
 func (auth ClientAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
 	claims, err := auth.tokenAuth.CheckRequestTokens(req)
 	if err != nil {
@@ -142,6 +124,7 @@ func (auth ClientAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) 
 	return http.StatusOK, claims, nil
 }
 
+// GetTokenAuth returns the TokenAuth from the handler
 func (auth ClientAuth) GetTokenAuth() *tokenauth.TokenAuth {
 	return auth.tokenAuth
 }
@@ -162,6 +145,7 @@ type AdminAuth struct {
 	logger    *logs.Logger
 }
 
+// Check validates the request contains a valid client token
 func (auth AdminAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
 	claims, err := auth.tokenAuth.CheckRequestTokens(req)
 	if err != nil {
@@ -175,6 +159,7 @@ func (auth AdminAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
 	return http.StatusOK, claims, nil
 }
 
+// GetTokenAuth returns the TokenAuth from the handler
 func (auth AdminAuth) GetTokenAuth() *tokenauth.TokenAuth {
 	return auth.tokenAuth
 }

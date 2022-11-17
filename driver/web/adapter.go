@@ -67,7 +67,7 @@ func (we Adapter) Start() {
 	baseRouter := router.PathPrefix("/notifications").Subrouter()
 	baseRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	baseRouter.HandleFunc("/doc", we.serveDoc)
-	baseRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+	baseRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")
 
 	mainRouter := baseRouter.PathPrefix("/api").Subrouter()
 
@@ -75,6 +75,7 @@ func (we Adapter) Start() {
 	mainRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	mainRouter.HandleFunc("/doc", we.serveDoc)
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")
+	//
 
 	// Internal APIs
 	//deprecated

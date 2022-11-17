@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/rokwire/logging-library-go/logs"
+	"github.com/rokwire/logging-library-go/v2/logs"
 
 	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/v2/errors"
@@ -961,7 +961,7 @@ func (sa Adapter) DeleteMessageWithContext(ctx context.Context, orgID string, ap
 }
 
 // UpdateUnreadMessage updates a unread message in the recipients to read
-func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID *string) (*model.Message, error) {
+func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID string) (*model.Message, error) {
 	read := true
 	filter := bson.D{primitive.E{Key: "_id", Value: ID},
 		primitive.E{Key: "app_id", Value: appID},

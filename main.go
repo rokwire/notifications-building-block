@@ -26,6 +26,7 @@ import (
 	"strconv"
 
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 var (
@@ -40,7 +41,8 @@ func main() {
 		Version = "dev"
 	}
 
-	loggerOpts := logs.LoggerOpts{SuppressRequests: []logs.HttpRequestProperties{logs.NewAwsHealthCheckHttpRequestProperties("notifications/version"), logs.NewAwsHealthCheckHttpRequestProperties("notifications/api/version")}}
+	loggerOpts := logs.LoggerOpts{SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties("notifications/version")}
+	loggerOpts.SuppressRequests = append(loggerOpts.SuppressRequests, logs.NewStandardHealthCheckHTTPRequestProperties("notifications/api/version")...)
 	logger := logs.NewLogger("core", &loggerOpts)
 
 	port := getEnvKey("PORT", true)
