@@ -1,0 +1,115 @@
+// Copyright 2022 Board of Trustees of the University of Illinois.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package rest
+
+import (
+	"encoding/json"
+	"net/http"
+	"notifications/core"
+	"notifications/core/model"
+
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
+)
+
+// BBsAPIsHandler handles the rest BBs APIs implementation
+type BBsAPIsHandler struct {
+	app *core.Application
+}
+
+// newBBsAPIsHandler creates new rest Handler instance
+func newBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
+	return BBsAPIsHandler{app: app}
+}
+
+// sendMessageRequestBody message request body
+type bbsSendMessageRequestBody struct {
+	Async   *bool          `json:"async"`
+	Message *model.Message `json:"message"`
+} // @name sendMessageRequestBody
+
+// SendMessage Sends a message to a user, list of users or a topic
+// @Description Sends a message to a user, list of users or a topic
+// @Tags BBs
+// @ID BBsSendMessage
+// @Param data body sendMessageRequestBody true "body json"
+// @Produce plain
+// @Success 200 {object} model.Message
+// @Security BBsAuth
+// @Router /bbs/message [post]
+func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var bodyData bbsSendMessageRequestBody
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+
+	message := bodyData.Message
+	async := false //by default
+	if bodyData.Async != nil {
+		async = *bodyData.Async
+	}
+
+	if message == nil {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypeRequestBody, nil, nil, http.StatusBadRequest, false)
+	}
+	if len(message.OrgID) == 0 || len(message.AppID) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
+	}
+
+	message, err = h.app.Services.CreateMessage(nil, message, async)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
+}
+
+// sendMailRequestBody mail request body
+type bbsSendMailRequestBody struct {
+	ToMail  string `json:"to_mail"`
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
+} // @name sendMailRequestBody
+
+// SendMail Sends an email
+// @Description Sends an email
+// @Tags BBs
+// @ID BBsSendEmail
+// @Param data body sendMailRequestBody true "body json"
+// @Produce plain
+// @Success 200
+// @Security BBsAuth
+// @Router /bbs/mail [post]
+func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var mailRequest *bbsSendMailRequestBody
+	err := json.NewDecoder(r.Body).Decode(&mailRequest)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+
+	err = h.app.Services.SendMail(mailRequest.ToMail, mailRequest.Subject, mailRequest.Body)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "email", nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
+}

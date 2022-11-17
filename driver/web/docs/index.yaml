@@ -65,6 +65,12 @@ paths:
     $ref: "./resources/admin/message/message.yaml"
   /api/admin/messages{id}:
     $ref: "./resources/admin/message/messages-id.yaml"   
+
+  #BBs
+  /api/bbs/message:
+    $ref: "./resources/bbs/message.yaml"
+  /api/bbs/mail:
+    $ref: "./resources/bbs/mail.yaml"
     
 components:
   securitySchemes:

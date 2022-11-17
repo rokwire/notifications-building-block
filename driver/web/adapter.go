@@ -77,7 +77,7 @@ func (we Adapter) Start() {
 	//
 
 	// Internal APIs
-	//deprecated
+	// DEPRECATED - Use "bbs" APIs
 	mainRouter.HandleFunc("/int/message", we.wrapFunc(we.internalApisHandler.SendMessage, we.auth.internal)).Methods("POST")
 	mainRouter.HandleFunc("/int/v2/message", we.wrapFunc(we.internalApisHandler.SendMessageV2, we.auth.internal)).Methods("POST")
 	mainRouter.HandleFunc("/int/mail", we.wrapFunc(we.internalApisHandler.SendMail, we.auth.internal)).Methods("POST")
@@ -90,7 +90,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/messages", we.wrapFunc(we.apisHandler.GetUserMessages, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.wrapFunc(we.apisHandler.DeleteUserMessages, we.auth.client.Standard)).Methods("DELETE")
 	mainRouter.HandleFunc("/messages/stats", we.wrapFunc(we.apisHandler.GetUserMessagesStats, we.auth.client.Standard)).Methods("GET")
-	// mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
+	mainRouter.HandleFunc("/message", we.wrapFunc(we.apisHandler.CreateMessage, we.auth.client.Permissions)).Methods("POST")
 	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.GetMessage, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.DeleteUserMessage, we.auth.client.Standard)).Methods("DELETE")
 	mainRouter.HandleFunc("/message/{id}/read", we.wrapFunc(we.apisHandler.UpdateReadMessage, we.auth.client.Standard)).Methods("PUT")
@@ -110,6 +110,11 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.UpdateMessage, we.auth.admin.Permissions)).Methods("PUT")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.GetMessage, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.DeleteMessage, we.auth.admin.Permissions)).Methods("DELETE")
+
+	// BB APIs
+	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()
+	bbsRouter.HandleFunc("/message", we.wrapFunc(we.internalApisHandler.SendMessageV2, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.internalApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -191,7 +196,7 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 		logger.Fatalf("error parsing docs yaml - %s", err.Error())
 	}
 
-	auth, err := NewAuth(app, config, serviceRegManager, logger)
+	auth, err := NewAuth(app, config, serviceRegManager)
 	if err != nil {
 		logger.Fatalf("error creating auth - %s", err.Error())
 	}

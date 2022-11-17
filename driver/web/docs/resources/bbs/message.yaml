@@ -1,11 +1,11 @@
 post:
   tags:
-  - Client
+  - BBs
   summary: Create message
   description: |
     Create message
 
-    **Auth:** Requires user token with `send_message` permission
+    **Auth:** Requires first-party service token with `send_message` permission
   security:
     - bearerAuth: []
   requestBody:
@@ -13,7 +13,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../../schemas/application/Message.yaml" 
+          $ref: "../../schemas/apis/messageV2/request/Request.yaml" 
     required: true    
   responses:
     200:
@@ -23,7 +23,7 @@ post:
           schema:
             type: array
             items:
-              $ref: "../../../schemas/application/Message.yaml"
+              $ref: "../../schemas/application/Message.yaml"
     400:
       description: Bad request
     401:

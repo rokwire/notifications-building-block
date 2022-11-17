@@ -21,7 +21,6 @@ import (
 
 	"github.com/rokwire/core-auth-library-go/v2/authorization"
 	"github.com/rokwire/logging-library-go/v2/errors"
-	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
 
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
@@ -32,32 +31,37 @@ import (
 type Auth struct {
 	client   tokenauth.Handlers
 	admin    tokenauth.Handlers
+	bbs      tokenauth.Handlers
 	internal InternalAuth
-
-	logger *logs.Logger
 }
 
 // NewAuth creates new auth handler
-func NewAuth(app *core.Application, config *model.Config, serviceRegManager *authservice.ServiceRegManager, logger *logs.Logger) (*Auth, error) {
-	client, err := newClientAuth(serviceRegManager, logger)
+func NewAuth(app *core.Application, config *model.Config, serviceRegManager *authservice.ServiceRegManager) (*Auth, error) {
+	client, err := newClientAuth(serviceRegManager)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionCreate, "client auth", nil, err)
 	}
 	clientHandlers := tokenauth.NewHandlers(client)
 
-	admin, err := newAdminAuth(serviceRegManager, logger)
+	admin, err := newAdminAuth(serviceRegManager)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionCreate, "admin auth", nil, err)
 	}
 	adminHandlers := tokenauth.NewHandlers(admin)
+
+	bbs, err := newBBsAuth(serviceRegManager)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "bbs auth", nil, err)
+	}
+	bbsHandlers := tokenauth.NewHandlers(bbs)
 
 	internal := newInternalAuth(config.InternalAPIKey)
 
 	auth := Auth{
 		client:   clientHandlers,
 		admin:    adminHandlers,
+		bbs:      bbsHandlers,
 		internal: internal,
-		logger:   logger,
 	}
 	return &auth, nil
 }
@@ -99,7 +103,6 @@ func (auth InternalAuth) GetTokenAuth() *tokenauth.TokenAuth {
 // ClientAuth entity
 type ClientAuth struct {
 	tokenAuth *tokenauth.TokenAuth
-	logger    *logs.Logger
 }
 
 // Check validates the request contains a valid client token
@@ -130,23 +133,23 @@ func (auth ClientAuth) GetTokenAuth() *tokenauth.TokenAuth {
 	return auth.tokenAuth
 }
 
-func newClientAuth(serviceRegManager *authservice.ServiceRegManager, logger *logs.Logger) (*ClientAuth, error) {
-	servicesTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, nil, nil)
+func newClientAuth(serviceRegManager *authservice.ServiceRegManager) (*ClientAuth, error) {
+	clientPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/client_permission_policy.csv")
+	clientTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, clientPermissionAuth, nil)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionCreate, "client token auth", nil, err)
 	}
 
-	auth := ClientAuth{tokenAuth: servicesTokenAuth, logger: logger}
+	auth := ClientAuth{tokenAuth: clientTokenAuth}
 	return &auth, nil
 }
 
 // AdminAuth entity
 type AdminAuth struct {
 	tokenAuth *tokenauth.TokenAuth
-	logger    *logs.Logger
 }
 
-// Check validates the request contains a valid client token
+// Check validates the request contains a valid admin token
 func (auth AdminAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
 	claims, err := auth.tokenAuth.CheckRequestTokens(req)
 	if err != nil {
@@ -165,13 +168,52 @@ func (auth AdminAuth) GetTokenAuth() *tokenauth.TokenAuth {
 	return auth.tokenAuth
 }
 
-func newAdminAuth(serviceRegManager *authservice.ServiceRegManager, logger *logs.Logger) (*AdminAuth, error) {
+func newAdminAuth(serviceRegManager *authservice.ServiceRegManager) (*AdminAuth, error) {
 	adminPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/admin_permission_policy.csv")
 	adminTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, adminPermissionAuth, nil)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionCreate, "admin token auth", nil, err)
 	}
 
-	auth := AdminAuth{tokenAuth: adminTokenAuth, logger: logger}
+	auth := AdminAuth{tokenAuth: adminTokenAuth}
+	return &auth, nil
+}
+
+// BBsAuth entity
+type BBsAuth struct {
+	tokenAuth *tokenauth.TokenAuth
+}
+
+// Check validates the request contains a valid first-party service token
+func (auth *BBsAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
+	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	if err != nil {
+		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
+	}
+
+	if !claims.Service {
+		return http.StatusUnauthorized, nil, errors.ErrorData(logutils.StatusInvalid, "service claim", nil)
+	}
+
+	if !claims.FirstParty {
+		return http.StatusUnauthorized, nil, errors.ErrorData(logutils.StatusInvalid, "first party claim", nil)
+	}
+
+	return http.StatusOK, claims, nil
+}
+
+// GetTokenAuth returns the TokenAuth from the handler
+func (auth *BBsAuth) GetTokenAuth() *tokenauth.TokenAuth {
+	return auth.tokenAuth
+}
+
+func newBBsAuth(serviceRegManager *authservice.ServiceRegManager) (*BBsAuth, error) {
+	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/bbs_permission_policy.csv")
+	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionStart, "bbs token auth", nil, err)
+	}
+
+	auth := BBsAuth{tokenAuth: bbsTokenAuth}
 	return &auth, nil
 }
