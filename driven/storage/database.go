@@ -135,7 +135,7 @@ func (m *database) start() error {
 	return nil
 }
 
-//it adds org id and app id for the current data to match the multi-tenancy requirements
+// it adds org id and app id for the current data to match the multi-tenancy requirements
 func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWrapper, topics *collectionWrapper,
 	messages *collectionWrapper, appVersions *collectionWrapper, appPlatforms *collectionWrapper) error {
 

@@ -27,7 +27,7 @@ const (
 	typeMail logutils.MessageDataType = "mail"
 )
 
-//Adapter implements the Emailer interface
+// Adapter implements the Emailer interface
 type Adapter struct {
 	smptHost     string
 	smtpPortNum  int
@@ -37,7 +37,7 @@ type Adapter struct {
 	emailDialer  *gomail.Dialer
 }
 
-//SendMail is used to send emails using Smtp connection
+// SendMail is used to send emails using Smtp connection
 func (a *Adapter) SendMail(toEmail string, subject string, body string) error {
 	if a.emailDialer == nil {
 		return errors.New("email dialer is nil")
@@ -60,7 +60,7 @@ func (a *Adapter) SendMail(toEmail string, subject string, body string) error {
 	return nil
 }
 
-//NewMailerAdapter creates a new mailer adapter instance
+// NewMailerAdapter creates a new mailer adapter instance
 func NewMailerAdapter(smtpHost string, smtpPortNum int, smtpUser string, smtpPassword string, smtpFrom string) *Adapter {
 	emailDialer := gomail.NewDialer(smtpHost, smtpPortNum, smtpUser, smtpPassword)
 
