@@ -1,0 +1,12 @@
+type: object
+properties:
+  user_id:
+    type: string
+  name:
+    type: string  
+  notification_disabled:
+    type: boolean 
+  mute:
+    type: boolean
+  read:
+    type: boolean

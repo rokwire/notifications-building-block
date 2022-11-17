@@ -1,0 +1,17 @@
+get:
+  tags:
+  - Client
+  summary: Count the unread messages
+  description: |
+    Count the unread messages
+  security:
+    - bearerAuth: []  
+  responses:
+    200:
+      description: Success
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error

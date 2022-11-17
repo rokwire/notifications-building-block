@@ -1,0 +1,27 @@
+# application
+AppPlatform:
+  $ref: "./application/AppPlatform.yaml"
+AppVersion:
+  $ref: "./application/AppVersion.yaml"
+Config:
+  $ref: "./application/Config.yaml"
+CoreToken:
+  $ref: "./application/CoreToken.yaml"
+CoreUserRef:
+  $ref: "./application/CoreUserRef.yaml"
+FirebaseToken:
+  $ref: "./application/FirebaseToken.yaml"
+Message:
+  $ref: "./application/Message.yaml"
+Recipient:
+  $ref: "./application/Recipients.yaml"
+RecipientCriteria:
+  $ref: "./application/RecipientCriteria.yaml"
+Sender:
+  $ref: "./application/Sender.yaml"
+TokenInfo:
+  $ref: "./application/TokenInfo.yaml"
+Topic:
+  $ref: "./application/Topic.yaml"
+User:
+  $ref: "./application/User.yaml"

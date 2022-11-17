@@ -1,0 +1,12 @@
+type: object
+properties:
+  token:
+    type: string
+  app_platform:
+    type: string
+  app_version:
+    type: string
+  date_created:
+    type: string
+  date_updated:
+    type: string   

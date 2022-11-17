@@ -1,0 +1,76 @@
+openapi: 3.0.3
+info:
+  title: Rokwire Notification Building Block API
+  description: Notification Building Block API Documentation
+  version: 1.4.0
+servers:
+  - url: 'https://api.rokwire.illinois.edu/notifications'
+    description: Production server
+  - url: 'https://api-test.rokwire.illinois.edu/notifications'
+    description: Test server
+  - url: 'https://api-dev.rokwire.illinois.edu/notifications'
+    description: Development server
+  - url: 'http://localhost/notifications'
+    description: Local server
+tags:
+  - name: Admin
+    description: Clients administration applications APIs.
+  - name: Internal
+    description: Internal applications APIs.
+  - name: Client
+    description: Client applications APIs.
+paths:  
+  #Internal
+  /int/message:
+    $ref: "./resources/internal/message.yaml"
+  /int/v2/message:
+    $ref: "./resources/internal/v2/message.yaml"
+  /int/mail:
+    $ref: "./resources/internal/mail.yaml"
+  #Client
+  /token:
+    $ref: "./resources/client/token.yaml"
+  /user:
+    $ref: "./resources/client/user.yaml"
+  /message:
+    $ref: "./resources/client/message/message.yaml"
+  /messages:
+    $ref: "./resources/client/message/messages.yaml"
+  /messages/stats:
+    $ref: "./resources/client/message/messages-stats.yaml"  
+  /message/{id}:
+    $ref: "./resources/client/message/messages-id.yaml"
+  message/{message_id}/read:
+    $ref: "./resources/client/message/message-read.yaml"
+  /topics:
+    $ref: "./resources/client/topic/topics.yaml"
+  /topic/{topic}/messages:
+    $ref: "./resources/client/topic/topics-messages.yaml"
+  /topic/{topic}/subscribe:
+    $ref: "./resources/client/topic/topics-subscribe.yaml"
+  /topic/{topic}/unsubscribe:
+    $ref: "./resources/client/topic/topics-unsubscribe.yaml"
+  #Admin
+  /admin/app-versions:
+    $ref: "./resources/admin/app-versions.yaml"
+  /admin/app-platforms:
+    $ref: "./resources/admin/app-platforms.yaml"
+  /admin/topics:
+    $ref: "./resources/admin/topic/topics.yaml"
+  /admin/topic:
+    $ref: "./resources/admin/topic/topic.yaml"
+  /admin/messages:
+    $ref: "./resources/admin/message/messages.yaml"
+  /admin/message:
+    $ref: "./resources/admin/message/message.yaml"
+  /admin/messages{id}:
+    $ref: "./resources/admin/message/messages-id.yaml"   
+    
+components:
+  securitySchemes:
+      bearerAuth:            # arbitrary name for the security scheme
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
+  schemas:
+    $ref: "./schemas/index.yaml"

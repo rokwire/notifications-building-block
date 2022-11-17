@@ -1,0 +1,1143 @@
+openapi: 3.0.3
+info:
+  title: Rokwire Notification Building Block API
+  description: Notification Building Block API Documentation
+  version: 1.4.0
+servers:
+  - url: 'https://api.rokwire.illinois.edu/notifications'
+    description: Production server
+  - url: 'https://api-test.rokwire.illinois.edu/notifications'
+    description: Test server
+  - url: 'https://api-dev.rokwire.illinois.edu/notifications'
+    description: Development server
+  - url: 'http://localhost/notifications'
+    description: Local server
+tags:
+  - name: Admin
+    description: Clients administration applications APIs.
+  - name: Internal
+    description: Internal applications APIs.
+  - name: Client
+    description: Client applications APIs.
+paths:
+  /int/message:
+    post:
+      tags:
+        - Internal
+      deprecated: true
+      summary: Create message
+      description: |
+        Create message
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /int/v2/message:
+    post:
+      tags:
+        - Internal
+      summary: Create message
+      description: |
+        Create message
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                async:
+                  type: boolean
+                message:
+                  $ref: '#/components/schemas/Message'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /int/mail:
+    post:
+      tags:
+        - Internal
+      deprecated: true
+      summary: Stores a firebase token and maps it to a idToken if presents"
+      description: |
+        Stores a firebase token and maps it to a idToken if presents"
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: sending mail
+        content:
+          application/json:
+            schema:
+              required:
+                - token
+              type: object
+              properties:
+                token:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /token:
+    post:
+      tags:
+        - Client
+      summary: Send mail
+      description: |
+        Send mail
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: sending mail
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to_mail:
+                  type: string
+                subject:
+                  type: string
+                body:
+                  type: string
+        required: true
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /user:
+    get:
+      tags:
+        - Client
+      summary: Gets user record
+      description: |
+        Gets user record
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    delete:
+      tags:
+        - Client
+      summary: Deletes user record and unlink all messages
+      description: |
+        Deletes user record and unlink all messages
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: notifications_disabled
+        content:
+          application/json:
+            schema:
+              $ref: '#/paths/~1user/post/requestBody/content/application~1json/schema'
+              type: array
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    post:
+      tags:
+        - Client
+      summary: Updates user record
+      description: |
+        Updates user record
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: notifications_disabled
+        content:
+          application/json:
+            schema:
+              type: array
+              required:
+                - notifications_disabled
+              properties:
+                notifications_disabled:
+                  type: boolean
+        required: trueg
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /message:
+    post:
+      tags:
+        - Client
+      deprecated: true
+      summary: Create message
+      description: |
+        Create message
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /messages:
+    get:
+      tags:
+        - Client
+      summary: Retrieves a message by id
+      description: |
+        Retrieves a message by id
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: body json of the all message ids that need to be filtered
+        content:
+          application/json:
+            schema:
+              required:
+                - _ids
+              type: object
+              properties:
+                _ids:
+                  type: array
+                  items:
+                    type: string
+        required: true
+      parameters:
+        - name: read
+          in: query
+          description: read
+          style: simple
+          explode: false
+          schema:
+            type: boolean
+        - name: mute
+          in: query
+          description: mute
+          style: simple
+          explode: false
+          schema:
+            type: boolean
+        - name: offset
+          in: query
+          description: offset
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: limit
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: 'order - Possible values: asc, desc. Default: desc'
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          description: start_date - Start date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: end_date
+          in: query
+          description: end_date - End date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    delete:
+      tags:
+        - Client
+      summary: Removes the current user from the recipient list of all described
+      description: |
+        Removes the current user from the recipient list of all described
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: body json of the all message ids that need to be filtered
+        content:
+          application/json:
+            schema:
+              $ref: '#/paths/~1messages/get/requestBody/content/application~1json/schema'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /messages/stats:
+    get:
+      tags:
+        - Client
+      summary: Count the unread messages
+      description: |
+        Count the unread messages
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  '/message/{id}':
+    get:
+      tags:
+        - Client
+      summary: Retrieves a message by id
+      description: |
+        Retrieves a message by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: offset
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    delete:
+      tags:
+        - Client
+      summary: Removes the current user from the recipient list of the message
+      description: |
+        Removes the current user from the recipient list of the message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  'message/{message_id}/read':
+    put:
+      tags:
+        - Client
+      summary: Update message
+      description: |
+        Update message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /topics:
+    get:
+      tags:
+        - Client
+      summary: Gets all topics
+      description: |
+        Gets all topics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  '/topic/{topic}/messages':
+    get:
+      tags:
+        - Client
+      summary: Gets all messages for topic
+      description: |
+        Gets all messages for topic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: topic
+          in: path
+          description: topic
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: offset
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: limit - limit the result
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: 'order - Possible values: asc, desc. Default: desc'
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          description: start_date - Start date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: end_date
+          in: query
+          description: end_date - End date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  '/topic/{topic}/subscribe':
+    post:
+      tags:
+        - Client
+      summary: Subscribes the current user to a topic
+      description: |
+        Subscribes the current user to a topic
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: token
+        content:
+          application/json:
+            schema:
+              $ref: '#/paths/~1int~1mail/post/requestBody/content/application~1json/schema'
+        required: true
+      parameters:
+        - name: topic
+          in: path
+          description: topic
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  '/topic/{topic}/unsubscribe':
+    post:
+      tags:
+        - Client
+      summary: Unubscribes the current user to a topic
+      description: |
+        Unsubscribes the current user to a topic
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: token
+        content:
+          application/json:
+            schema:
+              $ref: '#/paths/~1int~1mail/post/requestBody/content/application~1json/schema'
+        required: true
+      parameters:
+        - name: topic
+          in: path
+          description: topic
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /admin/app-versions:
+    get:
+      tags:
+        - Admin
+      summary: Gets all available app versions
+      description: |
+        Gets all available app versions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /admin/app-platforms:
+    get:
+      tags:
+        - Admin
+      summary: Gets all available app platforms
+      description: |
+        Gets all available app platforms
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /admin/topics:
+    get:
+      tags:
+        - Admin
+      summary: Gets all topics
+      description: |
+        Gets all topics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /admin/topic:
+    put:
+      tags:
+        - Admin
+      summary: Updated the topic
+      description: |
+        Updated the topic
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: token
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Topic'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /admin/messages:
+    get:
+      tags:
+        - Admin
+      summary: Retrieves a message by id
+      description: |
+        Retrieves a message by id
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: body json of the all message ids that need to be filtered
+        content:
+          application/json:
+            schema:
+              $ref: '#/paths/~1messages/get/requestBody/content/application~1json/schema'
+        required: true
+      parameters:
+        - name: offset
+          in: query
+          description: offset
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: limit
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: 'order - Possible values: asc, desc. Default: desc'
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          description: start_date - Start date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: end_date
+          in: query
+          description: end_date - End date filter in milliseconds as an integer epoch value
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /admin/message:
+    post:
+      tags:
+        - Admin
+      summary: Create message
+      description: |
+        Create message
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    put:
+      tags:
+        - Admin
+      summary: Update message
+      description: |
+        Update message
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  '/admin/messages{id}':
+    get:
+      tags:
+        - Admin
+      summary: Gets message by id
+      description: |
+        Gets message by id
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: the message id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    delete:
+      tags:
+        - Admin
+      summary: Delete message
+      description: |
+        Deletes an existing message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: The message
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AppPlatform:
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    AppVersion:
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    Config:
+      type: object
+      properties:
+        CoreAuthPrivateKey:
+          type: string
+        CoreBBHost:
+          type: string
+        NotificationsServiceURL:
+          type: string
+        InternalAPIKey:
+          type: string
+    CoreToken:
+      type: object
+      properties:
+        uid:
+          type: string
+        app_id:
+          type: string
+        org_id:
+          type: string
+        sub:
+          type: string
+        name:
+          type: string
+        scope:
+          type: string
+        permissions:
+          type: string
+        anonymous:
+          type: boolean
+    CoreUserRef:
+      type: object
+      properties:
+        user_id:
+          type: string
+        name:
+          type: string
+    FirebaseToken:
+      type: object
+      properties:
+        token:
+          type: string
+        app_platform:
+          type: string
+        app_version:
+          type: string
+        date_created:
+          type: string
+        date_updated:
+          type: string
+    Message:
+      type: object
+      properties:
+        org_id:
+          type: string
+        app_id:
+          type: string
+        _id:
+          type: string
+        date_created:
+          type: string
+        date_updated:
+          type: string
+        priority:
+          type: string
+        recipients:
+          type: array
+          $ref: '#/components/schemas/Recipient'
+        recipients_criteria_list:
+          type: array
+          $ref: '#/components/schemas/RecipientCriteria'
+        topic:
+          type: string
+        subject:
+          type: string
+        sender:
+          $ref: '#/components/schemas/Sender'
+        body:
+          type: string
+        data:
+          type: array
+          items:
+            type: string
+    Recipient:
+      type: object
+      properties:
+        user_id:
+          type: string
+        name:
+          type: string
+        notification_disabled:
+          type: boolean
+        mute:
+          type: boolean
+        read:
+          type: boolean
+    RecipientCriteria:
+      type: object
+      properties:
+        app_version:
+          type: string
+        app_platform:
+          type: string
+    Sender:
+      type: object
+      properties:
+        type:
+          type: string
+        user:
+          $ref: '#/components/schemas/CoreUserRef'
+    TokenInfo:
+      type: object
+      properties:
+        previous_token:
+          type: string
+        token:
+          type: string
+        app_version:
+          type: string
+        app_platform:
+          type: string
+    Topic:
+      type: object
+      properties:
+        name:
+          type: string
+        app_id:
+          type: string
+        org_id:
+          type: string
+        description:
+          type: string
+        date_created:
+          type: string
+        date_updated:
+          type: string
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+        notifications_disabled:
+          type: string
+        firebase_tokens:
+          type: array
+          $ref: '#/components/schemas/FirebaseToken'
+        user_id:
+          type: string
+        topics:
+          type: array
+        date_created:
+          type: string
+        date_updated:
+          type: string

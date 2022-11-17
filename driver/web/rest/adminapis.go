@@ -44,8 +44,7 @@ func NewAdminApisHandler(app *core.Application) AdminApisHandler {
 // @Security AdminUserAuth
 // @Router /admin/topics [get]
 func (h AdminApisHandler) GetTopics(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-
-	topics, err := h.app.Services.GetTopics()
+	topics, err := h.app.Services.GetTopics(user.OrgID, user.AppID)
 	if err != nil {
 		log.Printf("Error on retrieving all topics: %s\n", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -88,6 +87,9 @@ func (h AdminApisHandler) UpdateTopic(user *model.CoreToken, w http.ResponseWrit
 		return
 	}
 
+	topic.OrgID = user.OrgID
+	topic.AppID = user.AppID
+
 	_, err = h.app.Services.UpdateTopic(topic)
 	if err != nil {
 		log.Printf("Error on update topic (%s): %s\n", topic.Name, err)
@@ -129,8 +131,10 @@ func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWrit
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
 	endDateFilter := getInt64QueryParam(r, "end_date")
+	read := getBoolQueryParam(r, "read")
+	mute := getBoolQueryParam(r, "mute")
 
-	messages, err := h.app.Services.GetMessages(userIDFilter, nil, startDateFilter, endDateFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(user.OrgID, user.AppID, userIDFilter, read, mute, nil, startDateFilter, endDateFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		log.Printf("Error on getting messages: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -177,6 +181,9 @@ func (h AdminApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWr
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	message.OrgID = user.OrgID
+	message.AppID = user.AppID
 
 	message, err = h.app.Services.CreateMessage(user, message, false)
 	if err != nil {
@@ -228,6 +235,9 @@ func (h AdminApisHandler) UpdateMessage(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
+	message.OrgID = user.OrgID
+	message.AppID = user.AppID
+
 	message, err = h.app.Services.UpdateMessage(user, message)
 	if err != nil {
 		log.Printf("Error on update message: %s\n", err)
@@ -266,7 +276,7 @@ func (h AdminApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWrite
 		return
 	}
 
-	message, err := h.app.Services.GetMessage(id)
+	message, err := h.app.Services.GetMessage(user.OrgID, user.AppID, id)
 	if err != nil {
 		log.Printf("Error on get message with id (%s): %s\n", id, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -304,7 +314,7 @@ func (h AdminApisHandler) DeleteMessage(user *model.CoreToken, w http.ResponseWr
 		return
 	}
 
-	err := h.app.Services.DeleteMessage(id)
+	err := h.app.Services.DeleteMessage(user.OrgID, user.AppID, id)
 	if err != nil {
 		log.Printf("Error on delete message with id (%s): %s\n", id, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -322,8 +332,8 @@ func (h AdminApisHandler) DeleteMessage(user *model.CoreToken, w http.ResponseWr
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/app_versions [get]
-func (h AdminApisHandler) GetAllAppVersions(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-	appVersions, err := h.app.Services.GetAllAppVersions()
+func (h AdminApisHandler) GetAllAppVersions(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
+	appVersions, err := h.app.Services.GetAllAppVersions(coreToken.OrgID, coreToken.AppID)
 	if err != nil {
 		log.Printf("Error on get app versions: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -350,8 +360,8 @@ func (h AdminApisHandler) GetAllAppVersions(_ *model.CoreToken, w http.ResponseW
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/app_platforms [get]
-func (h AdminApisHandler) GetAllAppPlatforms(_ *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-	appPlatforms, err := h.app.Services.GetAllAppPlatforms()
+func (h AdminApisHandler) GetAllAppPlatforms(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
+	appPlatforms, err := h.app.Services.GetAllAppPlatforms(coreToken.OrgID, coreToken.AppID)
 	if err != nil {
 		log.Printf("Error on get app platforms: %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

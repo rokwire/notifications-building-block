@@ -15,10 +15,30 @@
 package core
 
 import (
-	"notifications/driven/mailer"
-
 	"github.com/rokwire/logging-library-go/logs"
+	"log"
+	"notifications/driven/mailer"
 )
+
+type storageListener struct {
+	app *Application
+}
+
+// OnFirebaseConfigurationsUpdated notifies that the firebase configurations have been updated
+func (sl *storageListener) OnFirebaseConfigurationsUpdated() {
+	log.Println("OnFirebaseConfigurationsUpdated")
+
+	// set the updated firebase configuration in the firebase adapter
+	firebaseConfs, err := sl.app.storage.LoadFirebaseConfigurations()
+	if err != nil {
+		log.Printf("Error getting the firebase configurations when updated - %s", err.Error())
+	}
+
+	err = sl.app.firebase.UpdateFirebaseConfigurations(firebaseConfs)
+	if err != nil {
+		log.Printf("Error setting the firebase configurations when updated - %s", err.Error())
+	}
+}
 
 // Application represents the core application code based on hexagonal architecture
 type Application struct {
@@ -35,6 +55,9 @@ type Application struct {
 
 // Start starts the core part of the application
 func (app *Application) Start() {
+	//set storage listener
+	storageListener := storageListener{app: app}
+	app.storage.RegisterStorageListener(&storageListener)
 }
 
 // NewApplication creates new Application

@@ -33,10 +33,11 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	host          string
-	port          string
-	auth          *Auth
-	authorization *casbin.Enforcer
+	host                   string
+	port                   string
+	notificationServiceURL string
+	auth                   *Auth
+	authorization          *casbin.Enforcer
 
 	apisHandler         rest.ApisHandler
 	adminApisHandler    rest.AdminApisHandler
@@ -45,31 +46,6 @@ type Adapter struct {
 	app    *core.Application
 	logger *logs.Logger
 }
-
-// @title Rokwire Notifications Building Block API
-// @description Rokwire Notifications Building Block API Documentation.
-// @version 1.2.0
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost
-// @BasePath /notifications/api
-// @schemes https
-
-// @securityDefinitions.apikey RokwireAuth
-// @in header
-// @name ROKWIRE-API-KEY
-
-// @securityDefinitions.apikey InternalAuth
-// @in header
-// @name INTERNAL-API-KEY
-
-// @securityDefinitions.apikey UserAuth
-// @in header (add core access token with Bearer prefix to the Authorization value. The token must represent either anonymous or authenticated user )
-// @name Authorization
-
-// @securityDefinitions.apikey AdminUserAuth
-// @in header (add admin core access token with Bearer prefix to the Authorization value. The token must contain notifications_admin as a permission)
-// @name Authorization
 
 // Start starts the module
 func (we Adapter) Start() {
@@ -95,9 +71,11 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
+	mainRouter.HandleFunc("/messages/stats", we.coreWrapFunc(we.apisHandler.GetUserMessagesStats)).Methods("GET")
 	// mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
 	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.GetMessage)).Methods("GET")
 	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.DeleteUserMessage)).Methods("DELETE")
+	mainRouter.HandleFunc("/message/{id}/read", we.coreWrapFunc(we.apisHandler.UpdateReadMessage)).Methods("PUT")
 	mainRouter.HandleFunc("/topics", we.coreWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/messages", we.coreWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.coreWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
@@ -120,11 +98,11 @@ func (we Adapter) Start() {
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("access-control-allow-origin", "*")
-	http.ServeFile(w, r, "./docs/swagger.yaml")
+	http.ServeFile(w, r, "./driver/web/docs/gen/def.yaml")
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/notifications/api/doc", we.host)
+	url := fmt.Sprintf("%s/api/doc", we.notificationServiceURL)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
@@ -207,7 +185,7 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port, auth: auth, authorization: authorization,
+	return Adapter{host: host, port: port, notificationServiceURL: config.NotificationsServiceURL, auth: auth, authorization: authorization,
 		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app, logger: logger}
 }
 

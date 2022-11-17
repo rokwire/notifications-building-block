@@ -16,8 +16,10 @@ package firebase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"notifications/core/model"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
@@ -27,41 +29,73 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	firebase *firebase.App
+	//key is org-id_app-id construction
+	firebaseClients map[string]firebase.App
 }
 
 // NewFirebaseAdapter instance a new Firebase adapter
-func NewFirebaseAdapter(authFile string, projectID string) *Adapter {
-	conf, err := google.JWTConfigFromJSON([]byte(authFile),
-		"https://www.googleapis.com/auth/firebase",
-		"https://www.googleapis.com/auth/cloud-platform")
-	if err != nil {
-		log.Fatal(err.Error())
-		return nil
-	}
-
-	tokenSource := conf.TokenSource(context.Background())
-	creds := google.Credentials{ProjectID: projectID, TokenSource: tokenSource}
-	opt := option.WithCredentials(&creds)
-	firebaseApp, err := firebase.NewApp(context.Background(), nil, opt)
-	if err != nil {
-		log.Fatal(err.Error())
-		return nil
-	}
-
-	return &Adapter{firebase: firebaseApp}
+func NewFirebaseAdapter() *Adapter {
+	return &Adapter{firebaseClients: make(map[string]firebase.App)}
 }
 
 // Start starts the firebase adapter
-func (fa *Adapter) Start() error {
-	// empty impl
+func (fa *Adapter) Start(firebaseConfs []model.FirebaseConf) error {
+	return fa.setFirebaseClients(firebaseConfs)
+}
+
+// UpdateFirebaseConfigurations sets new firebase configurations
+func (fa *Adapter) UpdateFirebaseConfigurations(firebaseConfs []model.FirebaseConf) error {
+	return fa.setFirebaseClients(firebaseConfs)
+}
+
+func (fa *Adapter) setFirebaseClients(firebaseConfs []model.FirebaseConf) error {
+	//1. check if there are configs data
+	if len(firebaseConfs) == 0 {
+		return errors.New("there is no firebase configurations")
+	}
+
+	//2. create a firebase client for every configuration
+	for _, current := range firebaseConfs {
+		client, err := fa.createFirebaseClient(current)
+		if err != nil {
+			return err
+		}
+
+		key := fmt.Sprintf("%s_%s", current.OrgID, current.AppID)
+		fa.firebaseClients[key] = *client
+	}
 	return nil
 }
 
+func (fa *Adapter) createFirebaseClient(data model.FirebaseConf) (*firebase.App, error) {
+	conf, err := google.JWTConfigFromJSON([]byte(data.Auth),
+		"https://www.googleapis.com/auth/firebase",
+		"https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		return nil, err
+	}
+
+	tokenSource := conf.TokenSource(context.Background())
+	creds := google.Credentials{ProjectID: data.ProjectID, TokenSource: tokenSource}
+	opt := option.WithCredentials(&creds)
+	firebaseApp, err := firebase.NewApp(context.Background(), nil, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	return firebaseApp, nil
+}
+
+func (fa *Adapter) getFirebaseClient(orgID string, appID string) firebase.App {
+	key := fmt.Sprintf("%s_%s", orgID, appID)
+	return fa.firebaseClients[key]
+}
+
 // SendNotificationToToken sends a notification to token
-func (fa *Adapter) SendNotificationToToken(token string, title string, body string, data map[string]string) error {
+func (fa *Adapter) SendNotificationToToken(orgID string, appID string, token string, title string, body string, data map[string]string) error {
 	ctx := context.Background()
-	client, err := fa.firebase.Messaging(ctx)
+	firebase := fa.getFirebaseClient(orgID, appID)
+	client, err := firebase.Messaging(ctx)
 	if err == nil {
 		message := &messaging.Message{
 			Token: token,
@@ -81,9 +115,10 @@ func (fa *Adapter) SendNotificationToToken(token string, title string, body stri
 }
 
 // SendNotificationToTopic sends a notification to a topic
-func (fa *Adapter) SendNotificationToTopic(topic string, title string, body string, data map[string]string) error {
+func (fa *Adapter) SendNotificationToTopic(orgID string, appID string, topic string, title string, body string, data map[string]string) error {
 	ctx := context.Background()
-	client, err := fa.firebase.Messaging(ctx)
+	firebase := fa.getFirebaseClient(orgID, appID)
+	client, err := firebase.Messaging(ctx)
 	if err == nil {
 		message := &messaging.Message{
 			Topic: topic,
@@ -102,9 +137,10 @@ func (fa *Adapter) SendNotificationToTopic(topic string, title string, body stri
 }
 
 // SubscribeToTopic subscribes to a topic
-func (fa *Adapter) SubscribeToTopic(token string, topic string) error {
+func (fa *Adapter) SubscribeToTopic(orgID string, appID string, token string, topic string) error {
 	ctx := context.Background()
-	client, err := fa.firebase.Messaging(ctx)
+	firebase := fa.getFirebaseClient(orgID, appID)
+	client, err := firebase.Messaging(ctx)
 	if err == nil {
 		_, err = client.SubscribeToTopic(ctx, []string{token}, topic)
 		if err != nil {
@@ -115,9 +151,10 @@ func (fa *Adapter) SubscribeToTopic(token string, topic string) error {
 }
 
 // UnsubscribeToTopic unsubscribes from a topic
-func (fa *Adapter) UnsubscribeToTopic(token string, topic string) error {
+func (fa *Adapter) UnsubscribeToTopic(orgID string, appID string, token string, topic string) error {
 	ctx := context.Background()
-	client, err := fa.firebase.Messaging(ctx)
+	firebase := fa.getFirebaseClient(orgID, appID)
+	client, err := firebase.Messaging(ctx)
 	if err == nil {
 		_, err = client.UnsubscribeFromTopic(ctx, []string{token}, topic)
 		if err != nil {
