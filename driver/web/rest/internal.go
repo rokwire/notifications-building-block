@@ -16,12 +16,13 @@ package rest
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 )
 
 // InternalApisHandler handles the rest Admin APIs implementation
@@ -44,23 +45,14 @@ func NewInternalApisHandler(app *core.Application) InternalApisHandler {
 // @Security InternalAuth
 // @Router /int/message [post]
 // @Deprecated
-func (h InternalApisHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
-		return
-	}
-
+func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var message *model.Message
-	err = json.Unmarshal(data, &message)
+	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
-		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	h.processSendMessage(message, false, w, r)
+	return h.processSendMessage(l, message, false, r)
 }
 
 // sendMessageRequestBody message request body
@@ -78,20 +70,11 @@ type sendMessageRequestBody struct {
 // @Success 200 {object} model.Message
 // @Security InternalAuth
 // @Router /int/v2/message [post]
-func (h InternalApisHandler) SendMessageV2(w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
-		return
-	}
-
+func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var bodyData sendMessageRequestBody
-	err = json.Unmarshal(data, &bodyData)
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
 	if err != nil {
-		log.Printf("Error on unmarshal the body request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
 	message := bodyData.Message
@@ -99,38 +82,28 @@ func (h InternalApisHandler) SendMessageV2(w http.ResponseWriter, r *http.Reques
 	if bodyData.Async != nil {
 		async = *bodyData.Async
 	}
-	h.processSendMessage(message, async, w, r)
+	return h.processSendMessage(l, message, async, r)
 }
 
-func (h InternalApisHandler) processSendMessage(message *model.Message, async bool, w http.ResponseWriter, r *http.Request) {
+func (h InternalApisHandler) processSendMessage(l *logs.Log, message *model.Message, async bool, r *http.Request) logs.HTTPResponse {
 	if message == nil {
-		log.Println("Message is nil")
-		http.Error(w, "Message is nil", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypeRequestBody, nil, nil, http.StatusBadRequest, false)
 	}
 	if len(message.OrgID) == 0 || len(message.AppID) == 0 {
-		log.Println("org or app is not passed")
-		http.Error(w, "org or app is not passed", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
 	message, err := h.app.Services.CreateMessage(nil, message, async)
 	if err != nil {
-		log.Printf("Error on sending message: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
 	data, err := json.Marshal(message)
 	if err != nil {
-		log.Println("Error on marshal topic")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // sendMailRequestBody mail request body
@@ -149,29 +122,17 @@ type sendMailRequestBody struct {
 // @Success 200
 // @Security InternalAuth
 // @Router /int/mail [post]
-func (h InternalApisHandler) SendMail(w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading email data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading email data - %s\n", err.Error()), http.StatusBadRequest)
-		return
-	}
-
+func (h InternalApisHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var mailRequest *sendMailRequestBody
-	err = json.Unmarshal(data, &mailRequest)
+	err := json.NewDecoder(r.Body).Decode(&mailRequest)
 	if err != nil {
-		log.Printf("Error on unmarshal the email request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
 	err = h.app.Services.SendMail(mailRequest.ToMail, mailRequest.Subject, mailRequest.Body)
 	if err != nil {
-		log.Printf("Error on sending email: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "email", nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
+	return l.HTTPResponseSuccess()
 }
