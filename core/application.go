@@ -15,6 +15,7 @@
 package core
 
 import (
+	"github.com/rokwire/logging-library-go/logs"
 	"log"
 	"notifications/driven/mailer"
 )
@@ -45,6 +46,7 @@ type Application struct {
 	build   string
 
 	Services Services // expose to the drivers adapters
+	logger   *logs.Logger
 
 	storage  Storage
 	firebase Firebase
@@ -59,9 +61,9 @@ func (app *Application) Start() {
 }
 
 // NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage, firebase Firebase, mailer *mailer.Adapter) *Application {
+func NewApplication(version string, build string, storage Storage, firebase Firebase, mailer *mailer.Adapter, logger *logs.Logger) *Application {
 
-	application := Application{version: version, build: build, storage: storage, firebase: firebase, mailer: mailer}
+	application := Application{version: version, build: build, storage: storage, firebase: firebase, mailer: mailer, logger: logger}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

@@ -24,6 +24,8 @@ import (
 	"notifications/utils"
 	"strings"
 
+	"github.com/rokwire/logging-library-go/logs"
+
 	"github.com/casbin/casbin"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -41,7 +43,8 @@ type Adapter struct {
 	adminApisHandler    rest.AdminApisHandler
 	internalApisHandler rest.InternalApisHandler
 
-	app *core.Application
+	app    *core.Application
+	logger *logs.Logger
 }
 
 // Start starts the module
@@ -50,10 +53,18 @@ func (we Adapter) Start() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// handle apis
-	mainRouter := router.PathPrefix("/notifications/api").Subrouter()
+	baseRouter := router.PathPrefix("/notifications").Subrouter()
+	baseRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
+	baseRouter.HandleFunc("/doc", we.serveDoc)
+	baseRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+
+	mainRouter := baseRouter.PathPrefix("/api").Subrouter()
+
+	// DEPRECATED
 	mainRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	mainRouter.HandleFunc("/doc", we.serveDoc)
 	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+	//
 
 	// Internal APIs
 	//deprecated
@@ -175,15 +186,15 @@ func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) htt
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(host string, port string, app *core.Application, config *model.Config) Adapter {
-	auth := NewAuth(app, config)
+func NewWebAdapter(host string, port string, app *core.Application, config *model.Config, logger *logs.Logger) Adapter {
+	auth := NewAuth(app, config, logger)
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
 	return Adapter{host: host, port: port, notificationServiceURL: config.NotificationsServiceURL, auth: auth, authorization: authorization,
-		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
+		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app, logger: logger}
 }
 
 // AppListener implements core.ApplicationListener interface

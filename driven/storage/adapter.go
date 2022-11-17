@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rokwire/logging-library-go/logs"
+
 	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/errors"
 	"github.com/rokwire/logging-library-go/logutils"
@@ -49,7 +51,7 @@ func (sa *Adapter) RegisterStorageListener(storageListener Listener) {
 
 // NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string,
-	multiTenancyOrgID string, multiTenancyAppID string) *Adapter {
+	multiTenancyOrgID string, multiTenancyAppID string, logger *logs.Logger) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
 	if err != nil {
 		log.Println("Set default timeout - 2000")
@@ -58,7 +60,7 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 	timeoutMS := time.Millisecond * time.Duration(timeout)
 
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS,
-		multiTenancyOrgID: multiTenancyOrgID, multiTenancyAppID: multiTenancyAppID}
+		multiTenancyOrgID: multiTenancyOrgID, multiTenancyAppID: multiTenancyAppID, logger: logger}
 	return &Adapter{db: db}
 }
 

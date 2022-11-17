@@ -31,16 +31,18 @@ import (
 type Auth struct {
 	internalAuth *InternalAuth
 	coreAuth     *CoreAuth
+	logger       *logs.Logger
 }
 
 // NewAuth creates new auth handler
-func NewAuth(app *core.Application, config *model.Config) *Auth {
+func NewAuth(app *core.Application, config *model.Config, logger *logs.Logger) *Auth {
 	internalAuth := newInternalAuth(config.InternalAPIKey)
 	coreAuth := newCoreAuth(app, config)
 
 	auth := Auth{
 		internalAuth: internalAuth,
 		coreAuth:     coreAuth,
+		logger:       logger,
 	}
 	return &auth
 }
