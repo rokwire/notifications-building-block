@@ -21,49 +21,49 @@ tags:
     description: Client applications APIs.
 paths:  
   #Internal
-  /int/message:
+  /api/int/message:
     $ref: "./resources/internal/message.yaml"
-  /int/v2/message:
+  /api/int/v2/message:
     $ref: "./resources/internal/v2/message.yaml"
-  /int/mail:
+  /api/int/mail:
     $ref: "./resources/internal/mail.yaml"
   #Client
-  /token:
+  /api/token:
     $ref: "./resources/client/token.yaml"
-  /user:
+  /api/user:
     $ref: "./resources/client/user.yaml"
-  /message:
+  /api/message:
     $ref: "./resources/client/message/message.yaml"
-  /messages:
+  /api/messages:
     $ref: "./resources/client/message/messages.yaml"
-  /messages/stats:
+  /api/messages/stats:
     $ref: "./resources/client/message/messages-stats.yaml"  
-  /message/{id}:
+  /api/message/{id}:
     $ref: "./resources/client/message/messages-id.yaml"
-  /message/{message_id}/read:
+  /api/message/{message_id}/read:
     $ref: "./resources/client/message/message-read.yaml"
-  /topics:
+  /api/topics:
     $ref: "./resources/client/topic/topics.yaml"
-  /topic/{topic}/messages:
+  /api/topic/{topic}/messages:
     $ref: "./resources/client/topic/topics-messages.yaml"
-  /topic/{topic}/subscribe:
+  /api/topic/{topic}/subscribe:
     $ref: "./resources/client/topic/topics-subscribe.yaml"
-  /topic/{topic}/unsubscribe:
+  /api/topic/{topic}/unsubscribe:
     $ref: "./resources/client/topic/topics-unsubscribe.yaml"
   #Admin
-  /admin/app-versions:
+  /api/admin/app-versions:
     $ref: "./resources/admin/app-versions.yaml"
-  /admin/app-platforms:
+  /api/admin/app-platforms:
     $ref: "./resources/admin/app-platforms.yaml"
-  /admin/topics:
+  /api/admin/topics:
     $ref: "./resources/admin/topic/topics.yaml"
-  /admin/topic:
+  /api/admin/topic:
     $ref: "./resources/admin/topic/topic.yaml"
-  /admin/messages:
+  /api/admin/messages:
     $ref: "./resources/admin/message/messages.yaml"
-  /admin/message:
+  /api/admin/message:
     $ref: "./resources/admin/message/message.yaml"
-  /admin/messages{id}:
+  /api/admin/messages{id}:
     $ref: "./resources/admin/message/messages-id.yaml"   
     
 components:

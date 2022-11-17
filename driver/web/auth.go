@@ -116,10 +116,11 @@ func (auth ClientAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) 
 		return http.StatusUnauthorized, nil, errors.ErrorData(logutils.StatusInvalid, "system claim", nil)
 	}
 
-	err = auth.tokenAuth.AuthorizeRequestScope(claims, req)
-	if err != nil {
-		return http.StatusForbidden, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeScope, nil, err)
-	}
+	// TODO: Enable scope authorization
+	// err = auth.tokenAuth.AuthorizeRequestScope(claims, req)
+	// if err != nil {
+	// 	return http.StatusForbidden, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeScope, nil, err)
+	// }
 
 	return http.StatusOK, claims, nil
 }

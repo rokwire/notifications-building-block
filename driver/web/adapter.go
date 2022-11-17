@@ -39,9 +39,8 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	host                   string
-	port                   string
-	notificationServiceURL string
+	host string
+	port string
 
 	auth *Auth
 
@@ -126,7 +125,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/api/doc", we.notificationServiceURL)
+	url := fmt.Sprintf("%s/api/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
@@ -200,7 +199,7 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port, notificationServiceURL: config.NotificationsServiceURL, cachedYamlDoc: yamlDoc, auth: auth,
+	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth,
 		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app, logger: logger}
 }
 

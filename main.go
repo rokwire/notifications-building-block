@@ -45,7 +45,10 @@ func main() {
 	loggerOpts.SuppressRequests = append(loggerOpts.SuppressRequests, logs.NewStandardHealthCheckHTTPRequestProperties("notifications/api/version")...)
 	logger := logs.NewLogger("core", &loggerOpts)
 
-	port := getEnvKey("PORT", true)
+	port := getEnvKey("PORT", false)
+	if len(port) == 0 {
+		port = "80"
+	}
 
 	// mongoDB adapter
 	mongoDBAuth := getEnvKey("MONGO_AUTH", true)

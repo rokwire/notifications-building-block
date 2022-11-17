@@ -1,17 +1,16 @@
  post:
   tags:
   - Client
-  summary: Send mail
+  summary: Store Firebase token
   description: |
-    Send mail
+    Store Firebase token
   security:
     - bearerAuth: []
   requestBody:
-    description: sending mail
     content:
       application/json:
         schema:
-          $ref: "../../schemas/apis/mail/request/Request.yaml"
+          $ref: "../../schemas/apis/token/request/Request.yaml"
     required: true
   responses:
     200:
