@@ -25,53 +25,33 @@ import (
 	"github.com/rokwire/logging-library-go/v2/logutils"
 )
 
-// InternalApisHandler handles the rest Admin APIs implementation
-type InternalApisHandler struct {
+// BBsAPIsHandler handles the rest BBs APIs implementation
+type BBsAPIsHandler struct {
 	app *core.Application
 }
 
-// NewInternalApisHandler creates new rest Handler instance
-func NewInternalApisHandler(app *core.Application) InternalApisHandler {
-	return InternalApisHandler{app: app}
-}
-
-// SendMessage Sends a message to a user, list of users or a topic
-// @Description Sends a message to a user, list of users or a topic
-// @Tags Internal
-// @ID InternalSendMessage
-// @Param data body model.Message true "body json"
-// @Produce plain
-// @Success 200 {object} model.Message
-// @Security InternalAuth
-// @Router /int/message [post]
-// @Deprecated
-func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.Message
-	err := json.NewDecoder(r.Body).Decode(&message)
-	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
-	}
-
-	return h.processSendMessage(l, message, false, r)
+// newBBsAPIsHandler creates new rest Handler instance
+func newBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
+	return BBsAPIsHandler{app: app}
 }
 
 // sendMessageRequestBody message request body
-type sendMessageRequestBody struct {
+type bbsSendMessageRequestBody struct {
 	Async   *bool          `json:"async"`
 	Message *model.Message `json:"message"`
 } // @name sendMessageRequestBody
 
-// SendMessageV2 Sends a message to a user, list of users or a topic
+// SendMessage Sends a message to a user, list of users or a topic
 // @Description Sends a message to a user, list of users or a topic
-// @Tags Internal
-// @ID InternalSendMessageV2
+// @Tags BBs
+// @ID BBsSendMessage
 // @Param data body sendMessageRequestBody true "body json"
 // @Produce plain
 // @Success 200 {object} model.Message
-// @Security InternalAuth
-// @Router /int/v2/message [post]
-func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var bodyData sendMessageRequestBody
+// @Security BBsAuth
+// @Router /bbs/message [post]
+func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var bodyData bbsSendMessageRequestBody
 	err := json.NewDecoder(r.Body).Decode(&bodyData)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
@@ -82,10 +62,7 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 	if bodyData.Async != nil {
 		async = *bodyData.Async
 	}
-	return h.processSendMessage(l, message, async, r)
-}
 
-func (h InternalApisHandler) processSendMessage(l *logs.Log, message *model.Message, async bool, r *http.Request) logs.HTTPResponse {
 	if message == nil {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypeRequestBody, nil, nil, http.StatusBadRequest, false)
 	}
@@ -93,7 +70,7 @@ func (h InternalApisHandler) processSendMessage(l *logs.Log, message *model.Mess
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
-	message, err := h.app.Services.CreateMessage(nil, message, async)
+	message, err = h.app.Services.CreateMessage(nil, message, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
@@ -107,7 +84,7 @@ func (h InternalApisHandler) processSendMessage(l *logs.Log, message *model.Mess
 }
 
 // sendMailRequestBody mail request body
-type sendMailRequestBody struct {
+type bbsSendMailRequestBody struct {
 	ToMail  string `json:"to_mail"`
 	Subject string `json:"subject"`
 	Body    string `json:"body"`
@@ -115,15 +92,15 @@ type sendMailRequestBody struct {
 
 // SendMail Sends an email
 // @Description Sends an email
-// @Tags Internal
-// @ID InternalSendMail
+// @Tags BBs
+// @ID BBsSendEmail
 // @Param data body sendMailRequestBody true "body json"
 // @Produce plain
 // @Success 200
-// @Security InternalAuth
-// @Router /int/mail [post]
-func (h InternalApisHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var mailRequest *sendMailRequestBody
+// @Security BBsAuth
+// @Router /bbs/mail [post]
+func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var mailRequest *bbsSendMailRequestBody
 	err := json.NewDecoder(r.Body).Decode(&mailRequest)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)

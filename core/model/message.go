@@ -40,17 +40,15 @@ type Message struct {
 
 // HasUser checks if the user is the sender or as a recipient for the current message
 // Use better name
-func (m *Message) HasUser(token *CoreToken) bool {
-	if token != nil {
-		for _, recipient := range m.Recipients {
-			if recipient.UserID == token.UserID {
-				return true
-			}
-		}
-
-		if m.Sender.User.UserID != nil && token.UserID == m.Sender.User.UserID {
+func (m *Message) HasUser(id string) bool {
+	for _, recipient := range m.Recipients {
+		if recipient.UserID == id {
 			return true
 		}
+	}
+
+	if m.Sender != nil && m.Sender.User != nil && id == m.Sender.User.UserID {
+		return true
 	}
 	return false
 }

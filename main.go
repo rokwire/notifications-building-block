@@ -25,7 +25,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/rokwire/logging-library-go/logs"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 var (
@@ -40,10 +41,16 @@ func main() {
 		Version = "dev"
 	}
 
-	loggerOpts := logs.LoggerOpts{SuppressRequests: []logs.HttpRequestProperties{logs.NewAwsHealthCheckHttpRequestProperties("notifications/version"), logs.NewAwsHealthCheckHttpRequestProperties("notifications/api/version")}}
-	logger := logs.NewLogger("core", &loggerOpts)
+	serviceID := "notifications"
 
-	port := getEnvKey("PORT", true)
+	loggerOpts := logs.LoggerOpts{SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties("notifications/version")}
+	loggerOpts.SuppressRequests = append(loggerOpts.SuppressRequests, logs.NewStandardHealthCheckHTTPRequestProperties("notifications/api/version")...)
+	logger := logs.NewLogger(serviceID, &loggerOpts)
+
+	port := getEnvKey("PORT", false)
+	if len(port) == 0 {
+		port = "80"
+	}
 
 	// mongoDB adapter
 	mongoDBAuth := getEnvKey("MONGO_AUTH", true)
@@ -85,16 +92,33 @@ func main() {
 	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
 	coreAuthPrivateKey := getEnvKey("CORE_AUTH_PRIVATE_KEY", true)
 	coreBBHost := getEnvKey("CORE_BB_HOST", true)
-	contentServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
+	notificationsServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
+
+	authService := authservice.AuthService{
+		ServiceID:   serviceID,
+		ServiceHost: notificationsServiceURL,
+		FirstParty:  true,
+		AuthBaseURL: coreBBHost,
+	}
+
+	serviceRegLoader, err := authservice.NewRemoteServiceRegLoader(&authService, []string{"auth"})
+	if err != nil {
+		log.Fatalf("Error initializing remote service registration loader: %v", err)
+	}
+
+	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
+	if err != nil {
+		log.Fatalf("Error initializing service registration manager: %v", err)
+	}
 
 	config := &model.Config{
 		InternalAPIKey:          internalAPIKey,
 		CoreAuthPrivateKey:      coreAuthPrivateKey,
 		CoreBBHost:              coreBBHost,
-		NotificationsServiceURL: contentServiceURL,
+		NotificationsServiceURL: notificationsServiceURL,
 	}
 
-	webAdapter := driver.NewWebAdapter(host, port, application, config, logger)
+	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, logger)
 
 	webAdapter.Start()
 }
