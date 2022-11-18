@@ -1,0 +1,22 @@
+{
+    "app_secret": {
+        "MONGO_AUTH": "<mongo-url>",
+        "SMTP_PASSWORD": "",
+        "INTERNAL_API_KEY": "",
+        "CORE_AUTH_PRIVATE_KEY": ""
+    },
+    "app_config":{
+        "PORT": "5000",
+        "MONGO_DATABASE": "<db-name>",
+        "MONGO_TIMEOUT": "",
+        "NOTIFICATIONS_MULTI_TENANCY_ORG_ID": "",
+        "NOTIFICATIONS_MULTI_TENANCY_APP_ID": "",
+        "SMTP_HOST": "",
+        "SMTP_PORT": "",
+        "SMTP_USER": "",
+        "SMTP_EMAIL_FROM": "",
+        "HOST": "<base-url>",
+        "CORE_BB_HOST": "<core-bb-base-url>",
+        "NOTIFICATIONS_SERVICE_URL": "<base-url>"
+    }
+}
