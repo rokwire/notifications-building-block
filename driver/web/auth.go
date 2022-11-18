@@ -15,34 +15,55 @@
 package web
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
 
-	"github.com/rokwire/logging-library-go/logs"
+	"github.com/rokwire/core-auth-library-go/v2/authorization"
+	"github.com/rokwire/logging-library-go/v2/errors"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 
-	"github.com/rokwire/core-auth-library-go/authservice"
-	"github.com/rokwire/core-auth-library-go/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 )
 
 // Auth handler
 type Auth struct {
-	internalAuth *InternalAuth
-	coreAuth     *CoreAuth
+	client   tokenauth.Handlers
+	admin    tokenauth.Handlers
+	bbs      tokenauth.Handlers
+	internal InternalAuth
 }
 
 // NewAuth creates new auth handler
-func NewAuth(app *core.Application, config *model.Config) *Auth {
-	internalAuth := newInternalAuth(config.InternalAPIKey)
-	coreAuth := newCoreAuth(app, config)
+func NewAuth(app *core.Application, config *model.Config, serviceRegManager *authservice.ServiceRegManager) (*Auth, error) {
+	client, err := newClientAuth(serviceRegManager)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "client auth", nil, err)
+	}
+	clientHandlers := tokenauth.NewHandlers(client)
+
+	admin, err := newAdminAuth(serviceRegManager)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "admin auth", nil, err)
+	}
+	adminHandlers := tokenauth.NewHandlers(admin)
+
+	bbs, err := newBBsAuth(serviceRegManager)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "bbs auth", nil, err)
+	}
+	bbsHandlers := tokenauth.NewHandlers(bbs)
+
+	internal := newInternalAuth(config.InternalAPIKey)
 
 	auth := Auth{
-		internalAuth: internalAuth,
-		coreAuth:     coreAuth,
+		client:   clientHandlers,
+		admin:    adminHandlers,
+		bbs:      bbsHandlers,
+		internal: internal,
 	}
-	return &auth
+	return &auth, nil
 }
 
 ///////
@@ -52,85 +73,147 @@ type InternalAuth struct {
 	internalAPIKey string
 }
 
-func newInternalAuth(internalAPIKey string) *InternalAuth {
-	auth := InternalAuth{internalAPIKey: internalAPIKey}
-	return &auth
+func newInternalAuth(internalAPIKey string) InternalAuth {
+	return InternalAuth{internalAPIKey: internalAPIKey}
 }
 
-func (auth *InternalAuth) check(w http.ResponseWriter, r *http.Request) bool {
-	apiKey := r.Header.Get("INTERNAL-API-KEY")
+// Check verifies the internal API key
+func (auth InternalAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
+	apiKey := req.Header.Get("INTERNAL-API-KEY")
+
 	//check if there is api key in the header
 	if len(apiKey) == 0 {
 		//no key, so return 400
-		log.Println(fmt.Sprintf("400 - Bad Request"))
-
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
-		return false
+		return http.StatusBadRequest, nil, errors.New("Bad Request")
 	}
 
-	exist := auth.internalAPIKey == apiKey
-
-	if !exist {
+	if auth.internalAPIKey != apiKey {
 		//not exist, so return 401
-		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", apiKey))
-
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
-		return false
+		return http.StatusUnauthorized, nil, errors.New("Unauthorized")
 	}
-	return true
+
+	return http.StatusOK, nil, nil
 }
 
-////////////////////////////////////
-
-// CoreAuth implementation
-type CoreAuth struct {
-	app                *core.Application
-	tokenAuth          *tokenauth.TokenAuth
-	coreAuthPrivateKey *string
+// GetTokenAuth returns nil
+func (auth InternalAuth) GetTokenAuth() *tokenauth.TokenAuth {
+	return nil
 }
 
-func newCoreAuth(app *core.Application, config *model.Config) *CoreAuth {
-	remoteConfig := authservice.RemoteAuthDataLoaderConfig{
-		AuthServicesHost: config.CoreBBHost,
-	}
-
-	serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{"core"}, logs.NewLogger("notifications", &logs.LoggerOpts{}))
-	authService, err := authservice.NewAuthService("notifications", config.NotificationsServiceURL, serviceLoader)
-	if err != nil {
-		log.Fatalf("Error initializing auth service: %v", err)
-	}
-	tokenAuth, err := tokenauth.NewTokenAuth(true, authService, nil, nil)
-	if err != nil {
-		log.Fatalf("Error intitializing token auth: %v", err)
-	}
-
-	auth := CoreAuth{app: app, tokenAuth: tokenAuth, coreAuthPrivateKey: &config.CoreAuthPrivateKey}
-	return &auth
+// ClientAuth entity
+type ClientAuth struct {
+	tokenAuth *tokenauth.TokenAuth
 }
 
-func (ca CoreAuth) coreAuthCheck(w http.ResponseWriter, r *http.Request) (bool, *model.CoreToken) {
-	claims, err := ca.tokenAuth.CheckRequestTokens(r)
+// Check validates the request contains a valid client token
+func (auth ClientAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
+	claims, err := auth.tokenAuth.CheckRequestTokens(req)
 	if err != nil {
-		log.Printf("error validate token: %s", err)
-		return false, nil
+		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
 	}
 
-	if claims != nil {
-		if claims.Valid() == nil {
-			return true, &model.CoreToken{
-				UserID:      &claims.Subject,
-				Name:        &claims.Name,
-				ExternalID:  &claims.UID,
-				AppID:       claims.AppID,
-				OrgID:       claims.OrgID,
-				Scope:       &claims.Scope,
-				Permissions: &claims.Permissions,
-				Anonymous:   claims.Anonymous,
-			}
-		}
+	if claims.Admin {
+		return http.StatusUnauthorized, nil, errors.ErrorData(logutils.StatusInvalid, "admin claim", nil)
+	}
+	if claims.System {
+		return http.StatusUnauthorized, nil, errors.ErrorData(logutils.StatusInvalid, "system claim", nil)
 	}
 
-	return false, nil
+	// TODO: Enable scope authorization
+	// err = auth.tokenAuth.AuthorizeRequestScope(claims, req)
+	// if err != nil {
+	// 	return http.StatusForbidden, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeScope, nil, err)
+	// }
+
+	return http.StatusOK, claims, nil
+}
+
+// GetTokenAuth returns the TokenAuth from the handler
+func (auth ClientAuth) GetTokenAuth() *tokenauth.TokenAuth {
+	return auth.tokenAuth
+}
+
+func newClientAuth(serviceRegManager *authservice.ServiceRegManager) (*ClientAuth, error) {
+	clientPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/client_permission_policy.csv")
+	clientTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, clientPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "client token auth", nil, err)
+	}
+
+	auth := ClientAuth{tokenAuth: clientTokenAuth}
+	return &auth, nil
+}
+
+// AdminAuth entity
+type AdminAuth struct {
+	tokenAuth *tokenauth.TokenAuth
+}
+
+// Check validates the request contains a valid admin token
+func (auth AdminAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
+	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	if err != nil {
+		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
+	}
+
+	if !claims.Admin {
+		return http.StatusUnauthorized, nil, errors.ErrorData(logutils.StatusInvalid, "admin claim", nil)
+	}
+
+	return http.StatusOK, claims, nil
+}
+
+// GetTokenAuth returns the TokenAuth from the handler
+func (auth AdminAuth) GetTokenAuth() *tokenauth.TokenAuth {
+	return auth.tokenAuth
+}
+
+func newAdminAuth(serviceRegManager *authservice.ServiceRegManager) (*AdminAuth, error) {
+	adminPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/admin_permission_policy.csv")
+	adminTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, adminPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "admin token auth", nil, err)
+	}
+
+	auth := AdminAuth{tokenAuth: adminTokenAuth}
+	return &auth, nil
+}
+
+// BBsAuth entity
+type BBsAuth struct {
+	tokenAuth *tokenauth.TokenAuth
+}
+
+// Check validates the request contains a valid first-party service token
+func (auth *BBsAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
+	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	if err != nil {
+		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
+	}
+
+	if !claims.Service {
+		return http.StatusUnauthorized, nil, errors.ErrorData(logutils.StatusInvalid, "service claim", nil)
+	}
+
+	if !claims.FirstParty {
+		return http.StatusUnauthorized, nil, errors.ErrorData(logutils.StatusInvalid, "first party claim", nil)
+	}
+
+	return http.StatusOK, claims, nil
+}
+
+// GetTokenAuth returns the TokenAuth from the handler
+func (auth *BBsAuth) GetTokenAuth() *tokenauth.TokenAuth {
+	return auth.tokenAuth
+}
+
+func newBBsAuth(serviceRegManager *authservice.ServiceRegManager) (*BBsAuth, error) {
+	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/bbs_permission_policy.csv")
+	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionStart, "bbs token auth", nil, err)
+	}
+
+	auth := BBsAuth{tokenAuth: bbsTokenAuth}
+	return &auth, nil
 }

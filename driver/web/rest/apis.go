@@ -16,13 +16,17 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
 	"strings"
+
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 
 	"github.com/gorilla/mux"
 )
@@ -53,8 +57,8 @@ type tokenBody struct {
 // @Success 200
 // @Security RokwireAuth
 // @Router /version [get]
-func (h ApisHandler) Version(w http.ResponseWriter, _ *http.Request) {
-	w.Write([]byte(h.app.Services.GetVersion()))
+func (h ApisHandler) Version(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	return l.HTTPResponseSuccessMessage(h.app.Services.GetVersion())
 }
 
 // StoreFirebaseToken Sends a message to a user, list of users or a topic
@@ -66,48 +70,31 @@ func (h ApisHandler) Version(w http.ResponseWriter, _ *http.Request) {
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /token [post]
-func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal token data - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
+func (h ApisHandler) StoreFirebaseToken(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var tokenInfo model.TokenInfo
-	err = json.Unmarshal(data, &tokenInfo)
+	err := json.NewDecoder(r.Body).Decode(&tokenInfo)
 	if err != nil {
-		log.Printf("Error on unmarshal the create student guide request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
 	if tokenInfo.Token == nil || len(*tokenInfo.Token) == 0 {
-		log.Printf("token is empty or null")
-		http.Error(w, "token is empty or null\n", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "token", logutils.StringArgs("empty or nil"), nil, http.StatusBadRequest, false)
 	}
 
 	if tokenInfo.AppVersion == nil || len(*tokenInfo.AppVersion) == 0 {
-		log.Printf("app_version is empty or null")
-		http.Error(w, "app_version is empty or null\n", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "app version", logutils.StringArgs("empty or nil"), nil, http.StatusBadRequest, false)
 	}
 
 	if tokenInfo.AppPlatform == nil || len(*tokenInfo.AppPlatform) == 0 {
-		log.Printf("app_platform is empty or null")
-		http.Error(w, "app_platform is empty or null\n", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "app platform", logutils.StringArgs("empty or nil"), nil, http.StatusBadRequest, false)
 	}
 
-	err = h.app.Services.StoreFirebaseToken(user.OrgID, user.AppID, &tokenInfo, user)
+	err = h.app.Services.StoreFirebaseToken(claims.OrgID, claims.AppID, &tokenInfo, claims.Subject)
 	if err != nil {
-		log.Printf("Error on creating student guide: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionSave, "token", nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return l.HTTPResponseSuccess()
 }
 
 // GetUser Gets user record
@@ -117,30 +104,22 @@ func (h ApisHandler) StoreFirebaseToken(user *model.CoreToken, w http.ResponseWr
 // @Success 200 {array} model.User
 // @Security RokwireAuth UserAuth
 // @Router /user [get]
-func (h ApisHandler) GetUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	userMapping, err := h.app.Services.FindUserByID(user.OrgID, user.AppID, *user.UserID)
+func (h ApisHandler) GetUser(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	userMapping, err := h.app.Services.FindUserByID(claims.OrgID, claims.AppID, claims.Subject)
 	if err != nil {
-		log.Printf("Error on retrieving user mapping: %s\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionFind, "user", nil, err, http.StatusInternalServerError, true)
 	}
 
 	if userMapping == nil {
-		log.Printf("unable to find user: %s\n", err)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, "user", nil, nil, http.StatusNotFound, false)
 	}
 
 	data, err := json.Marshal(userMapping)
 	if err != nil {
-		log.Printf("Error on marshal user mapping: %s\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // updateUserRequest Wrapper for update user request body
@@ -156,45 +135,28 @@ type updateUserRequest struct {
 // @Success 200 {array} model.User
 // @Security RokwireAuth UserAuth
 // @Router /user [post]
-func (h ApisHandler) UpdateUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal updateUserRequest data - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
+func (h ApisHandler) UpdateUser(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var bodyData updateUserRequest
-	err = json.Unmarshal(data, &bodyData)
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
 	if err != nil {
-		log.Printf("Error on unmarshal the updateUserRequest request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	userMapping, err := h.app.Services.UpdateUserByID(user.OrgID, user.AppID, *user.UserID, bodyData.NotificationsDisabled)
+	userMapping, err := h.app.Services.UpdateUserByID(claims.OrgID, claims.AppID, claims.Subject, bodyData.NotificationsDisabled)
 	if err != nil {
-		log.Printf("Error on updating user: %s\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "user", nil, err, http.StatusInternalServerError, true)
 	}
 
 	if userMapping == nil {
-		log.Printf("unable to find user: %s\n", err)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, "user", nil, nil, http.StatusNotFound, false)
 	}
 
 	responseData, err := json.Marshal(userMapping)
 	if err != nil {
-		log.Printf("Error on marshal user mapping: %s\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(responseData)
+	return l.HTTPResponseSuccessJSON(responseData)
 }
 
 // DeleteUser Deletes user record and unlink all messages
@@ -205,14 +167,12 @@ func (h ApisHandler) UpdateUser(user *model.CoreToken, w http.ResponseWriter, r 
 // @Success 200 {array} model.User
 // @Security RokwireAuth UserAuth
 // @Router /user [delete]
-func (h ApisHandler) DeleteUser(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.DeleteUserWithID(user.OrgID, user.AppID, *user.UserID)
+func (h ApisHandler) DeleteUser(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	err := h.app.Services.DeleteUserWithID(claims.OrgID, claims.AppID, claims.Subject)
 	if err != nil {
-		log.Printf("Error on updating user: %s\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "user", nil, err, http.StatusInternalServerError, true)
 	}
-	w.WriteHeader(http.StatusOK)
+	return l.HTTPResponseSuccess()
 }
 
 // Subscribe Subscribes the current user to a topic
@@ -225,44 +185,29 @@ func (h ApisHandler) DeleteUser(user *model.CoreToken, w http.ResponseWriter, r 
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/subscribe [post]
-func (h ApisHandler) Subscribe(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Subscribe(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	topic := params["topic"]
 	if len(topic) == 0 {
-		log.Println("topic is required")
-		http.Error(w, "topic is required", http.StatusBadRequest)
-		return
-	}
-
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("topic"), nil, http.StatusBadRequest, false)
 	}
 
 	var body tokenBody
-	err = json.Unmarshal(data, &body)
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
 	if len(*body.Token) == 0 {
-		log.Printf("Missing token in the body")
-		http.Error(w, "Missing token in the body", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypeToken, nil, nil, http.StatusBadRequest, false)
 	}
 
-	err = h.app.Services.SubscribeToTopic(user.OrgID, user.AppID, *body.Token, user, topic)
+	err = h.app.Services.SubscribeToTopic(claims.OrgID, claims.AppID, *body.Token, claims.Subject, claims.Anonymous, topic)
 	if err != nil {
-		log.Printf("Error on subscribe to topic (%s): %s\n", topic, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction("subscribing", "topic", nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return l.HTTPResponseSuccess()
 }
 
 // Unsubscribe Unsubscribes the current user to a topic
@@ -274,50 +219,37 @@ func (h ApisHandler) Subscribe(user *model.CoreToken, w http.ResponseWriter, r *
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/unsubscribe [post]
-func (h ApisHandler) Unsubscribe(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	topic := params["topic"]
 	if len(topic) == 0 {
-		log.Println("topic is required")
-		http.Error(w, "topic is required", http.StatusBadRequest)
-		return
-	}
-
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading body data - %s\n", err.Error()), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("topic"), nil, http.StatusBadRequest, false)
 	}
 
 	var body tokenBody
-	err = json.Unmarshal(data, &body)
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		log.Printf("Error on unmarshal the body request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
 	if len(*body.Token) == 0 {
-		log.Printf("Missing token in the json body")
-		http.Error(w, "Missing token in the json body", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypeToken, nil, nil, http.StatusBadRequest, false)
 	}
 
-	err = h.app.Services.UnsubscribeToTopic(user.OrgID, user.AppID, *body.Token, user, topic)
+	err = h.app.Services.UnsubscribeToTopic(claims.OrgID, claims.AppID, *body.Token, claims.Subject, claims.Anonymous, topic)
 	if err != nil {
-		log.Printf("Error on unsubscribe to topic (%s): %s\n", topic, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction("unsubscribing", "topic", nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return l.HTTPResponseSuccess()
 }
 
 // GetUserMessages Gets all messages for the user
 // @Description Gets all messages to the authenticated user.
 // @Tags Client
 // @ID GetUserMessages
+// @Param read query bool "read"
+// @Param mute query bool "mute"
 // @Param offset query string false "offset"
 // @Param limit query string false "limit - limit the result"
 // @Param order query string false "order - Possible values: asc, desc. Default: desc"
@@ -328,32 +260,26 @@ func (h ApisHandler) Unsubscribe(user *model.CoreToken, w http.ResponseWriter, r
 // @Success 200 {array} model.Message
 // @Security UserAuth
 // @Router /messages [get]
-func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
 	endDateFilter := getInt64QueryParam(r, "end_date")
+	read := getBoolQueryParam(r, "read")
+	mute := getBoolQueryParam(r, "mute")
 
 	var messageIDs []string
-	bodyData, _ := ioutil.ReadAll(r.Body)
-	if bodyData != nil {
-		var body getMessagesRequestBody
-		bodyErr := json.Unmarshal(bodyData, &body)
-		if bodyErr == nil {
-			messageIDs = body.IDs
-		}
+	var body getMessagesRequestBody
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err == nil {
+		messageIDs = body.IDs
 	}
 
-	var err error
 	var messages []model.Message
-	if user != nil {
-		messages, err = h.app.Services.GetMessages(user.OrgID, user.AppID, user.UserID, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
-		if err != nil {
-			log.Printf("Error on getting user messages: %s", err)
-			http.Error(w, fmt.Sprintf("Error on getting user messages: %s", err), http.StatusInternalServerError)
-			return
-		}
+	messages, err = h.app.Services.GetMessages(claims.OrgID, claims.AppID, &claims.Subject, read, mute, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages", nil, err, http.StatusInternalServerError, true)
 	}
 	if messages == nil {
 		messages = []model.Message{}
@@ -361,14 +287,34 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 
 	data, err := json.Marshal(messages)
 	if err != nil {
-		log.Printf("Error on marshal messages: %s\n", err)
-		http.Error(w, fmt.Sprintf("Error on marshal messages: %s\n", err), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
+}
+
+// GetUserMessagesStats Count the messages stats
+// @Description Count the messages stats.
+// @Tags Client
+// @ID GetUserMessagesStats
+// @Accept  json
+// @Success 200
+// @Security UserAuth
+// @Router /messages/stats[get]
+func (h ApisHandler) GetUserMessagesStats(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var err error
+	var unreadMessages *model.MessagesStats
+	unreadMessages, err = h.app.Services.GetMessagesStats(claims.OrgID, claims.AppID, claims.Subject)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "message stats", nil, err, http.StatusInternalServerError, true)
+	}
+
+	data, err := json.Marshal(unreadMessages)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // GetTopics Gets all topics
@@ -378,24 +324,18 @@ func (h ApisHandler) GetUserMessages(user *model.CoreToken, w http.ResponseWrite
 // @Success 200 {array} model.Topic
 // @Security RokwireAuth
 // @Router /topics [get]
-func (h ApisHandler) GetTopics(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-	topics, err := h.app.Services.GetTopics(coreToken.OrgID, coreToken.AppID)
+func (h ApisHandler) GetTopics(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	topics, err := h.app.Services.GetTopics(claims.OrgID, claims.AppID)
 	if err != nil {
-		log.Printf("Error on retrieving all topics: %s\n", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "topics", nil, err, http.StatusInternalServerError, true)
 	}
 
 	data, err := json.Marshal(topics)
 	if err != nil {
-		log.Println("Error on marshal topics")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // GetTopicMessages Gets all messages for topic
@@ -411,7 +351,7 @@ func (h ApisHandler) GetTopics(coreToken *model.CoreToken, w http.ResponseWriter
 // @Success 200 {array} model.Message
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/messages [get]
-func (h ApisHandler) GetTopicMessages(coreToken *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
@@ -421,28 +361,20 @@ func (h ApisHandler) GetTopicMessages(coreToken *model.CoreToken, w http.Respons
 	params := mux.Vars(r)
 	topic := params["topic"]
 	if len(topic) == 0 {
-		log.Println("topic is required")
-		http.Error(w, "topic is required", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("topic"), nil, http.StatusBadRequest, false)
 	}
 
-	messages, err := h.app.Services.GetMessages(coreToken.OrgID, coreToken.AppID, nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(claims.OrgID, claims.AppID, nil, nil, nil, nil, startDateFilter, endDateFilter, &topic, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
-		log.Printf("Error on getting messages: %s", err)
-		http.Error(w, fmt.Sprintf("Error on getting messages: %s", err), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages", nil, err, http.StatusInternalServerError, true)
 	}
 
 	data, err := json.Marshal(messages)
 	if err != nil {
-		log.Printf("Error on marshal messages: %s\n", err)
-		http.Error(w, fmt.Sprintf("Error on marshal messages: %s\n", err), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // GetMessage Retrieves a message by id
@@ -455,38 +387,28 @@ func (h ApisHandler) GetTopicMessages(coreToken *model.CoreToken, w http.Respons
 // @Success 200 {object} model.Message
 // @Security UserAuth
 // @Router /message/{id} [get]
-func (h ApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) GetMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) == 0 {
-		log.Println("Message id is required")
-		http.Error(w, "Message id is required", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	message, err := h.app.Services.GetMessage(user.OrgID, user.AppID, id)
+	message, err := h.app.Services.GetMessage(claims.OrgID, claims.AppID, id)
 	if err != nil {
-		log.Printf("Error on get message with id (%s): %s\n", id, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
-	if message == nil || !message.HasUser(user) {
-		log.Printf("Error on get message with id (%s): %s\n", id, err)
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
+	if message == nil || !message.HasUser(claims.Subject) {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, "message", nil, nil, http.StatusNotFound, false)
 	}
 
 	data, err := json.Marshal(message)
 	if err != nil {
-		log.Println("Error on marshal message")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // DeleteUserMessages Removes the current user from the recipient list of all described messages
@@ -498,37 +420,31 @@ func (h ApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWriter, r 
 // @Success 200
 // @Security UserAuth
 // @Router /messages [delete]
-func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) DeleteUserMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var messageIDs []string
-	bodyData, _ := ioutil.ReadAll(r.Body)
-	if bodyData != nil {
-		var body getMessagesRequestBody
-		bodyErr := json.Unmarshal(bodyData, &body)
-		if bodyErr == nil {
-			messageIDs = body.IDs
-		}
+	var body getMessagesRequestBody
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err == nil {
+		messageIDs = body.IDs
 	}
 
 	errStrings := []string{}
 	if len(messageIDs) > 0 {
 		for _, id := range messageIDs {
-			err := h.app.Services.DeleteUserMessage(user.OrgID, user.AppID, user, id)
+			err := h.app.Services.DeleteUserMessage(claims.OrgID, claims.AppID, claims.Subject, id)
 			if err != nil {
 				errStrings = append(errStrings, fmt.Sprintf("%s\n", err.Error()))
-				log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UserID, err)
+				log.Printf("Error on delete message with id (%s) for recipient (%s): %s\n", id, claims.Subject, err)
 			}
 		}
 	} else {
-		log.Printf("Missing ids inthe request body")
-		http.Error(w, "Missing ids inthe request body", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypeRequestBody, logutils.StringArgs("ids"), nil, http.StatusBadRequest, false)
 	}
 	if len(errStrings) > 0 {
-		http.Error(w, strings.Join(errStrings, ""), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, errors.New(strings.Join(errStrings, "")), http.StatusInternalServerError, true)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return l.HTTPResponseSuccess()
 }
 
 // CreateMessage Creates a message. Message without subject and body will be interpreted as a data massage and it won't be stored in the database
@@ -540,42 +456,27 @@ func (h ApisHandler) DeleteUserMessages(user *model.CoreToken, w http.ResponseWr
 // @Success 200 {object} model.Message
 // @Security UserAuth
 // @Router /message [post]
-func (h ApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
-		return
-	}
-
+func (h ApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var message *model.Message
-	err = json.Unmarshal(data, &message)
+	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
-		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	message.OrgID = user.OrgID
-	message.AppID = user.AppID
+	message.OrgID = claims.OrgID
+	message.AppID = claims.AppID
 
-	message, err = h.app.Services.CreateMessage(user, message, false)
+	message, err = h.app.Services.CreateMessage(&model.CoreUserRef{UserID: claims.Subject, Name: claims.Name}, message, false)
 	if err != nil {
-		log.Printf("Error on create message: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
-	data, err = json.Marshal(message)
+	data, err := json.Marshal(message)
 	if err != nil {
-		log.Println("Error on marshal message")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // DeleteUserMessage Removes the current user from the recipient list of the message
@@ -587,21 +488,46 @@ func (h ApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWriter,
 // @Success 200
 // @Security UserAuth
 // @Router /message/{id} [delete]
-func (h ApisHandler) DeleteUserMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h ApisHandler) DeleteUserMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) == 0 {
-		log.Println("Message id is required")
-		http.Error(w, "Message id is required", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	err := h.app.Services.DeleteUserMessage(user.OrgID, user.AppID, user, id)
+	err := h.app.Services.DeleteUserMessage(claims.OrgID, claims.AppID, claims.Subject, id)
 	if err != nil {
-		log.Printf("Error on delete message with id (%s) for recipuent (%s): %s\n", id, *user.UserID, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return l.HTTPResponseSuccess()
+}
+
+// UpdateReadMessage marking an "unread" message as "read"
+// @Description marking an "unread" message as "read"
+// @Tags Client
+// @ID UpdateReadMessage
+// @Param id path string true "id"
+// @Accept  json
+// @Success 200 {object} model.Message
+// @Security UserAuth
+// @Router message/{id}/read [put]
+func (h ApisHandler) UpdateReadMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+
+	message, err := h.app.Services.UpdateReadMessage(claims.OrgID, claims.AppID, id, claims.Subject)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "message read", nil, err, http.StatusInternalServerError, true)
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
 }

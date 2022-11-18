@@ -16,12 +16,13 @@ package rest
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 
 	"github.com/gorilla/mux"
 )
@@ -43,24 +44,18 @@ func NewAdminApisHandler(app *core.Application) AdminApisHandler {
 // @Success 200 {array} model.Topic
 // @Security AdminUserAuth
 // @Router /admin/topics [get]
-func (h AdminApisHandler) GetTopics(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	topics, err := h.app.Services.GetTopics(user.OrgID, user.AppID)
+func (h AdminApisHandler) GetTopics(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	topics, err := h.app.Services.GetTopics(claims.OrgID, claims.AppID)
 	if err != nil {
-		log.Printf("Error on retrieving all topics: %s\n", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "topics", nil, err, http.StatusBadRequest, true)
 	}
 
 	data, err := json.Marshal(topics)
 	if err != nil {
-		log.Println("Error on marshal topics")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // UpdateTopic Updated the topic
@@ -71,42 +66,27 @@ func (h AdminApisHandler) GetTopics(user *model.CoreToken, w http.ResponseWriter
 // @Success 200 {object} model.Topic
 // @Security AdminUserAuth
 // @Router /admin/topic [put]
-func (h AdminApisHandler) UpdateTopic(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading body data - %s\n", err.Error()), http.StatusBadRequest)
-		return
-	}
-
+func (h AdminApisHandler) UpdateTopic(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var topic *model.Topic
-	err = json.Unmarshal(data, &topic)
+	err := json.NewDecoder(r.Body).Decode(&topic)
 	if err != nil {
-		log.Printf("Error on unmarshal the body request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	topic.OrgID = user.OrgID
-	topic.AppID = user.AppID
+	topic.OrgID = claims.OrgID
+	topic.AppID = claims.AppID
 
 	_, err = h.app.Services.UpdateTopic(topic)
 	if err != nil {
-		log.Printf("Error on update topic (%s): %s\n", topic.Name, err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "topic", nil, err, http.StatusInternalServerError, true)
 	}
 
-	data, err = json.Marshal(topic)
+	data, err := json.Marshal(topic)
 	if err != nil {
-		log.Println("Error on marshal topic")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // GetMessages Gets all messages. This api may be invoked with different filters in the query string
@@ -123,7 +103,7 @@ func (h AdminApisHandler) UpdateTopic(user *model.CoreToken, w http.ResponseWrit
 // @Success 200 {array} model.Message
 // @Security AdminUserAuth
 // @Router /admin/messages [get]
-func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	userIDFilter := getStringQueryParam(r, "user")
 	topicFilter := getStringQueryParam(r, "topic")
 	offsetFilter := getInt64QueryParam(r, "offset")
@@ -131,12 +111,12 @@ func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWrit
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
 	endDateFilter := getInt64QueryParam(r, "end_date")
+	read := getBoolQueryParam(r, "read")
+	mute := getBoolQueryParam(r, "mute")
 
-	messages, err := h.app.Services.GetMessages(user.OrgID, user.AppID, userIDFilter, nil, startDateFilter, endDateFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
+	messages, err := h.app.Services.GetMessages(claims.OrgID, claims.AppID, userIDFilter, read, mute, nil, startDateFilter, endDateFilter, topicFilter, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
-		log.Printf("Error on getting messages: %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages", nil, err, http.StatusInternalServerError, true)
 	}
 
 	if messages == nil {
@@ -145,14 +125,10 @@ func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWrit
 
 	data, err := json.Marshal(messages)
 	if err != nil {
-		log.Printf("Error on marshal messages: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // CreateMessage Creates a message
@@ -164,42 +140,27 @@ func (h AdminApisHandler) GetMessages(user *model.CoreToken, w http.ResponseWrit
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message [post]
-func (h AdminApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
-		return
-	}
-
+func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var message *model.Message
-	err = json.Unmarshal(data, &message)
+	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
-		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	message.OrgID = user.OrgID
-	message.AppID = user.AppID
+	message.OrgID = claims.OrgID
+	message.AppID = claims.AppID
 
-	message, err = h.app.Services.CreateMessage(user, message, false)
+	message, err = h.app.Services.CreateMessage(&model.CoreUserRef{UserID: claims.Subject, Name: claims.Name}, message, false)
 	if err != nil {
-		log.Printf("Error on create message: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
-	data, err = json.Marshal(message)
+	data, err := json.Marshal(message)
 	if err != nil {
-		log.Println("Error on marshal message")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // UpdateMessage Updates a message
@@ -211,48 +172,31 @@ func (h AdminApisHandler) CreateMessage(user *model.CoreToken, w http.ResponseWr
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message [put]
-func (h AdminApisHandler) UpdateMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on reading message data - %s\n", err.Error())
-		http.Error(w, fmt.Sprintf("Error on reading message data - %s\n", err.Error()), http.StatusBadRequest)
-		return
-	}
-
+func (h AdminApisHandler) UpdateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var message *model.Message
-	err = json.Unmarshal(data, &message)
+	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
-		log.Printf("Error on unmarshal the message request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
 	if message.ID == nil {
-		log.Printf("Error message doesn't contain ID - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, "message id", nil, nil, http.StatusBadRequest, false)
 	}
 
-	message.OrgID = user.OrgID
-	message.AppID = user.AppID
+	message.OrgID = claims.OrgID
+	message.AppID = claims.AppID
 
-	message, err = h.app.Services.UpdateMessage(user, message)
+	message, err = h.app.Services.UpdateMessage(&claims.Subject, message)
 	if err != nil {
-		log.Printf("Error on update message: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
-	data, err = json.Marshal(message)
+	data, err := json.Marshal(message)
 	if err != nil {
-		log.Println("Error on marshal message")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // GetMessage Retrieves a message by id
@@ -265,32 +209,24 @@ func (h AdminApisHandler) UpdateMessage(user *model.CoreToken, w http.ResponseWr
 // @Success 200 {object} model.Message
 // @Security AdminUserAuth
 // @Router /admin/message/{id} [get]
-func (h AdminApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) GetMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
-		log.Println("Message id is required")
-		http.Error(w, "Message id is required", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	message, err := h.app.Services.GetMessage(user.OrgID, user.AppID, id)
+	message, err := h.app.Services.GetMessage(claims.OrgID, claims.AppID, id)
 	if err != nil {
-		log.Printf("Error on get message with id (%s): %s\n", id, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
 	data, err := json.Marshal(message)
 	if err != nil {
-		log.Println("Error on marshal message")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // DeleteMessage Deletes a message with id
@@ -303,23 +239,19 @@ func (h AdminApisHandler) GetMessage(user *model.CoreToken, w http.ResponseWrite
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/message/{id} [delete]
-func (h AdminApisHandler) DeleteMessage(user *model.CoreToken, w http.ResponseWriter, r *http.Request) {
+func (h AdminApisHandler) DeleteMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
-		log.Println("Message id is required")
-		http.Error(w, "Message id is required", http.StatusBadRequest)
-		return
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	err := h.app.Services.DeleteMessage(user.OrgID, user.AppID, id)
+	err := h.app.Services.DeleteMessage(claims.OrgID, claims.AppID, id)
 	if err != nil {
-		log.Printf("Error on delete message with id (%s): %s\n", id, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return l.HTTPResponseSuccess()
 }
 
 // GetAllAppVersions Gets all available app versions
@@ -330,24 +262,18 @@ func (h AdminApisHandler) DeleteMessage(user *model.CoreToken, w http.ResponseWr
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/app_versions [get]
-func (h AdminApisHandler) GetAllAppVersions(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-	appVersions, err := h.app.Services.GetAllAppVersions(coreToken.OrgID, coreToken.AppID)
+func (h AdminApisHandler) GetAllAppVersions(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	appVersions, err := h.app.Services.GetAllAppVersions(claims.OrgID, claims.AppID)
 	if err != nil {
-		log.Printf("Error on get app versions: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "app versions", nil, err, http.StatusInternalServerError, true)
 	}
 
 	data, err := json.Marshal(appVersions)
 	if err != nil {
-		log.Println("Error on marshal appVersions")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // GetAllAppPlatforms Gets all available app platforms
@@ -358,22 +284,16 @@ func (h AdminApisHandler) GetAllAppVersions(coreToken *model.CoreToken, w http.R
 // @Success 200
 // @Security AdminUserAuth
 // @Router /admin/app_platforms [get]
-func (h AdminApisHandler) GetAllAppPlatforms(coreToken *model.CoreToken, w http.ResponseWriter, _ *http.Request) {
-	appPlatforms, err := h.app.Services.GetAllAppPlatforms(coreToken.OrgID, coreToken.AppID)
+func (h AdminApisHandler) GetAllAppPlatforms(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	appPlatforms, err := h.app.Services.GetAllAppPlatforms(claims.OrgID, claims.AppID)
 	if err != nil {
-		log.Printf("Error on get app platforms: %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "app platforms", nil, err, http.StatusInternalServerError, true)
 	}
 
 	data, err := json.Marshal(appPlatforms)
 	if err != nil {
-		log.Println("Error on marshal app platforms")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return l.HTTPResponseSuccessJSON(data)
 }

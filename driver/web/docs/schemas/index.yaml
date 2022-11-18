@@ -25,3 +25,14 @@ Topic:
   $ref: "./application/Topic.yaml"
 User:
   $ref: "./application/User.yaml"
+
+_client_req_mail:
+  $ref: "./apis/mail/request/Request.yaml"
+_client_req_message:
+  $ref: "./apis/message/request/Request.yaml"
+_client_req_messageV2:
+  $ref: "./apis/messageV2/request/Request.yaml"
+_client_req_token:
+  $ref: "./apis/token/request/Request.yaml"
+_client_req_user:
+  $ref: "./apis/user/request/Request.yaml"

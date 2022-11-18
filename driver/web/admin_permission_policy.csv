@@ -1,0 +1,1 @@
+p, all_admin_notifications, /notifications/api/admin/*, (GET)|(POST)|(PUT)|(DELETE), All notification admin actions

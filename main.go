@@ -24,6 +24,9 @@ import (
 	driver "notifications/driver/web"
 	"os"
 	"strconv"
+
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 var (
@@ -38,7 +41,16 @@ func main() {
 		Version = "dev"
 	}
 
-	port := getEnvKey("PORT", true)
+	serviceID := "notifications"
+
+	loggerOpts := logs.LoggerOpts{SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties("notifications/version")}
+	loggerOpts.SuppressRequests = append(loggerOpts.SuppressRequests, logs.NewStandardHealthCheckHTTPRequestProperties("notifications/api/version")...)
+	logger := logs.NewLogger(serviceID, &loggerOpts)
+
+	port := getEnvKey("PORT", false)
+	if len(port) == 0 {
+		port = "80"
+	}
 
 	// mongoDB adapter
 	mongoDBAuth := getEnvKey("MONGO_AUTH", true)
@@ -46,7 +58,7 @@ func main() {
 	mongoTimeout := getEnvKey("MONGO_TIMEOUT", false)
 	mtOrgID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_ORG_ID", true)
 	mtAppID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_APP_ID", true)
-	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout, mtOrgID, mtAppID)
+	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout, mtOrgID, mtAppID, logger)
 	err := storageAdapter.Start()
 	if err != nil {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
@@ -72,7 +84,7 @@ func main() {
 	mailAdapter := mailer.NewMailerAdapter(smtpHost, smtpPortNum, smtpUser, smtpPassword, smtpFrom)
 
 	// application
-	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter, logger)
 	application.Start()
 
 	// web adapter
@@ -80,16 +92,33 @@ func main() {
 	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
 	coreAuthPrivateKey := getEnvKey("CORE_AUTH_PRIVATE_KEY", true)
 	coreBBHost := getEnvKey("CORE_BB_HOST", true)
-	contentServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
+	notificationsServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
+
+	authService := authservice.AuthService{
+		ServiceID:   serviceID,
+		ServiceHost: notificationsServiceURL,
+		FirstParty:  true,
+		AuthBaseURL: coreBBHost,
+	}
+
+	serviceRegLoader, err := authservice.NewRemoteServiceRegLoader(&authService, []string{"auth"})
+	if err != nil {
+		log.Fatalf("Error initializing remote service registration loader: %v", err)
+	}
+
+	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
+	if err != nil {
+		log.Fatalf("Error initializing service registration manager: %v", err)
+	}
 
 	config := &model.Config{
 		InternalAPIKey:          internalAPIKey,
 		CoreAuthPrivateKey:      coreAuthPrivateKey,
 		CoreBBHost:              coreBBHost,
-		NotificationsServiceURL: contentServiceURL,
+		NotificationsServiceURL: notificationsServiceURL,
 	}
 
-	webAdapter := driver.NewWebAdapter(host, port, application, config)
+	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, logger)
 
 	webAdapter.Start()
 }

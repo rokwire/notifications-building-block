@@ -349,6 +349,22 @@ func (collWrapper *collectionWrapper) Aggregate(pipeline interface{}, result int
 	return err
 }
 
+func (collWrapper *collectionWrapper) AggregateWithContext(ctx context.Context, pipeline interface{}, result interface{}, ops *options.AggregateOptions) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*15000)
+	defer cancel()
+
+	cursor, err := collWrapper.coll.Aggregate(ctx, pipeline, ops)
+
+	if err == nil {
+		err = cursor.All(ctx, result)
+	}
+
+	return err
+}
+
 func (collWrapper *collectionWrapper) Drop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
 	defer cancel()
