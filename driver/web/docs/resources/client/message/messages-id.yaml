@@ -9,7 +9,7 @@ get:
   parameters:
     - name: id
       in: path
-      description: offset
+      description: id
       required: true
       style: simple
       explode: false

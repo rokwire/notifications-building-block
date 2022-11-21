@@ -396,7 +396,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: offset
+          description: id
           required: true
           style: simple
           explode: false
@@ -455,7 +455,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: offset
+          description: id
           required: true
           style: simple
           explode: false
@@ -828,7 +828,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/_client_req_messageV2'
         required: true
       responses:
         '200':

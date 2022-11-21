@@ -11,7 +11,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../../schemas/application/Message.yaml" 
+          $ref: "../../../schemas/apis/messageV2/request/Request.yaml"   
     required: true    
   responses:
     200:
