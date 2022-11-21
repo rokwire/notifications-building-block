@@ -178,7 +178,10 @@ func (we Adapter) wrapFunc(handler handlerFunc, authorization tokenauth.Handler)
 				return
 			}
 
-			logObj.SetContext("account_id", claims.Subject)
+			//do not crash the service if the deprecated internal auth type is used
+			if claims != nil {
+				logObj.SetContext("account_id", claims.Subject)
+			}
 			response = handler(logObj, req, claims)
 		} else {
 			response = handler(logObj, req, nil)
