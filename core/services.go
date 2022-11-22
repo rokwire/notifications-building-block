@@ -182,6 +182,20 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 	return persistedMessage, err
 }
 
+func getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
+	common := []model.Recipient{}
+	messageReciepientsMap := map[string]model.Recipient{}
+	for _, e := range s1 {
+		messageReciepientsMap[e.UserID] = e
+	}
+	for _, e := range s2 {
+		if val, ok := messageReciepientsMap[e.UserID]; ok {
+			common = append(common, val)
+		}
+	}
+	return common
+}
+
 func (app *Application) sendNotifications(message *model.Message, tokens []string) {
 	for _, token := range tokens {
 		sendErr := app.firebase.SendNotificationToToken(message.OrgID, message.AppID, token, message.Subject, message.Body, message.Data)
@@ -281,20 +295,6 @@ func (app *Application) deleteUserWithID(orgID string, appID string, userID stri
 	}
 
 	return nil
-}
-
-func getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
-	common := []model.Recipient{}
-	messageReciepientsMap := map[string]model.Recipient{}
-	for _, e := range s1 {
-		messageReciepientsMap[e.UserID] = e
-	}
-	for _, e := range s2 {
-		if val, ok := messageReciepientsMap[e.UserID]; ok {
-			common = append(common, val)
-		}
-	}
-	return common
 }
 
 func (app *Application) sendMail(toEmail string, subject string, body string) error {
