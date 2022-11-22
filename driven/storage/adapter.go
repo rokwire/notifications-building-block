@@ -354,8 +354,7 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string)
 		for _, user := range tokenMappings {
 			if user.HasTopic(topic) {
 				recipients = append(recipients, model.Recipient{
-					UserID:               user.UserID,
-					NotificationDisabled: user.NotificationsDisabled,
+					UserID: user.UserID,
 				})
 			}
 		}
@@ -398,8 +397,7 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, 
 		recipients := []model.Recipient{}
 		for _, user := range tokenMappings {
 			recipients = append(recipients, model.Recipient{
-				UserID:               user.UserID,
-				NotificationDisabled: user.NotificationsDisabled,
+				UserID: user.UserID,
 			})
 		}
 
