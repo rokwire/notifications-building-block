@@ -14,8 +14,8 @@
 
 package model
 
-// Recipient represent recipient of a message
-type Recipient struct {
+// MessageRecipient represent recipient of a message
+type MessageRecipient struct {
 	UserID string `json:"user_id" bson:"user_id"`
 	Name   string `json:"name" bson:"name"`
 	Mute   bool   `json:"mute" bson:"mute"`

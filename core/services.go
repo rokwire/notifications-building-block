@@ -95,7 +95,7 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 		log.Printf("message %s has been created", *persistedMessage.ID)
 	}
 
-	messageRecipients := []model.Recipient{}
+	messageRecipients := []model.MessageRecipient{}
 	checkCriteria := true
 
 	// recipients from message
@@ -182,9 +182,9 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 	return persistedMessage, err
 }
 
-func getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
-	common := []model.Recipient{}
-	messageReciepientsMap := map[string]model.Recipient{}
+func getCommonRecipients(s1, s2 []model.MessageRecipient) []model.MessageRecipient {
+	common := []model.MessageRecipient{}
+	messageReciepientsMap := map[string]model.MessageRecipient{}
 	for _, e := range s1 {
 		messageReciepientsMap[e.UserID] = e
 	}

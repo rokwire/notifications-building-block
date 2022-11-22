@@ -29,7 +29,7 @@ type Message struct {
 	DateCreated            *time.Time          `json:"date_created" bson:"date_created"`
 	DateUpdated            *time.Time          `json:"date_updated" bson:"date_updated"`
 	Priority               int                 `json:"priority" bson:"priority"`
-	Recipients             []Recipient         `json:"recipients" bson:"recipients"`
+	Recipients             []MessageRecipient  `json:"recipients" bson:"recipients"`
 	RecipientsCriteriaList []RecipientCriteria `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
 	Topic                  *string             `json:"topic" bson:"topic"`
 	Subject                string              `json:"subject" bson:"subject"`

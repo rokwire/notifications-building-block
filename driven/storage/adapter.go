@@ -286,7 +286,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID stri
 }
 
 // GetFirebaseTokensByRecipients Gets all users mapped to the recipients input list
-func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, recipients []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error) {
+func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, recipients []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error) {
 	if len(recipients) > 0 {
 		innerFilter := []string{}
 		for _, recipient := range recipients {
@@ -336,7 +336,7 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 }
 
 // GetRecipientsByTopic Gets all users recipients by topic
-func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string) ([]model.Recipient, error) {
+func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string) ([]model.MessageRecipient, error) {
 	if len(topic) > 0 {
 		filter := bson.D{
 			primitive.E{Key: "org_id", Value: orgID},
@@ -350,10 +350,10 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string)
 			return nil, err
 		}
 
-		recipients := []model.Recipient{}
+		recipients := []model.MessageRecipient{}
 		for _, user := range tokenMappings {
 			if user.HasTopic(topic) {
-				recipients = append(recipients, model.Recipient{
+				recipients = append(recipients, model.MessageRecipient{
 					UserID: user.UserID,
 				})
 			}
@@ -365,7 +365,7 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string)
 }
 
 // GetRecipientsByRecipientCriterias gets recipients list by list of criteria
-func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error) {
+func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.MessageRecipient, error) {
 	if len(recipientCriterias) > 0 {
 		var tokenMappings []model.User
 		innerFilter := []interface{}{}
@@ -394,9 +394,9 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, 
 			return nil, err
 		}
 
-		recipients := []model.Recipient{}
+		recipients := []model.MessageRecipient{}
 		for _, user := range tokenMappings {
-			recipients = append(recipients, model.Recipient{
+			recipients = append(recipients, model.MessageRecipient{
 				UserID: user.UserID,
 			})
 		}
@@ -905,7 +905,7 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string
 		return fmt.Errorf("message with id (%s) not found: %s", messageID, err)
 	}
 
-	updatesRecipients := []model.Recipient{}
+	updatesRecipients := []model.MessageRecipient{}
 	for _, recipient := range persistedMessage.Recipients {
 		if userID != recipient.UserID {
 			updatesRecipients = append(updatesRecipients, recipient)
