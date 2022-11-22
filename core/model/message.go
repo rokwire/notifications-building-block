@@ -92,7 +92,7 @@ type InputMessage struct {
 
 	Priority int               `json:"priority"`
 	Subject  string            `json:"subject"`
-	Sender   *InputSender      `json:"sender`
+	Sender   *InputSender      `json:"sender"`
 	Body     string            `json:"body"`
 	Data     map[string]string `json:"data"`
 
