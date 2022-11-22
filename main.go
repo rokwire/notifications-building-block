@@ -18,14 +18,18 @@ import (
 	"log"
 	"notifications/core"
 	"notifications/core/model"
+	corebb "notifications/driven/core"
 	"notifications/driven/firebase"
 	"notifications/driven/mailer"
 	storage "notifications/driven/storage"
 	driver "notifications/driver/web"
 	"os"
 	"strconv"
+	"strings"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/sigauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
@@ -83,10 +87,6 @@ func main() {
 	smtpPortNum, _ := strconv.Atoi(smtpPort)
 	mailAdapter := mailer.NewMailerAdapter(smtpHost, smtpPortNum, smtpUser, smtpPassword, smtpFrom)
 
-	// application
-	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter, logger)
-	application.Start()
-
 	// web adapter
 	host := getEnvKey("HOST", true)
 	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
@@ -111,12 +111,41 @@ func main() {
 		log.Fatalf("Error initializing service registration manager: %v", err)
 	}
 
+	//core adapter
+	serviceAccountID := getEnvKey("GR_SERVICE_ACCOUNT_ID", false)
+	privKeyRaw := getEnvKey("GR_PRIV_KEY", true)
+	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
+	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
+	if err != nil {
+		log.Fatalf("Error parsing priv key: %v", err)
+	}
+	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false)
+	if err != nil {
+		log.Fatalf("Error initializing signature auth: %v", err)
+	}
+
+	serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
+	if err != nil {
+		log.Fatalf("Error initializing remote service account loader: %v", err)
+	}
+
+	serviceAccountManager, err := authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
+	if err != nil {
+		log.Fatalf("Error initializing service account manager: %v", err)
+	}
+
+	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
+
 	config := &model.Config{
 		InternalAPIKey:          internalAPIKey,
 		CoreAuthPrivateKey:      coreAuthPrivateKey,
 		CoreBBHost:              coreBBHost,
 		NotificationsServiceURL: notificationsServiceURL,
 	}
+
+	// application
+	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter, logger, coreAdapter)
+	application.Start()
 
 	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, logger)
 

@@ -16,6 +16,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"notifications/core/model"
@@ -143,6 +144,25 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 			messageRecipients = nil
 		}
 		log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
+	}
+
+	if len(message.RecipientAccountCriteria) > 0 {
+
+		accounts, err := app.core.RetrieveCoreUserAccountByCriteria(message.RecipientAccountCriteria, &appID, &orgID)
+		if err != nil {
+			fmt.Printf("error retrieving recipients by account criteria: %s", err)
+		}
+
+		if len(accounts) > 0 {
+			jsonStr, err := json.Marshal(accounts)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			if err := json.Unmarshal(jsonStr, &messageRecipients); err != nil {
+				fmt.Println(err)
+			}
+		}
 	}
 
 	if len(messageRecipients) > 0 {
