@@ -46,19 +46,19 @@ func NewInternalApisHandler(app *core.Application) InternalApisHandler {
 // @Router /int/message [post]
 // @Deprecated
 func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.Message
+	var message *model.InputMessage
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	return h.processSendMessage(l, message, false, r)
+	return h.processSendMessage(l, *message, false, r)
 }
 
 // sendMessageRequestBody message request body
 type sendMessageRequestBody struct {
-	Async   *bool          `json:"async"`
-	Message *model.Message `json:"message"`
+	Async   *bool              `json:"async"`
+	Message model.InputMessage `json:"message"`
 } // @name sendMessageRequestBody
 
 // SendMessageV2 Sends a message to a user, list of users or a topic
@@ -85,15 +85,12 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 	return h.processSendMessage(l, message, async, r)
 }
 
-func (h InternalApisHandler) processSendMessage(l *logs.Log, message *model.Message, async bool, r *http.Request) logs.HTTPResponse {
-	if message == nil {
-		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypeRequestBody, nil, nil, http.StatusBadRequest, false)
-	}
-	if len(message.OrgID) == 0 || len(message.AppID) == 0 {
+func (h InternalApisHandler) processSendMessage(l *logs.Log, inputMessage model.InputMessage, async bool, r *http.Request) logs.HTTPResponse {
+	if len(inputMessage.OrgID) == 0 || len(inputMessage.AppID) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
-	message, err := h.app.Services.CreateMessage(nil, message, async)
+	message, err := h.app.Services.CreateMessage(inputMessage, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}

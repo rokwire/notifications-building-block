@@ -16,6 +16,7 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
@@ -141,16 +142,17 @@ func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *toke
 // @Security AdminUserAuth
 // @Router /admin/message [post]
 func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.Message
-	err := json.NewDecoder(r.Body).Decode(&message)
+	var inputMessage *model.InputMessage
+	err := json.NewDecoder(r.Body).Decode(&inputMessage)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	message.OrgID = claims.OrgID
-	message.AppID = claims.AppID
+	inputMessage.OrgID = claims.OrgID
+	inputMessage.AppID = claims.AppID
+	inputMessage.Sender = &model.InputSender{UserID: claims.Subject, Name: claims.Name}
 
-	message, err = h.app.Services.CreateMessage(&model.CoreUserRef{UserID: claims.Subject, Name: claims.Name}, message, false)
+	message, err := h.app.Services.CreateMessage(*inputMessage, false)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}
@@ -173,7 +175,7 @@ func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *to
 // @Security AdminUserAuth
 // @Router /admin/message [put]
 func (h AdminApisHandler) UpdateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.Message
+	/*var message *model.Message
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
@@ -196,7 +198,9 @@ func (h AdminApisHandler) UpdateMessage(l *logs.Log, r *http.Request, claims *to
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	return l.HTTPResponseSuccessJSON(data) */
+
+	return l.HTTPResponseError("disabled api", errors.New("disabled api"), 500, true)
 }
 
 // GetMessage Retrieves a message by id

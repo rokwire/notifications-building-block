@@ -25,10 +25,10 @@ type Message struct {
 	OrgID string `json:"org_id" bson:"org_id"`
 	AppID string `json:"app_id" bson:"app_id"`
 
-	ID       *string           `json:"id" bson:"_id"`
+	ID       string            `json:"id" bson:"_id"`
 	Priority int               `json:"priority" bson:"priority"`
 	Subject  string            `json:"subject" bson:"subject"`
-	Sender   *Sender           `json:"sender,omitempty" bson:"sender,omitempty"`
+	Sender   Sender            `json:"sender,omitempty" bson:"sender,omitempty"`
 	Body     string            `json:"body" bson:"body"`
 	Data     map[string]string `json:"data" bson:"data"`
 
@@ -50,7 +50,7 @@ func (m *Message) HasUser(id string) bool {
 		}
 	}
 
-	if m.Sender != nil && m.Sender.User != nil && id == m.Sender.User.UserID {
+	if m.Sender.User != nil && id == m.Sender.User.UserID {
 		return true
 	}
 	return false
@@ -81,4 +81,42 @@ type MessagesStats struct {
 	Unmuted    *int64 `json:"not_muted_count" bson:"not_muted_count"`
 	Read       *int64 `json:"read_count" bson:"read_count"`
 	Unread     *int64 `json:"not_read_count" bson:"not_read_count"`
+}
+
+///
+
+//InputMessage is passed by the adapters for creating a message in the core module
+type InputMessage struct {
+	OrgID string `json:"org_id"`
+	AppID string `json:"app_id"`
+
+	Priority int               `json:"priority"`
+	Subject  string            `json:"subject"`
+	Sender   *InputSender      `json:"sender`
+	Body     string            `json:"body"`
+	Data     map[string]string `json:"data"`
+
+	//recipients related
+	Recipients             []InputMessageRecipient  `json:"recipients"`
+	RecipientsCriteriaList []InputRecipientCriteria `json:"recipients_criteria_list"`
+	Topic                  *string                  `json:"topic"`
+}
+
+// InputSender is passed by the adapters for creating a message in the core module
+type InputSender struct {
+	UserID string `json:"user_id"`
+	Name   string `json:"name"`
+}
+
+// InputMessageRecipient is passed by the adapters for creating a message in the core module
+type InputMessageRecipient struct {
+	UserID string `json:"user_id"`
+	Name   string `json:"name"`
+	Mute   bool   `json:"mute"`
+}
+
+// InputRecipientCriteria is passed by the adapters for creating a message in the core module
+type InputRecipientCriteria struct {
+	AppVersion  *string `json:"app_version"`
+	AppPlatform *string `json:"app_platform"`
 }

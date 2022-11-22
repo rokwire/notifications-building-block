@@ -456,14 +456,14 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			if len(messages) > 0 {
 				for _, message := range messages {
 					if message.Recipients != nil && len(message.Recipients) > 1 {
-						err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, *message.ID)
+						err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, message.ID)
 						if err != nil {
-							fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", *message.ID, userID, err)
+							fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
 						}
 					} else {
-						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, *message.ID)
+						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
 						if err != nil {
-							fmt.Printf("warning: unable to delete message(%s): %s\n", *message.ID, err)
+							fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
 						}
 					}
 				}
@@ -842,10 +842,10 @@ func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Mess
 }
 
 // CreateMessage creates a new message.
-func (sa Adapter) CreateMessage(message *model.Message) (*model.Message, error) {
-	if message.ID == nil {
+func (sa Adapter) CreateMessage(message model.Message) (*model.Message, error) {
+	if len(message.ID) == 0 {
 		id := uuid.New().String()
-		message.ID = &id
+		message.ID = id
 	}
 	now := time.Now().UTC()
 	message.DateUpdated = &now
@@ -853,19 +853,19 @@ func (sa Adapter) CreateMessage(message *model.Message) (*model.Message, error) 
 
 	_, err := sa.db.messages.InsertOne(&message)
 	if err != nil {
-		fmt.Printf("warning: error while store message (%s) - %s", *message.ID, err)
+		fmt.Printf("warning: error while store message (%s) - %s", message.ID, err)
 		return nil, err
 	}
 
-	return message, nil
+	return &message, nil
 }
 
 // UpdateMessage updates a message
 func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) {
-	if message != nil && message.ID != nil {
-		persistedMessage, err := sa.GetMessage(message.OrgID, message.AppID, *message.ID)
+	if message != nil {
+		persistedMessage, err := sa.GetMessage(message.OrgID, message.AppID, message.ID)
 		if err != nil || persistedMessage == nil {
-			return nil, fmt.Errorf("Message with id (%s) not found: %w", *message.ID, err)
+			return nil, fmt.Errorf("Message with id (%s) not found: %w", message.ID, err)
 		}
 
 		filter := bson.D{
@@ -887,7 +887,7 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 
 		_, err = sa.db.messages.UpdateOne(filter, update, nil)
 		if err != nil {
-			fmt.Printf("warning: error while update message (%s) - %s", *message.ID, err)
+			fmt.Printf("warning: error while update message (%s) - %s", message.ID, err)
 			return nil, err
 		}
 	}

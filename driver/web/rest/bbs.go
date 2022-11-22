@@ -37,8 +37,8 @@ func newBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
 
 // sendMessageRequestBody message request body
 type bbsSendMessageRequestBody struct {
-	Async   *bool          `json:"async"`
-	Message *model.Message `json:"message"`
+	Async   *bool              `json:"async"`
+	Message model.InputMessage `json:"message"`
 } // @name sendMessageRequestBody
 
 // SendMessage Sends a message to a user, list of users or a topic
@@ -57,20 +57,17 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	message := bodyData.Message
+	inputMessage := bodyData.Message
 	async := false //by default
 	if bodyData.Async != nil {
 		async = *bodyData.Async
 	}
 
-	if message == nil {
-		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypeRequestBody, nil, nil, http.StatusBadRequest, false)
-	}
-	if len(message.OrgID) == 0 || len(message.AppID) == 0 {
+	if len(inputMessage.OrgID) == 0 || len(inputMessage.AppID) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
-	message, err = h.app.Services.CreateMessage(nil, message, async)
+	message, err := h.app.Services.CreateMessage(inputMessage, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}

@@ -19,6 +19,9 @@ import (
 	"fmt"
 	"log"
 	"notifications/core/model"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 func (app *Application) getVersion() string {
@@ -69,117 +72,134 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(user *model.CoreUserRef, message *model.Message, async bool) (*model.Message, error) {
-	var persistedMessage *model.Message
+func (app *Application) createMessage(inputMessage model.InputMessage, async bool) (*model.Message, error) {
 	var err error
 
-	orgID := message.OrgID
-	appID := message.AppID
+	orgID := inputMessage.OrgID
+	appID := inputMessage.AppID
 
-	if message.ID != nil {
-		return nil, fmt.Errorf("message with id (%s): is already sent", *message.ID)
-	}
-
-	if user != nil {
-		message.Sender = &model.Sender{Type: "user", User: user}
+	id := uuid.NewString()
+	priority := inputMessage.Priority
+	subject := inputMessage.Subject
+	var sender model.Sender
+	if inputMessage.Sender != nil {
+		senderUser := model.CoreUserRef{UserID: inputMessage.Sender.UserID, Name: inputMessage.Sender.Name}
+		sender = model.Sender{Type: "user", User: &senderUser}
 	} else {
-		message.Sender = &model.Sender{Type: "system"}
+		sender = model.Sender{Type: "system"}
 	}
-	storeInInbox := len(message.Subject) > 0 || len(message.Body) > 0
-	if storeInInbox {
-		persistedMessage, err = app.storage.CreateMessage(message)
-		if err != nil {
-			fmt.Printf("error on creating a message: %s", err)
-			return nil, fmt.Errorf("error on creating a message: %s", err)
+	body := inputMessage.Body
+	data := inputMessage.Data
+	//recipients - not here, see below
+	var recipientsCriteriaList []model.RecipientCriteria
+	if len(inputMessage.RecipientsCriteriaList) > 0 {
+		recipientsCriteriaList = make([]model.RecipientCriteria, len(inputMessage.RecipientsCriteriaList))
+		for i, item := range inputMessage.RecipientsCriteriaList {
+			recipientsCriteriaList[i] = model.RecipientCriteria{AppVersion: item.AppVersion, AppPlatform: item.AppPlatform}
 		}
-		log.Printf("message %s has been created", *persistedMessage.ID)
 	}
+	topic := inputMessage.Topic
+	dateCreated := time.Now()
 
-	messageRecipients := []model.MessageRecipient{}
-	checkCriteria := true
+	message := model.Message{OrgID: orgID, AppID: appID, ID: id, Priority: priority,
+		Subject: subject, Sender: sender, Body: body, Data: data, Topic: topic, DateCreated: &dateCreated}
 
-	// recipients from message
-	if len(message.Recipients) > 0 {
-		messageRecipients = append(messageRecipients, message.Recipients...)
+	//store it
+	persistedMessage, err := app.storage.CreateMessage(message)
+	if err != nil {
+		fmt.Printf("error on creating a message: %s", err)
+		return nil, fmt.Errorf("error on creating a message: %s", err)
 	}
+	log.Printf("message %s has been created", persistedMessage.ID)
 
-	// recipients from topic
-	if message.Topic != nil {
-		topicRecipients, err := app.storage.GetRecipientsByTopic(orgID, appID, *message.Topic)
-		if err != nil {
-			fmt.Printf("error retrieving recipients by topic (%s): %s", *message.Topic, err)
-		} else {
-			log.Printf("retrieve recipients (%+v) for topic (%s)", topicRecipients, *message.Topic)
-		}
+	//TODO - below logic + one transaction
+	return persistedMessage, err
+	/*
+		messageRecipients := []model.MessageRecipient{}
+		checkCriteria := true
 
-		if len(topicRecipients) > 0 {
-			if len(messageRecipients) > 0 {
-				messageRecipients = getCommonRecipients(messageRecipients, topicRecipients)
-			} else {
-				messageRecipients = append(messageRecipients, topicRecipients...)
-			}
-		} else {
-			checkCriteria = false
-			messageRecipients = nil
+		// recipients from message
+		if len(message.Recipients) > 0 {
+			messageRecipients = append(messageRecipients, message.Recipients...)
 		}
 
-		log.Printf("construct recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
-	}
-
-	// recipients from criteria
-	if (message.RecipientsCriteriaList != nil) && checkCriteria {
-		criteriaRecipients, err := app.storage.GetRecipientsByRecipientCriterias(orgID, appID, message.RecipientsCriteriaList)
-		if err != nil {
-			fmt.Printf("error retrieving recipients by criteria: %s", err)
-		}
-
-		if len(criteriaRecipients) > 0 {
-			if len(messageRecipients) > 0 {
-				messageRecipients = getCommonRecipients(messageRecipients, criteriaRecipients)
-			} else {
-				messageRecipients = append(messageRecipients, criteriaRecipients...)
-			}
-		} else {
-			messageRecipients = nil
-		}
-		log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
-	}
-
-	if len(messageRecipients) > 0 {
-		message.Recipients = messageRecipients
-		if storeInInbox {
-			persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
+		// recipients from topic
+		if message.Topic != nil {
+			topicRecipients, err := app.storage.GetRecipientsByTopic(orgID, appID, *message.Topic)
 			if err != nil {
-				fmt.Printf("error storing the message: %s", err)
+				fmt.Printf("error retrieving recipients by topic (%s): %s", *message.Topic, err)
 			} else {
-				log.Printf("message %s has been updated", *persistedMessage.ID)
+				log.Printf("retrieve recipients (%+v) for topic (%s)", topicRecipients, *message.Topic)
+			}
+
+			if len(topicRecipients) > 0 {
+				if len(messageRecipients) > 0 {
+					messageRecipients = getCommonRecipients(messageRecipients, topicRecipients)
+				} else {
+					messageRecipients = append(messageRecipients, topicRecipients...)
+				}
+			} else {
+				checkCriteria = false
+				messageRecipients = nil
+			}
+
+			log.Printf("construct recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
+		}
+
+		// recipients from criteria
+		if (message.RecipientsCriteriaList != nil) && checkCriteria {
+			criteriaRecipients, err := app.storage.GetRecipientsByRecipientCriterias(orgID, appID, message.RecipientsCriteriaList)
+			if err != nil {
+				fmt.Printf("error retrieving recipients by criteria: %s", err)
+			}
+
+			if len(criteriaRecipients) > 0 {
+				if len(messageRecipients) > 0 {
+					messageRecipients = getCommonRecipients(messageRecipients, criteriaRecipients)
+				} else {
+					messageRecipients = append(messageRecipients, criteriaRecipients...)
+				}
+			} else {
+				messageRecipients = nil
+			}
+			log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
+		}
+
+		if len(messageRecipients) > 0 {
+			message.Recipients = messageRecipients
+			if storeInInbox {
+				persistedMessage, err = app.storage.UpdateMessage(message) // just update the message
+				if err != nil {
+					fmt.Printf("error storing the message: %s", err)
+				} else {
+					log.Printf("message %s has been updated", *persistedMessage.ID)
+				}
+			}
+
+			// retrieve tokens by recipients
+			tokens, err := app.storage.GetFirebaseTokensByRecipients(orgID, appID, message.Recipients, message.RecipientsCriteriaList)
+			if err != nil {
+				log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
+				return nil, err
+			}
+			log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
+
+			// send message to tokens
+			if len(tokens) > 0 {
+				if async {
+					go app.sendNotifications(message, tokens)
+				} else {
+					app.sendNotifications(message, tokens)
+				}
 			}
 		}
 
-		// retrieve tokens by recipients
-		tokens, err := app.storage.GetFirebaseTokensByRecipients(orgID, appID, message.Recipients, message.RecipientsCriteriaList)
 		if err != nil {
-			log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
+			fmt.Printf("create message finished with error: %s", err)
 			return nil, err
 		}
-		log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
 
-		// send message to tokens
-		if len(tokens) > 0 {
-			if async {
-				go app.sendNotifications(message, tokens)
-			} else {
-				app.sendNotifications(message, tokens)
-			}
-		}
-	}
-
-	if err != nil {
-		fmt.Printf("create message finished with error: %s", err)
-		return nil, err
-	}
-
-	return persistedMessage, err
+		return persistedMessage, err */
 }
 
 func getCommonRecipients(s1, s2 []model.MessageRecipient) []model.MessageRecipient {
@@ -196,13 +216,13 @@ func getCommonRecipients(s1, s2 []model.MessageRecipient) []model.MessageRecipie
 	return common
 }
 
-func (app *Application) sendNotifications(message *model.Message, tokens []string) {
+func (app *Application) sendNotifications(message model.Message, tokens []string) {
 	for _, token := range tokens {
 		sendErr := app.firebase.SendNotificationToToken(message.OrgID, message.AppID, token, message.Subject, message.Body, message.Data)
 		if sendErr != nil {
 			fmt.Printf("error send notification to token (%s): %s", token, sendErr)
 		} else {
-			log.Printf("message(%s:%s:%s) has been sent to token: %s", *message.ID, message.Subject, message.Body, token)
+			log.Printf("message(%s:%s:%s) has been sent to token: %s", message.ID, message.Subject, message.Body, token)
 		}
 	}
 }
@@ -223,11 +243,11 @@ func (app *Application) getMessage(orgID string, appID string, ID string) (*mode
 }
 
 func (app *Application) updateMessage(userID *string, message *model.Message) (*model.Message, error) {
-	if message != nil && message.ID != nil {
-		persistedMessage, err := app.storage.GetMessage(message.OrgID, message.AppID, *message.ID)
+	if message != nil {
+		persistedMessage, err := app.storage.GetMessage(message.OrgID, message.AppID, message.ID)
 		if err == nil && persistedMessage != nil {
 			// If userID is nil, treat as system update, otherwise check sender match
-			if userID == nil || (persistedMessage.Sender != nil && persistedMessage.Sender.User != nil && persistedMessage.Sender.User.UserID == *userID) {
+			if userID == nil || (persistedMessage.Sender.User != nil && persistedMessage.Sender.User.UserID == *userID) {
 				return app.storage.UpdateMessage(message)
 			}
 			return nil, fmt.Errorf("only creator can update the original message")
