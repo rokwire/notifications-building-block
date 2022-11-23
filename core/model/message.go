@@ -33,7 +33,7 @@ type Message struct {
 	Data     map[string]string `json:"data" bson:"data"`
 
 	//recipients related
-	Recipients             []MessageRecipient  `json:"recipients" bson:"recipients"`
+	Recipients             []MessageRecipient  `json:"recipients" bson:"recipients"` //TODO remove it
 	RecipientsCriteriaList []RecipientCriteria `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
 	Topic                  *string             `json:"topic" bson:"topic"`
 

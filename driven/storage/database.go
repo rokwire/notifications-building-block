@@ -38,9 +38,10 @@ type database struct {
 	dbClient *mongo.Client
 	logger   *logs.Logger
 
-	users    *collectionWrapper
-	topics   *collectionWrapper
-	messages *collectionWrapper
+	users              *collectionWrapper
+	topics             *collectionWrapper
+	messages           *collectionWrapper
+	messagesRecipients *collectionWrapper
 
 	appVersions  *collectionWrapper
 	appPlatforms *collectionWrapper
@@ -95,6 +96,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	messagesRecipients := &collectionWrapper{database: m, coll: db.Collection("messages_recipients")}
+	err = m.applyMessagesRecipientsChecks(messagesRecipients)
+	if err != nil {
+		return err
+	}
+
 	appPlatforms := &collectionWrapper{database: m, coll: db.Collection("app_platforms")}
 	err = m.applyPlatformsChecks(appPlatforms)
 	if err != nil {
@@ -120,6 +127,7 @@ func (m *database) start() error {
 	m.users = users
 	m.topics = topics
 	m.messages = messages
+	m.messagesRecipients = messagesRecipients
 	m.appPlatforms = appPlatforms
 	m.appVersions = appVersions
 	m.firebaseConfigurations = firebaseConfigurations
@@ -290,6 +298,15 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	}
 
 	log.Println("apply messages passed")
+	return nil
+}
+
+func (m *database) applyMessagesRecipientsChecks(messagesRecipients *collectionWrapper) error {
+	log.Println("apply messages recipients checks.....")
+
+	//TODO
+
+	log.Println("apply messages recipients passed")
 	return nil
 }
 
