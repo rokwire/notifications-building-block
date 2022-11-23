@@ -304,7 +304,17 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 func (m *database) applyMessagesRecipientsChecks(messagesRecipients *collectionWrapper) error {
 	log.Println("apply messages recipients checks.....")
 
-	//TODO
+	//add user id index
+	err := messagesRecipients.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add messages id index
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "message_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
 
 	log.Println("apply messages recipients passed")
 	return nil
