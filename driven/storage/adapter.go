@@ -336,7 +336,7 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 }
 
 // GetRecipientsByTopic Gets all users recipients by topic
-func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string) ([]model.MessageRecipient, error) {
+func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string, messageID string) ([]model.MessageRecipient, error) {
 	if len(topic) > 0 {
 		filter := bson.D{
 			primitive.E{Key: "org_id", Value: orgID},
@@ -354,7 +354,7 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string)
 		for _, user := range tokenMappings {
 			if user.HasTopic(topic) {
 				recipients = append(recipients, model.MessageRecipient{
-					UserID: user.UserID,
+					ID: uuid.NewString(), UserID: user.UserID, MessageID: messageID,
 				})
 			}
 		}
@@ -365,7 +365,7 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string)
 }
 
 // GetRecipientsByRecipientCriterias gets recipients list by list of criteria
-func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.MessageRecipient, error) {
+func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria, messageID string) ([]model.MessageRecipient, error) {
 	if len(recipientCriterias) > 0 {
 		var tokenMappings []model.User
 		innerFilter := []interface{}{}
@@ -397,7 +397,7 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, 
 		recipients := []model.MessageRecipient{}
 		for _, user := range tokenMappings {
 			recipients = append(recipients, model.MessageRecipient{
-				UserID: user.UserID,
+				ID: uuid.NewString(), UserID: user.UserID, MessageID: messageID,
 			})
 		}
 
@@ -920,7 +920,7 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 
 // DeleteUserMessageWithContext removes the desired user from the recipients list
 func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error {
-	if ctx == nil {
+	/*if ctx == nil {
 		ctx = context.Background()
 	}
 	persistedMessage, err := sa.GetMessage(orgID, appID, messageID)
@@ -952,7 +952,7 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string
 			fmt.Printf("warning: error while delete message (%s) for user (%s) %s", messageID, userID, err)
 			return err
 		}
-	}
+	} */
 
 	return nil
 }

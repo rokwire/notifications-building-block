@@ -174,8 +174,8 @@ func (app *Application) calculateRecipients(
 	if len(inputMessage.Recipients) > 0 {
 		list := make([]model.MessageRecipient, len(inputMessage.Recipients))
 		for i, item := range inputMessage.Recipients {
-			cItem := model.MessageRecipient{UserID: item.UserID, MessageID: persistedMessage.ID,
-				Name: item.Name, Mute: item.Mute, Read: false}
+			cItem := model.MessageRecipient{ID: uuid.NewString(), UserID: item.UserID,
+				MessageID: persistedMessage.ID, Name: item.Name, Mute: item.Mute, Read: false}
 			list[i] = cItem
 		}
 
@@ -185,7 +185,7 @@ func (app *Application) calculateRecipients(
 	// recipients from topic
 	if persistedMessage.Topic != nil {
 		topicRecipients, err := app.storage.GetRecipientsByTopic(persistedMessage.OrgID,
-			persistedMessage.AppID, *persistedMessage.Topic)
+			persistedMessage.AppID, *persistedMessage.Topic, persistedMessage.ID)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by topic (%s): %s", *persistedMessage.Topic, err)
 			return nil, err
@@ -211,7 +211,7 @@ func (app *Application) calculateRecipients(
 	// recipients from criteria
 	if (persistedMessage.RecipientsCriteriaList != nil) && checkCriteria {
 		criteriaRecipients, err := app.storage.GetRecipientsByRecipientCriterias(
-			persistedMessage.OrgID, persistedMessage.AppID, persistedMessage.RecipientsCriteriaList)
+			persistedMessage.OrgID, persistedMessage.AppID, persistedMessage.RecipientsCriteriaList, persistedMessage.ID)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by criteria: %s", err)
 			return nil, err
