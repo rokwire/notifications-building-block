@@ -752,6 +752,29 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return topic, err
 }
 
+// InsertMessagesRecipients inserts messages recipients
+func (sa Adapter) InsertMessagesRecipients(items []model.MessageRecipient) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	data := make([]interface{}, len(items))
+	for i, p := range items {
+		data[i] = p
+	}
+
+	res, err := sa.db.messagesRecipients.InsertMany(data, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, "messages recipients", nil, err)
+	}
+
+	if len(res.InsertedIDs) != len(items) {
+		return errors.ErrorAction(logutils.ActionInsert, "messages recipients", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(items)})
+	}
+
+	return nil
+}
+
 // GetMessages Gets all messages according to the filter
 func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
 	filter := bson.D{

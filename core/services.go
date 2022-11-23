@@ -121,8 +121,12 @@ func (app *Application) createMessage(inputMessage model.InputMessage, async boo
 		return nil, fmt.Errorf("error on calculating recipients for message: %s", err)
 	}
 
-	//TODO store recipients
-	log.Println(recipients)
+	//store recipients
+	err = app.storage.InsertMessagesRecipients(recipients)
+	if err != nil {
+		fmt.Printf("error on inserting recipients: %s", err)
+		return nil, fmt.Errorf("error on inserting recipients: %s", err)
+	}
 
 	//send message
 	err = app.sendMessage(recipients, *persistedMessage, async)

@@ -157,6 +157,8 @@ type Storage interface {
 	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
+	InsertMessagesRecipients(items []model.MessageRecipient) error
+
 	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessage(message model.Message) (*model.Message, error)
