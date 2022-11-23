@@ -49,6 +49,36 @@ func (sa *Adapter) RegisterStorageListener(storageListener Listener) {
 	sa.db.listeners = append(sa.db.listeners, storageListener)
 }
 
+// PerformTransaction performs a transaction
+func (sa *Adapter) PerformTransaction(transaction func(context TransactionContext) error, timeoutMilliSeconds int64) error {
+	// transaction
+	timeout := time.Millisecond * time.Duration(timeoutMilliSeconds)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	err := sa.db.dbClient.UseSession(ctx, func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return errors.WrapErrorAction(logutils.ActionStart, logutils.TypeTransaction, nil, err)
+		}
+
+		err = transaction(sessionContext)
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return errors.WrapErrorAction("performing", logutils.TypeTransaction, nil, err)
+		}
+
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return errors.WrapErrorAction(logutils.ActionCommit, logutils.TypeTransaction, nil, err)
+		}
+		return nil
+	})
+
+	return err
+}
+
 // NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string,
 	multiTenancyOrgID string, multiTenancyAppID string, logger *logs.Logger) *Adapter {
@@ -335,8 +365,8 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 	return nil, fmt.Errorf("empty recient information")
 }
 
-// GetRecipientsByTopic Gets all users recipients by topic
-func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string, messageID string) ([]model.MessageRecipient, error) {
+// GetRecipientsByTopicWithContext Gets all users recipients by topic
+func (sa Adapter) GetRecipientsByTopicWithContext(ctx context.Context, orgID string, appID string, topic string, messageID string) ([]model.MessageRecipient, error) {
 	if len(topic) > 0 {
 		filter := bson.D{
 			primitive.E{Key: "org_id", Value: orgID},
@@ -345,7 +375,7 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string,
 		}
 
 		var tokenMappings []model.User
-		err := sa.db.users.Find(filter, &tokenMappings, nil)
+		err := sa.db.users.FindWithContext(ctx, filter, &tokenMappings, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -365,7 +395,7 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string,
 }
 
 // GetRecipientsByRecipientCriterias gets recipients list by list of criteria
-func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria, messageID string) ([]model.MessageRecipient, error) {
+func (sa Adapter) GetRecipientsByRecipientCriteriasWithContext(ctx context.Context, orgID string, appID string, recipientCriterias []model.RecipientCriteria, messageID string) ([]model.MessageRecipient, error) {
 	if len(recipientCriterias) > 0 {
 		var tokenMappings []model.User
 		innerFilter := []interface{}{}
@@ -389,7 +419,7 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, 
 			primitive.E{Key: "$or", Value: innerFilter},
 		}
 
-		err := sa.db.users.Find(filter, &tokenMappings, nil)
+		err := sa.db.users.FindWithContext(ctx, filter, &tokenMappings, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -752,8 +782,8 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return topic, err
 }
 
-// InsertMessagesRecipients inserts messages recipients
-func (sa Adapter) InsertMessagesRecipients(items []model.MessageRecipient) error {
+// InsertMessagesRecipientsWithContext inserts messages recipients
+func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error {
 	if len(items) == 0 {
 		return nil
 	}
@@ -763,7 +793,7 @@ func (sa Adapter) InsertMessagesRecipients(items []model.MessageRecipient) error
 		data[i] = p
 	}
 
-	res, err := sa.db.messagesRecipients.InsertMany(data, nil)
+	res, err := sa.db.messagesRecipients.InsertManyWithContext(ctx, data, nil)
 	if err != nil {
 		return errors.WrapErrorAction(logutils.ActionInsert, "messages recipients", nil, err)
 	}
@@ -864,8 +894,8 @@ func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Mess
 	return message, nil
 }
 
-// CreateMessage creates a new message.
-func (sa Adapter) CreateMessage(message model.Message) (*model.Message, error) {
+// CreateMessageWithContext creates a new message.
+func (sa Adapter) CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error) {
 	if len(message.ID) == 0 {
 		id := uuid.New().String()
 		message.ID = id
@@ -874,7 +904,7 @@ func (sa Adapter) CreateMessage(message model.Message) (*model.Message, error) {
 	message.DateUpdated = &now
 	message.DateCreated = &now
 
-	_, err := sa.db.messages.InsertOne(&message)
+	_, err := sa.db.messages.InsertOneWithContext(ctx, &message)
 	if err != nil {
 		fmt.Printf("warning: error while store message (%s) - %s", message.ID, err)
 		return nil, err
@@ -1041,7 +1071,19 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 	}
 }
 
+func (sa *Adapter) abortTransaction(sessionContext mongo.SessionContext) {
+	err := sessionContext.AbortTransaction(sessionContext)
+	if err != nil {
+		log.Printf("error aborting a transaction - %s", err)
+	}
+}
+
 // Listener represents storage listener
 type Listener interface {
 	OnFirebaseConfigurationsUpdated()
+}
+
+// TransactionContext represents storage transaction interface
+type TransactionContext interface {
+	mongo.SessionContext
 }

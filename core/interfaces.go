@@ -140,6 +140,8 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 type Storage interface {
 	RegisterStorageListener(storageListener storage.Listener)
 
+	PerformTransaction(func(context storage.TransactionContext) error, int64) error
+
 	LoadFirebaseConfigurations() ([]model.FirebaseConf, error)
 
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
@@ -149,19 +151,19 @@ type Storage interface {
 	FindUserByToken(orgID string, appID string, token string) (*model.User, error)
 	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
 	GetFirebaseTokensByRecipients(orgID string, appID string, recipient []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error)
-	GetRecipientsByTopic(orgID string, appID string, topic string, messageID string) ([]model.MessageRecipient, error)
-	GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria, messageID string) ([]model.MessageRecipient, error)
+	GetRecipientsByTopicWithContext(ctx context.Context, orgID string, appID string, topic string, messageID string) ([]model.MessageRecipient, error)
+	GetRecipientsByRecipientCriteriasWithContext(ctx context.Context, orgID string, appID string, recipientCriterias []model.RecipientCriteria, messageID string) ([]model.MessageRecipient, error)
 	SubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
 	UnsubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
 	GetTopics(orgID string, appID string) ([]model.Topic, error)
 	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
-	InsertMessagesRecipients(items []model.MessageRecipient) error
+	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
 
 	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
-	CreateMessage(message model.Message) (*model.Message, error)
+	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
