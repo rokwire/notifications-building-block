@@ -80,10 +80,20 @@ func (app *Application) createMessage(inputMessage model.InputMessage, async boo
 
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
+		//generate message id
+		messageID := uuid.NewString()
+
+		//calculate the recipients
+		recipients, err = app.calculateRecipients(context, inputMessage, messageID)
+		if err != nil {
+			fmt.Printf("error on calculating recipients for a message: %s", err)
+			return err
+		}
+
+		//create message object
 		orgID := inputMessage.OrgID
 		appID := inputMessage.AppID
 
-		id := uuid.NewString()
 		priority := inputMessage.Priority
 		subject := inputMessage.Subject
 		var sender model.Sender
@@ -95,7 +105,7 @@ func (app *Application) createMessage(inputMessage model.InputMessage, async boo
 		}
 		body := inputMessage.Body
 		data := inputMessage.Data
-		//recipients - not here, see below
+		calculatedRecipients := len(recipients)
 		var recipientsCriteriaList []model.RecipientCriteria
 		if len(inputMessage.RecipientsCriteriaList) > 0 {
 			recipientsCriteriaList = make([]model.RecipientCriteria, len(inputMessage.RecipientsCriteriaList))
@@ -106,23 +116,17 @@ func (app *Application) createMessage(inputMessage model.InputMessage, async boo
 		topic := inputMessage.Topic
 		dateCreated := time.Now()
 
-		message := model.Message{OrgID: orgID, AppID: appID, ID: id, Priority: priority,
-			Subject: subject, Sender: sender, Body: body, Data: data, Topic: topic, DateCreated: &dateCreated}
+		message := model.Message{OrgID: orgID, AppID: appID, ID: messageID, Priority: priority,
+			Subject: subject, Sender: sender, Body: body, Data: data, RecipientsCriteriaList: recipientsCriteriaList,
+			Topic: topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
 
-		//store it
+		//store the message object
 		persistedMessage, err = app.storage.CreateMessageWithContext(context, message)
 		if err != nil {
 			fmt.Printf("error on creating a message: %s", err)
 			return err
 		}
 		log.Printf("message %s has been created", persistedMessage.ID)
-
-		//calculate the recipients
-		recipients, err = app.calculateRecipients(context, inputMessage, *persistedMessage)
-		if err != nil {
-			fmt.Printf("error on calculating recipients for a message: %s", err)
-			return err
-		}
 
 		//store recipients
 		err = app.storage.InsertMessagesRecipientsWithContext(context, recipients)
@@ -180,7 +184,7 @@ func (app *Application) sendMessage(allRecipients []model.MessageRecipient, mess
 }
 
 func (app *Application) calculateRecipients(context storage.TransactionContext,
-	inputMessage model.InputMessage, persistedMessage model.Message) ([]model.MessageRecipient, error) {
+	inputMessage model.InputMessage, messageID string) ([]model.MessageRecipient, error) {
 
 	messageRecipients := []model.MessageRecipient{}
 	checkCriteria := true
@@ -191,7 +195,7 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 		for i, item := range inputMessage.Recipients {
 			cItem := model.MessageRecipient{OrgID: inputMessage.OrgID, AppID: inputMessage.AppID,
 				ID: uuid.NewString(), UserID: item.UserID,
-				MessageID: persistedMessage.ID, Name: item.Name, Mute: item.Mute, Read: false}
+				MessageID: messageID, Name: item.Name, Mute: item.Mute, Read: false}
 			list[i] = cItem
 		}
 
@@ -199,14 +203,14 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 	}
 
 	// recipients from topic
-	if persistedMessage.Topic != nil {
-		topicRecipients, err := app.storage.GetRecipientsByTopicWithContext(context, persistedMessage.OrgID,
-			persistedMessage.AppID, *persistedMessage.Topic, persistedMessage.ID)
+	if inputMessage.Topic != nil {
+		topicRecipients, err := app.storage.GetRecipientsByTopicWithContext(context, inputMessage.OrgID,
+			inputMessage.AppID, *inputMessage.Topic, messageID)
 		if err != nil {
-			fmt.Printf("error retrieving recipients by topic (%s): %s", *persistedMessage.Topic, err)
+			fmt.Printf("error retrieving recipients by topic (%s): %s", *inputMessage.Topic, err)
 			return nil, err
 		} else {
-			log.Printf("retrieve recipients (%+v) for topic (%s)", topicRecipients, *persistedMessage.Topic)
+			log.Printf("retrieve recipients (%+v) for topic (%s)", topicRecipients, *inputMessage.Topic)
 		}
 
 		if len(topicRecipients) > 0 {
@@ -221,13 +225,18 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 		}
 
 		log.Printf("construct recipients (%+v) for message (%s:%s:%s)",
-			messageRecipients, persistedMessage.ID, persistedMessage.Subject, persistedMessage.Body)
+			messageRecipients, messageID, inputMessage.Subject, inputMessage.Body)
 	}
 
 	// recipients from criteria
-	if (persistedMessage.RecipientsCriteriaList != nil) && checkCriteria {
+	if (inputMessage.RecipientsCriteriaList != nil) && checkCriteria {
+		criteriaList := make([]model.RecipientCriteria, len(inputMessage.RecipientsCriteriaList))
+		for i, item := range inputMessage.RecipientsCriteriaList {
+			criteriaList[i] = model.RecipientCriteria{AppVersion: item.AppVersion, AppPlatform: item.AppPlatform}
+		}
+
 		criteriaRecipients, err := app.storage.GetRecipientsByRecipientCriteriasWithContext(context,
-			persistedMessage.OrgID, persistedMessage.AppID, persistedMessage.RecipientsCriteriaList, persistedMessage.ID)
+			inputMessage.OrgID, inputMessage.AppID, criteriaList, messageID)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by criteria: %s", err)
 			return nil, err
@@ -243,7 +252,7 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 			messageRecipients = nil
 		}
 		log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)",
-			messageRecipients, persistedMessage.ID, persistedMessage.Subject, persistedMessage.Body)
+			messageRecipients, messageID, inputMessage.Subject, inputMessage.Body)
 	}
 
 	return messageRecipients, nil

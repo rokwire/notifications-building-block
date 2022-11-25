@@ -33,8 +33,13 @@ type Message struct {
 	Data     map[string]string `json:"data" bson:"data"`
 
 	//recipients related
+	Recipients             []MessageRecipient  `json:"recipients" bson:"recipients"` //keep it for back compatability
 	RecipientsCriteriaList []RecipientCriteria `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
 	Topic                  *string             `json:"topic" bson:"topic"`
+
+	//initialy calculated recipients count
+	//if nil then it means that the message was created before the refactoring
+	CalculatedRecipientsCount *int `json:"calculated_recipients_count" bson:"calculated_recipients_count"`
 
 	DateCreated *time.Time `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
