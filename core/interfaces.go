@@ -41,6 +41,7 @@ type Services interface {
 	DeleteUserMessage(orgID string, appID string, userID string, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
 	UpdateReadMessage(orgID string, appID string, ID string, userID string) (*model.Message, error)
+	UpdateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error
 
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
@@ -104,6 +105,10 @@ func (s *servicesImpl) UpdateReadMessage(orgID string, appID string, ID string, 
 	return s.app.updateReadMessage(orgID, appID, ID, userID)
 }
 
+func (s *servicesImpl) UpdateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error {
+	return s.app.updateAllUserMessagesRead(orgID, appID, userID, read)
+}
+
 func (s *servicesImpl) DeleteUserMessage(orgID string, appID string, userID string, messageID string) error {
 	return s.app.deleteUserMessage(orgID, appID, userID, messageID)
 }
@@ -165,7 +170,7 @@ type Storage interface {
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
 	GetMessagesStats(userID string, read bool, mute bool) (*model.MessagesStats, error)
 	UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID string) (*model.Message, error)
-
+	UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
 }
