@@ -365,8 +365,8 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 	return nil, fmt.Errorf("empty recient information")
 }
 
-// GetRecipientsByTopicWithContext Gets all users recipients by topic
-func (sa Adapter) GetRecipientsByTopicWithContext(ctx context.Context, orgID string, appID string, topic string, messageID string) ([]model.MessageRecipient, error) {
+// GetUsersByTopicWithContext Gets all users for topic topic
+func (sa Adapter) GetUsersByTopicWithContext(ctx context.Context, orgID string, appID string, topic string) ([]model.User, error) {
 	if len(topic) > 0 {
 		filter := bson.D{
 			primitive.E{Key: "org_id", Value: orgID},
@@ -380,25 +380,22 @@ func (sa Adapter) GetRecipientsByTopicWithContext(ctx context.Context, orgID str
 			return nil, err
 		}
 
-		recipients := []model.MessageRecipient{}
+		result := []model.User{}
 		for _, user := range tokenMappings {
 			if user.HasTopic(topic) {
-				recipients = append(recipients, model.MessageRecipient{
-					OrgID: orgID, AppID: appID,
-					ID: uuid.NewString(), UserID: user.UserID, MessageID: messageID,
-				})
+				result = append(result, user)
 			}
 		}
 
-		return recipients, nil
+		return result, nil
 	}
 	return nil, fmt.Errorf("no mapped recipients to %s topic", topic)
 }
 
-// GetRecipientsByRecipientCriterias gets recipients list by list of criteria
-func (sa Adapter) GetRecipientsByRecipientCriteriasWithContext(ctx context.Context, orgID string, appID string, recipientCriterias []model.RecipientCriteria, messageID string) ([]model.MessageRecipient, error) {
+// GetUsersByRecipientCriteriasWithContext gets users list by list of criteria
+func (sa Adapter) GetUsersByRecipientCriteriasWithContext(ctx context.Context, orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.User, error) {
 	if len(recipientCriterias) > 0 {
-		var tokenMappings []model.User
+		var users []model.User
 		innerFilter := []interface{}{}
 
 		for _, criteria := range recipientCriterias {
@@ -420,20 +417,12 @@ func (sa Adapter) GetRecipientsByRecipientCriteriasWithContext(ctx context.Conte
 			primitive.E{Key: "$or", Value: innerFilter},
 		}
 
-		err := sa.db.users.FindWithContext(ctx, filter, &tokenMappings, nil)
+		err := sa.db.users.FindWithContext(ctx, filter, &users, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		recipients := []model.MessageRecipient{}
-		for _, user := range tokenMappings {
-			recipients = append(recipients, model.MessageRecipient{
-				OrgID: orgID, AppID: appID,
-				ID: uuid.NewString(), UserID: user.UserID, MessageID: messageID,
-			})
-		}
-
-		return recipients, nil
+		return users, nil
 	}
 	return nil, fmt.Errorf("no mapped recipients for the input criterias")
 }
