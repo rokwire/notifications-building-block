@@ -528,3 +528,32 @@ func (h ApisHandler) UpdateReadMessage(l *logs.Log, r *http.Request, claims *tok
 
 	return l.HTTPResponseSuccessJSON(data)
 }
+
+// updateAllUserMessagesReadRequest Wrapper for update user read flag
+type updateAllUserMessagesReadRequest struct {
+	Read bool `json:"read"`
+} // @name updateAllUserMessagesReadRequest
+
+// UpdateAllUserMessagesRead marking as "unread" or as "read all user messages
+// @Description marking as "unread" or as "read all user messages
+// @Tags Client
+// @ID UpdateAllUserMessagesRead
+// @Param data body updateAllUserMessagesReadRequest true "body json"
+// @Accept  json
+// @Success 200
+// @Security UserAuth
+// @Router messages/read [put]
+func (h ApisHandler) UpdateAllUserMessagesRead(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var body updateAllUserMessagesReadRequest
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "all messages read", nil, err, http.StatusInternalServerError, true)
+	}
+
+	err = h.app.Services.UpdateAllUserMessagesRead(claims.OrgID, claims.AppID, claims.Subject, body.Read)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "all messages read", nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
+}
