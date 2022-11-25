@@ -784,6 +784,24 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return topic, err
 }
 
+// FindMessagesRecipients finds messages recipients
+func (sa Adapter) FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "message_id", Value: messageID},
+		primitive.E{Key: "user_id", Value: userID},
+	}
+
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // InsertMessagesRecipientsWithContext inserts messages recipients
 func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error {
 	if len(items) == 0 {

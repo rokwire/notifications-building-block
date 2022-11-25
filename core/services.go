@@ -305,10 +305,15 @@ func (app *Application) getUserMessage(orgID string, appID string, ID string, ac
 	}
 
 	//check if recipient
-	//TODO
+	messagesRecipients, err := app.storage.FindMessagesRecipients(orgID, appID, ID, accountID)
+	if err != nil {
+		return nil, err
+	}
+	if len(messagesRecipients) > 0 {
+		return message, err //it is recipient
+	}
 
-	return nil, nil
-	//return app.storage.GetMessage(orgID, appID, ID)
+	return nil, nil //not sender, not recipient
 }
 
 func (app *Application) updateMessage(userID *string, message *model.Message) (*model.Message, error) {
