@@ -304,8 +304,20 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 func (m *database) applyMessagesRecipientsChecks(messagesRecipients *collectionWrapper) error {
 	log.Println("apply messages recipients checks.....")
 
+	//add org id index
+	err := messagesRecipients.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add app id index
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "app_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
 	//add user id index
-	err := messagesRecipients.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}

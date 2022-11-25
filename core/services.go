@@ -189,7 +189,8 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 	if len(inputMessage.Recipients) > 0 {
 		list := make([]model.MessageRecipient, len(inputMessage.Recipients))
 		for i, item := range inputMessage.Recipients {
-			cItem := model.MessageRecipient{ID: uuid.NewString(), UserID: item.UserID,
+			cItem := model.MessageRecipient{OrgID: inputMessage.OrgID, AppID: inputMessage.AppID,
+				ID: uuid.NewString(), UserID: item.UserID,
 				MessageID: persistedMessage.ID, Name: item.Name, Mute: item.Mute, Read: false}
 			list[i] = cItem
 		}
@@ -286,6 +287,28 @@ func (app *Application) getMessagesStats(orgID string, appID string, userID stri
 
 func (app *Application) getMessage(orgID string, appID string, ID string) (*model.Message, error) {
 	return app.storage.GetMessage(orgID, appID, ID)
+}
+
+func (app *Application) getUserMessage(orgID string, appID string, ID string, accountID string) (*model.Message, error) {
+	message, err := app.storage.GetMessage(orgID, appID, ID)
+	if err != nil {
+		return nil, err
+	}
+	if message == nil {
+		//no message for this id
+		return nil, nil
+	}
+
+	//check if sender
+	if message.IsSender(accountID) {
+		return message, nil //it is sender
+	}
+
+	//check if recipient
+	//TODO
+
+	return nil, nil
+	//return app.storage.GetMessage(orgID, appID, ID)
 }
 
 func (app *Application) updateMessage(userID *string, message *model.Message) (*model.Message, error) {

@@ -387,20 +387,16 @@ func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *toke
 // @Success 200 {object} model.Message
 // @Security UserAuth
 // @Router /message/{id} [get]
-func (h ApisHandler) GetMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+func (h ApisHandler) GetUserMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	message, err := h.app.Services.GetMessage(claims.OrgID, claims.AppID, id)
+	message, err := h.app.Services.GetUserMessage(claims.OrgID, claims.AppID, id, claims.Subject)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionGet, "message", nil, err, http.StatusInternalServerError, true)
-	}
-
-	if message == nil || !message.HasUser(claims.Subject) {
-		return l.HTTPResponseErrorData(logutils.StatusMissing, "message", nil, nil, http.StatusNotFound, false)
 	}
 
 	data, err := json.Marshal(message)

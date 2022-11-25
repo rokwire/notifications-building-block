@@ -16,6 +16,9 @@ package model
 
 // MessageRecipient represent recipient of a message
 type MessageRecipient struct {
+	OrgID string `json:"org_id" bson:"org_id"`
+	AppID string `json:"app_id" bson:"app_id"`
+
 	ID        string `json:"id" bson:"_id"`
 	UserID    string `json:"user_id" bson:"user_id"`
 	MessageID string `json:"message_id" bson:"message_id"`

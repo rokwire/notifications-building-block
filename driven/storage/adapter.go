@@ -384,6 +384,7 @@ func (sa Adapter) GetRecipientsByTopicWithContext(ctx context.Context, orgID str
 		for _, user := range tokenMappings {
 			if user.HasTopic(topic) {
 				recipients = append(recipients, model.MessageRecipient{
+					OrgID: orgID, AppID: appID,
 					ID: uuid.NewString(), UserID: user.UserID, MessageID: messageID,
 				})
 			}
@@ -427,6 +428,7 @@ func (sa Adapter) GetRecipientsByRecipientCriteriasWithContext(ctx context.Conte
 		recipients := []model.MessageRecipient{}
 		for _, user := range tokenMappings {
 			recipients = append(recipients, model.MessageRecipient{
+				OrgID: orgID, AppID: appID,
 				ID: uuid.NewString(), UserID: user.UserID, MessageID: messageID,
 			})
 		}
@@ -467,7 +469,7 @@ func (sa Adapter) UpdateUserByID(orgID string, appID string, userID string, noti
 
 // DeleteUserWithID Deletes user with ID and all messages
 func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) error {
-	if userID != "" {
+	/*if userID != "" {
 
 		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 			err := sessionContext.StartTransaction()
@@ -530,7 +532,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			fmt.Printf("warning: error while deleting user record (%s): %s\n", userID, err)
 			return err
 		}
-	}
+	} */
 
 	return nil
 }
@@ -930,7 +932,6 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "priority", Value: message.Priority},
-				primitive.E{Key: "recipients", Value: message.Recipients},
 				primitive.E{Key: "topic", Value: message.Topic},
 				primitive.E{Key: "subject", Value: message.Subject},
 				primitive.E{Key: "body", Value: message.Body},

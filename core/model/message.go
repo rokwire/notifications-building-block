@@ -40,16 +40,9 @@ type Message struct {
 	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
 }
 
-// HasUser checks if the user is the sender or as a recipient for the current message
-// Use better name
-func (m *Message) HasUser(id string) bool {
-	for _, recipient := range m.Recipients {
-		if recipient.UserID == id {
-			return true
-		}
-	}
-
-	if m.Sender.User != nil && id == m.Sender.User.UserID {
+// IsSender checks if the user is a sender
+func (m *Message) IsSender(userID string) bool {
+	if m.Sender.User != nil && userID == m.Sender.User.UserID {
 		return true
 	}
 	return false
