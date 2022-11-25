@@ -532,8 +532,8 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			fmt.Printf("warning: error while deleting user record (%s): %s\n", userID, err)
 			return err
 		}
-	} */
-
+	}
+	*/
 	return nil
 }
 
