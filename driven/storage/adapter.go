@@ -958,7 +958,7 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 
 // DeleteUserMessageWithContext removes the desired user from the recipients list
 func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error {
-	/*if ctx == nil {
+	if ctx == nil {
 		ctx = context.Background()
 	}
 	persistedMessage, err := sa.GetMessage(orgID, appID, messageID)
@@ -966,31 +966,51 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string
 		return fmt.Errorf("message with id (%s) not found: %s", messageID, err)
 	}
 
-	updatesRecipients := []model.MessageRecipient{}
-	for _, recipient := range persistedMessage.Recipients {
-		if userID != recipient.UserID {
-			updatesRecipients = append(updatesRecipients, recipient)
-		}
-	}
+	if persistedMessage.CalculatedRecipientsCount == nil {
+		//it is an old message data containing the recipients in the message collection
 
-	if len(updatesRecipients) != len(persistedMessage.Recipients) {
+		updatesRecipients := []model.MessageRecipient{}
+		for _, recipient := range persistedMessage.Recipients {
+			if userID != recipient.UserID {
+				updatesRecipients = append(updatesRecipients, recipient)
+			}
+		}
+
+		if len(updatesRecipients) != len(persistedMessage.Recipients) {
+			filter := bson.D{
+				primitive.E{Key: "org_id", Value: orgID},
+				primitive.E{Key: "app_id", Value: appID},
+				primitive.E{Key: "_id", Value: messageID}}
+			update := bson.D{
+				primitive.E{Key: "$set", Value: bson.D{
+					primitive.E{Key: "recipients", Value: updatesRecipients},
+					primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+				}},
+			}
+
+			_, err = sa.db.messages.UpdateOneWithContext(ctx, filter, update, nil)
+			if err != nil {
+				fmt.Printf("warning: error while delete message (%s) for user (%s) %s", messageID, userID, err)
+				return err
+			}
+		}
+	} else {
+		//it is a new message data containing the recipients in a separate collection
+
+		//remove the messages recipients records
 		filter := bson.D{
 			primitive.E{Key: "org_id", Value: orgID},
 			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "_id", Value: messageID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "recipients", Value: updatesRecipients},
-				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-			}},
-		}
+			primitive.E{Key: "message_id", Value: messageID},
+			primitive.E{Key: "user_id", Value: userID}}
 
-		_, err = sa.db.messages.UpdateOneWithContext(ctx, filter, update, nil)
+		_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
 		if err != nil {
-			fmt.Printf("warning: error while delete message (%s) for user (%s) %s", messageID, userID, err)
-			return err
+			return errors.WrapErrorAction(logutils.ActionDelete, "message recipient",
+				&logutils.FieldArgs{"user_id": userID, "message_id": messageID}, err)
 		}
-	} */
+		return nil
+	}
 
 	return nil
 }
