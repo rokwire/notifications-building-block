@@ -458,7 +458,7 @@ func (sa Adapter) UpdateUserByID(orgID string, appID string, userID string, noti
 
 // DeleteUserWithID Deletes user with ID and all messages
 func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) error {
-	/*if userID != "" {
+	if userID != "" {
 
 		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 			err := sessionContext.StartTransaction()
@@ -476,15 +476,34 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			}
 			if len(messages) > 0 {
 				for _, message := range messages {
-					if message.Recipients != nil && len(message.Recipients) > 1 {
+
+					if message.CalculatedRecipientsCount == nil {
+						//the messsage has been written before the refactroing, so do what it was doing
+
+						if message.Recipients != nil && len(message.Recipients) > 1 {
+							err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, message.ID)
+							if err != nil {
+								fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
+							}
+						} else {
+							err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
+							if err != nil {
+								fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
+							}
+						}
+					} else {
+						//the messsage has been written after the refactroing
 						err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, message.ID)
 						if err != nil {
 							fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
 						}
-					} else {
-						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
-						if err != nil {
-							fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
+
+						if *message.CalculatedRecipientsCount == 1 {
+							//the message has had only one recipient, so we need to remove the message entity too
+							err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
+							if err != nil {
+								fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
+							}
 						}
 					}
 				}
@@ -521,7 +540,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			fmt.Printf("warning: error while deleting user record (%s): %s\n", userID, err)
 			return err
 		}
-	}*/
+	}
 
 	return nil
 }
