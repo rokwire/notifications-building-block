@@ -89,6 +89,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/user", we.wrapFunc(we.apisHandler.DeleteUser, we.auth.client.Standard)).Methods("DELETE")
 	mainRouter.HandleFunc("/messages", we.wrapFunc(we.apisHandler.GetUserMessages, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.wrapFunc(we.apisHandler.DeleteUserMessages, we.auth.client.Standard)).Methods("DELETE")
+	mainRouter.HandleFunc("/messages/read", we.wrapFunc(we.apisHandler.UpdateAllUserMessagesRead, we.auth.client.Standard)).Methods("PUT")
 	mainRouter.HandleFunc("/messages/stats", we.wrapFunc(we.apisHandler.GetUserMessagesStats, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/message", we.wrapFunc(we.apisHandler.CreateMessage, we.auth.client.Permissions)).Methods("POST")
 	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.GetUserMessage, we.auth.client.Standard)).Methods("GET")

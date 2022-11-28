@@ -1025,19 +1025,39 @@ func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID s
 	filter := bson.D{primitive.E{Key: "_id", Value: ID},
 		primitive.E{Key: "app_id", Value: appID},
 		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "recipients.user_id", Value: userID}}
+		primitive.E{Key: "user_id", Value: userID}}
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "recipients.$.read", Value: read},
-			primitive.E{Key: "recipients.$.date_updated", Value: time.Now().UTC()},
+			primitive.E{Key: "read", Value: read},
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 		}},
 	}
-	_, err := sa.db.messages.UpdateManyWithContext(ctx, filter, update, nil)
+	_, err := sa.db.messagesRecipients.UpdateOneWithContext(ctx, filter, update, nil)
 	if err != nil {
 		fmt.Println("warning: error while updating massage", ID, userID, err)
 		return nil, err
 	}
 	return nil, nil
+}
+
+// UpdateAllUserMessagesRead Update all user messages as read or as unread
+func (sa Adapter) UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error {
+	filter := bson.D{
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "user_id", Value: userID}}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "read", Value: read},
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+		}},
+	}
+	_, err := sa.db.messagesRecipients.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		fmt.Println("warning: error while read/unread all user messages", userID, err)
+		return err
+	}
+	return nil
 }
 
 // GetAllAppVersions gets all registered versions
