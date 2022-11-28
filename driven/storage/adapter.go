@@ -834,8 +834,8 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *
 	}
 
 	var list []model.Message
-	list = append(list, oldMessages...)
 	list = append(list, newMessages...)
+	list = append(list, oldMessages...)
 	return list, nil
 
 }
@@ -933,6 +933,46 @@ func (sa Adapter) getNewMessages(orgID string, appID string, userID *string, rea
 
 	if userID != nil && len(*userID) > 0 {
 		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.user_id": *userID}})
+	}
+
+	if read != nil {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.read": *read}})
+	}
+
+	if mute != nil {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.mute": *mute}})
+	}
+
+	if len(messageIDs) > 0 {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"_id": bson.M{"$in": messageIDs}}})
+	}
+
+	if filterTopic != nil {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"topic": *filterTopic}})
+	}
+
+	if startDateEpoch != nil {
+		seconds := *startDateEpoch / 1000
+		timeValue := time.Unix(seconds, 0)
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
+	}
+	if endDateEpoch != nil {
+		seconds := *endDateEpoch / 1000
+		timeValue := time.Unix(seconds, 0)
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
+	}
+
+	findOptions := options.Find()
+	if order != nil && *order == "asc" {
+		findOptions.SetSort(bson.D{{"date_created", 1}})
+	} else {
+		findOptions.SetSort(bson.D{{"date_created", -1}})
+	}
+	if limit != nil {
+		findOptions.SetLimit(*limit)
+	}
+	if offset != nil {
+		findOptions.SetSkip(*offset)
 	}
 
 	var messages []model.Message
