@@ -521,8 +521,8 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			fmt.Printf("warning: error while deleting user record (%s): %s\n", userID, err)
 			return err
 		}
-	}
-	*/
+	}*/
+
 	return nil
 }
 
@@ -815,7 +815,36 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 }
 
 // GetMessages Gets all messages according to the filter
-func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool,
+	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
+	offset *int64, limit *int64, order *string) ([]model.Message, error) {
+
+	//get old messages data
+	oldMessages, err := sa.getOldMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic,
+		offset, limit, order)
+	if err != nil {
+		return nil, err
+	}
+
+	//get new messages data
+	newMessages, err := sa.getNewMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic,
+		offset, limit, order)
+	if err != nil {
+		return nil, err
+	}
+
+	var list []model.Message
+	list = append(list, oldMessages...)
+	list = append(list, newMessages...)
+	return list, nil
+
+}
+
+//data before refactoring
+func (sa Adapter) getOldMessages(orgID string, appID string, userID *string, read *bool, mute *bool,
+	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
+	offset *int64, limit *int64, order *string) ([]model.Message, error) {
+
 	filter := bson.D{
 		primitive.E{Key: "org_id", Value: orgID},
 		primitive.E{Key: "app_id", Value: appID},
@@ -884,6 +913,37 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *
 	}
 
 	return list, nil
+}
+
+//data after refactoring
+func (sa Adapter) getNewMessages(orgID string, appID string, userID *string, read *bool, mute *bool,
+	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
+	offset *int64, limit *int64, order *string) ([]model.Message, error) {
+
+	pipeline := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "messages_recipients",
+			"localField":   "_id",
+			"foreignField": "message_id",
+			"as":           "mess_rec",
+		}},
+		{"$match": bson.M{"org_id": orgID}},
+		{"$match": bson.M{"app_id": appID}},
+	}
+
+	if userID != nil && len(*userID) > 0 {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.user_id": *userID}})
+	}
+
+	var messages []model.Message
+	err := sa.db.messages.Aggregate(pipeline, &messages, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "message", nil, err)
+	}
+
+	//TODO
+
+	return messages, nil
 }
 
 // GetMessage gets a message by id
