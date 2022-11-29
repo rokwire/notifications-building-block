@@ -16,7 +16,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"notifications/core/model"
@@ -146,23 +145,28 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 		log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
 	}
 
+	// recipients from account criteria
 	if len(message.RecipientAccountCriteria) > 0 {
-
 		accounts, err := app.core.RetrieveCoreUserAccountByCriteria(message.RecipientAccountCriteria, &appID, &orgID)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by account criteria: %s", err)
 		}
 
-		if len(accounts) > 0 {
-			jsonStr, err := json.Marshal(accounts)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			if err := json.Unmarshal(jsonStr, &messageRecipients); err != nil {
-				fmt.Println(err)
-			}
+		if len(appID) == 0 {
+			appID = "all"
 		}
+		if len(orgID) == 0 {
+			orgID = "all"
+		}
+
+		for _, account := range accounts {
+			//TODO rework hardcoding NotificationDisabled, Mute,  and Read values
+			accountProfile := account["profile"].(map[string]interface{})
+			name := accountProfile["first_name"].(string) + " " + accountProfile["last_name"].(string)
+			messageRecipient := model.Recipient{UserID: account["id"].(string), Name: name, NotificationDisabled: false, Mute: false, Read: false}
+			messageRecipients = append(messageRecipients, messageRecipient)
+		}
+
 	}
 
 	if len(messageRecipients) > 0 {
@@ -177,12 +181,16 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 		}
 
 		// retrieve tokens by recipients
+		//TODO need to find a way for the all case
 		tokens, err := app.storage.GetFirebaseTokensByRecipients(orgID, appID, message.Recipients, message.RecipientsCriteriaList)
 		if err != nil {
 			log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
 			return nil, err
 		}
-		log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
+
+		if persistedMessage.ID != nil {
+			log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
+		}
 
 		// send message to tokens
 		if len(tokens) > 0 {

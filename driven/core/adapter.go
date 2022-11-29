@@ -30,10 +30,19 @@ func (a *Adapter) RetrieveCoreUserAccountByCriteria(accountCriteria map[string]i
 		return nil, errors.New("service account manager is nil")
 	}
 
-	url := fmt.Sprintf("%s/accounts", accountCriteria)
+	appIDVal := "all"
+	if len(*appID) != 0 {
+		appIDVal = *appID
+	}
+	orgIDVal := "all"
+	if len(*orgID) != 0 {
+		orgIDVal = *orgID
+	}
+
+	url := fmt.Sprintf("%s/bbs/accounts", a.coreURL)
 	queryString := ""
 	if appID != nil {
-		queryString += "?app_id=" + *appID
+		queryString += "?app_id=" + appIDVal
 	}
 	if orgID != nil {
 		if queryString == "" {
@@ -41,7 +50,7 @@ func (a *Adapter) RetrieveCoreUserAccountByCriteria(accountCriteria map[string]i
 		} else {
 			queryString += "&"
 		}
-		queryString += "org_id=" + *orgID
+		queryString += "org_id=" + orgIDVal
 	}
 	bodyBytes, err := json.Marshal(accountCriteria)
 	if err != nil {
@@ -55,15 +64,6 @@ func (a *Adapter) RetrieveCoreUserAccountByCriteria(accountCriteria map[string]i
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json")
-
-	appIDVal := "all"
-	if appID != nil {
-		appIDVal = *appID
-	}
-	orgIDVal := "all"
-	if orgID != nil {
-		appIDVal = *orgID
-	}
 
 	resp, err := a.serviceAccountManager.MakeRequest(req, appIDVal, orgIDVal)
 	if err != nil {
