@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"notifications/core/model"
+	"notifications/utils"
 	"strconv"
 	"time"
 
@@ -552,7 +553,19 @@ func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error)
 		return nil, err
 	}
 
-	return oldData, nil
+	newData, err := sa.getNewMessagesStats(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	totalCoount := utils.GetInt64Value(oldData.TotalCount) + utils.GetInt64Value(newData.TotalCount)
+	muted := utils.GetInt64Value(oldData.Muted) + utils.GetInt64Value(newData.Muted)
+	Unmuted := utils.GetInt64Value(oldData.Unmuted) + utils.GetInt64Value(newData.Unmuted)
+	read := utils.GetInt64Value(oldData.Read) + utils.GetInt64Value(newData.Read)
+	unread := utils.GetInt64Value(oldData.Unread) + utils.GetInt64Value(newData.Unread)
+	result := model.MessagesStats{TotalCount: &totalCoount, Muted: &muted, Unmuted: &Unmuted,
+		Read: &read, Unread: &unread}
+	return &result, nil
 }
 
 func (sa *Adapter) getOldMessagesStats(userID string) (*model.MessagesStats, error) {
@@ -662,6 +675,45 @@ func (sa *Adapter) getOldMessagesStats(userID string) (*model.MessagesStats, err
 		return &stat, err
 	}
 	return nil, nil
+}
+
+func (sa *Adapter) getNewMessagesStats(userID string) (*model.MessagesStats, error) {
+	filter := bson.D{
+		primitive.E{Key: "user_id", Value: userID},
+	}
+
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
+	if err != nil {
+		return nil, err
+	}
+	if data == nil {
+		data = make([]model.MessageRecipient, 0)
+	}
+
+	totalCount := int64(len(data))
+	muted := int64(0)
+	unmuted := int64(0)
+	read := int64(0)
+	unread := int64(0)
+
+	for _, messRec := range data {
+		if messRec.Read {
+			read++
+		} else {
+			unread++
+		}
+
+		if messRec.Mute {
+			muted++
+		} else {
+			unmuted++
+		}
+	}
+
+	stats := model.MessagesStats{TotalCount: &totalCount, Muted: &muted,
+		Unmuted: &unmuted, Read: &read, Unread: &unread}
+	return &stats, nil
 }
 
 // SubscribeToTopic subscribes the token to a topic
