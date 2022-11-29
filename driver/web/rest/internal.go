@@ -86,10 +86,10 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 }
 
 func (h InternalApisHandler) processSendMessage(l *logs.Log, message *model.Message, async bool, r *http.Request) logs.HTTPResponse {
-	if message == nil {
+	if message == nil && len(message.RecipientAccountCriteria) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypeRequestBody, nil, nil, http.StatusBadRequest, false)
 	}
-	if len(message.OrgID) == 0 || len(message.AppID) == 0 {
+	if (len(message.OrgID) == 0 || len(message.AppID) == 0) && len(message.RecipientAccountCriteria) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 

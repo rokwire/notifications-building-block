@@ -66,6 +66,7 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	if message == nil {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypeRequestBody, nil, nil, http.StatusBadRequest, false)
 	}
+
 	if len(message.OrgID) == 0 || len(message.AppID) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}

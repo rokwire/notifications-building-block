@@ -90,7 +90,6 @@ func main() {
 	// web adapter
 	host := getEnvKey("HOST", true)
 	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
-	coreAuthPrivateKey := getEnvKey("CORE_AUTH_PRIVATE_KEY", true)
 	coreBBHost := getEnvKey("CORE_BB_HOST", true)
 	notificationsServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
 
@@ -112,8 +111,8 @@ func main() {
 	}
 
 	//core adapter
-	serviceAccountID := getEnvKey("GR_SERVICE_ACCOUNT_ID", false)
-	privKeyRaw := getEnvKey("GR_PRIV_KEY", true)
+	serviceAccountID := getEnvKey("NOTIFICATIONS_SERVICE_ACCOUNT_ID", false)
+	privKeyRaw := getEnvKey("NOTIFICATIONS_PRIV_KEY", true)
 	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
 	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
 	if err != nil {
@@ -138,7 +137,6 @@ func main() {
 
 	config := &model.Config{
 		InternalAPIKey:          internalAPIKey,
-		CoreAuthPrivateKey:      coreAuthPrivateKey,
 		CoreBBHost:              coreBBHost,
 		NotificationsServiceURL: notificationsServiceURL,
 	}

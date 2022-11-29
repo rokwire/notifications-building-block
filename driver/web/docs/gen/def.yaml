@@ -1090,6 +1090,8 @@ components:
         recipients_criteria_list:
           type: array
           $ref: '#/components/schemas/RecipientCriteria'
+        recipient_account_criteria:
+          type: object
         topic:
           type: string
         subject:
