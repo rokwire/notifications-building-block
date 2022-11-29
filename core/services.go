@@ -304,9 +304,7 @@ func (app *Application) getMessages(orgID string, appID string, userID *string, 
 }
 
 func (app *Application) getMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error) {
-	read := false
-	mute := true
-	stats, _ := app.storage.GetMessagesStats(userID, read, mute)
+	stats, _ := app.storage.GetMessagesStats(userID)
 	return stats, nil
 }
 

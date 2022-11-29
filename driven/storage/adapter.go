@@ -546,7 +546,16 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 }
 
 // GetMessagesStats counts read/unread and muted/unmuted messages
-func (sa *Adapter) GetMessagesStats(userID string, read bool, mute bool) (*model.MessagesStats, error) {
+func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error) {
+	oldData, err := sa.getOldMessagesStats(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return oldData, nil
+}
+
+func (sa *Adapter) getOldMessagesStats(userID string) (*model.MessagesStats, error) {
 	pipeline := bson.A{
 		bson.D{{"$match", bson.D{{"recipients.user_id", userID}}}},
 		bson.D{
