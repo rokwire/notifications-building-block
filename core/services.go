@@ -258,6 +258,10 @@ func (app *Application) updateReadMessage(orgID string, appID string, ID string,
 	return updateReadMessage, nil
 }
 
+func (app *Application) updateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error {
+	return app.storage.UpdateAllUserMessagesRead(context.Background(), orgID, appID, userID, read)
+}
+
 func (app *Application) deleteUserMessage(orgID string, appID string, userID string, messageID string) error {
 	return app.storage.DeleteUserMessageWithContext(context.Background(), orgID, appID, userID, messageID)
 }
