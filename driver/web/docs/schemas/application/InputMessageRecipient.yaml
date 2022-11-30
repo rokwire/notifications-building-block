@@ -1,0 +1,8 @@
+type: object
+properties:
+  user_id:
+    type: string
+  name:
+    type: string  
+  mute:
+    type: boolean
