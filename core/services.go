@@ -145,6 +145,22 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 		log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
 	}
 
+	// recipients from account criteria
+	if len(message.RecipientAccountCriteria) > 0 {
+		accounts, err := app.core.RetrieveCoreUserAccountByCriteria(message.RecipientAccountCriteria, &appID, &orgID)
+		if err != nil {
+			fmt.Printf("error retrieving recipients by account criteria: %s", err)
+		}
+
+		for _, account := range accounts {
+			//TODO rework hardcoding NotificationDisabled, Mute,  and Read values
+			name := account.Profile.Name()
+			messageRecipient := model.Recipient{UserID: account.ID, Name: name, NotificationDisabled: false, Mute: false, Read: false}
+			messageRecipients = append(messageRecipients, messageRecipient)
+		}
+
+	}
+
 	if len(messageRecipients) > 0 {
 		message.Recipients = messageRecipients
 		if storeInInbox {
@@ -157,12 +173,16 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 		}
 
 		// retrieve tokens by recipients
+		//TODO handle the "all" app/org case
 		tokens, err := app.storage.GetFirebaseTokensByRecipients(orgID, appID, message.Recipients, message.RecipientsCriteriaList)
 		if err != nil {
 			log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
 			return nil, err
 		}
-		log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
+
+		if persistedMessage != nil && persistedMessage.ID != nil {
+			log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
+		}
 
 		// send message to tokens
 		if len(tokens) > 0 {

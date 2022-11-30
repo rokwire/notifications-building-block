@@ -57,6 +57,7 @@ paths:
       tags:
         - Internal
       summary: Create message
+      deprecated: true
       description: |
         Create message
       security:
@@ -360,6 +361,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /api/messages/read:
+    put:
+      tags:
+        - Client
+      summary: Update read status of all messages where the current user is defined as a recipient
+      description: |
+        Update read status of all messages where the current user is defined as a recipient
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
         '400':
           description: Bad request
         '401':
@@ -976,7 +995,6 @@ paths:
     post:
       tags:
         - BBs
-      deprecated: true
       summary: Send email
       description: |
         Sends an email
@@ -1090,6 +1108,8 @@ components:
         recipients_criteria_list:
           type: array
           $ref: '#/components/schemas/RecipientCriteria'
+        recipient_account_criteria:
+          type: object
         topic:
           type: string
         subject:
