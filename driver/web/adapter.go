@@ -49,6 +49,7 @@ type Adapter struct {
 	apisHandler         rest.ApisHandler
 	adminApisHandler    rest.AdminApisHandler
 	internalApisHandler rest.InternalApisHandler
+	bbsApisHandler      rest.BBsAPIsHandler
 
 	app *core.Application
 
@@ -114,8 +115,8 @@ func (we Adapter) Start() {
 
 	// BB APIs
 	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()
-	bbsRouter.HandleFunc("/message", we.wrapFunc(we.internalApisHandler.SendMessageV2, we.auth.bbs.Permissions)).Methods("POST")
-	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.internalApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/message", we.wrapFunc(we.bbsApisHandler.SendMessage, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -131,7 +132,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/api/doc", we.host)
+	url := fmt.Sprintf("%s/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
@@ -179,7 +180,9 @@ func (we Adapter) wrapFunc(handler handlerFunc, authorization tokenauth.Handler)
 				return
 			}
 
-			logObj.SetContext("account_id", claims.Subject)
+			if claims != nil {
+				logObj.SetContext("account_id", claims.Subject)
+			}
 			response = handler(logObj, req, claims)
 		} else {
 			response = handler(logObj, req, nil)
@@ -205,8 +208,10 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth,
-		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app, logger: logger}
+	bbsApisHandler := rest.NewBBsAPIsHandler(app)
+	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth, apisHandler: apisHandler,
+		adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsApisHandler: bbsApisHandler,
+		app: app, logger: logger}
 }
 
 // AppListener implements core.ApplicationListener interface

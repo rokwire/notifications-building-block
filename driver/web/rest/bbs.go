@@ -30,8 +30,8 @@ type BBsAPIsHandler struct {
 	app *core.Application
 }
 
-// newBBsAPIsHandler creates new rest Handler instance
-func newBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
+// NewBBsAPIsHandler creates new rest Handler instance
+func NewBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
 	return BBsAPIsHandler{app: app}
 }
 
