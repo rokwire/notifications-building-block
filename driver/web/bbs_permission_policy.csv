@@ -1,0 +1,2 @@
+p, send_message, /notifications/api/bbs/message, (POST), Send message
+p, send_email, /notifications/api/bbs/mail, (POST), Send email

@@ -1,10 +1,11 @@
 post:
   tags:
   - Client
-  deprecated: true
   summary: Create message
   description: |
     Create message
+
+    **Auth:** Requires user token with `send_message` permission
   security:
     - bearerAuth: []
   requestBody:

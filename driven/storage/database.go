@@ -20,6 +20,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/rokwire/logging-library-go/v2/logs"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -34,6 +36,7 @@ type database struct {
 
 	db       *mongo.Database
 	dbClient *mongo.Client
+	logger   *logs.Logger
 
 	users    *collectionWrapper
 	topics   *collectionWrapper
@@ -132,7 +135,7 @@ func (m *database) start() error {
 	return nil
 }
 
-//it adds org id and app id for the current data to match the multi-tenancy requirements
+// it adds org id and app id for the current data to match the multi-tenancy requirements
 func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWrapper, topics *collectionWrapper,
 	messages *collectionWrapper, appVersions *collectionWrapper, appPlatforms *collectionWrapper) error {
 

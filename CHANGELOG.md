@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+## [1.5.0] - 2022-11-30
+### Added
+- Send notification by account data [#97](https://github.com/rokwire/notifications-building-block/issues/97)
+
+## [1.4.1] - 2022-11-25
+### Added
+- Set logger [#80](https://github.com/rokwire/notifications-building-block/issues/80)
+- Add support of read/unread all user messages [#112](https://github.com/rokwire/notifications-building-block/issues/112)
+
+### Changed
+- Use auth library authorization [#75](https://github.com/rokwire/notifications-building-block/issues/75)
+
 ## [1.4.0] - 2022-11-16
 ### Fixed
 - Fix docs path and the Dockerfile [#104](https://github.com/rokwire/notifications-building-block/issues/104)

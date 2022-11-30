@@ -1,4 +1,4 @@
-FROM golang:1.16-buster as builder
+FROM golang:1.18-buster as builder
 
 ENV CGO_ENABLED=0
 
@@ -8,7 +8,7 @@ WORKDIR /notifications-app
 COPY . .
 RUN make
 
-FROM alpine:3.13
+FROM alpine:3.16.2
 
 #we need timezone database
 RUN apk --no-cache add tzdata
@@ -16,8 +16,13 @@ RUN apk --no-cache add tzdata
 COPY --from=builder /notifications-app/bin/notifications /
 COPY --from=builder /notifications-app/driver/web/docs/gen/def.yaml /driver/web/docs/gen/def.yaml
 
-COPY --from=builder /notifications-app/driver/web/authorization_model.conf /driver/web/authorization_model.conf
-COPY --from=builder /notifications-app/driver/web/authorization_policy.csv /driver/web/authorization_policy.csv
+COPY --from=builder /notifications-app/driver/web/client_permission_policy.csv /driver/web/client_permission_policy.csv
+COPY --from=builder /notifications-app/driver/web/admin_permission_policy.csv /driver/web/admin_permission_policy.csv
+COPY --from=builder /notifications-app/driver/web/bbs_permission_policy.csv /driver/web/bbs_permission_policy.csv
+
+COPY --from=builder /notifications-app/vendor/github.com/rokwire/core-auth-library-go/v2/authorization/authorization_model_scope.conf /notifications-app/vendor/github.com/rokwire/core-auth-library-go/v2/authorization/authorization_model_scope.conf
+COPY --from=builder /notifications-app/vendor/github.com/rokwire/core-auth-library-go/v2/authorization/authorization_model_string.conf /notifications-app/vendor/github.com/rokwire/core-auth-library-go/v2/authorization/authorization_model_string.conf
+
 
 COPY --from=builder /etc/passwd /etc/passwd
 

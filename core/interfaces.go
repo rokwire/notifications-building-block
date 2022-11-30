@@ -23,9 +23,9 @@ import (
 // Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
-	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error
-	SubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error
-	UnsubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error
+	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
+	SubscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error
+	UnsubscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error
 	GetTopics(orgID string, appID string) ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
@@ -34,13 +34,14 @@ type Services interface {
 	DeleteUserWithID(orgID string, appID string, userID string) error
 
 	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
-	GetMessagesStats(orgID string, appID string, userID *string) (*model.MessagesStats, error)
+	GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
-	CreateMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error)
-	UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error)
-	DeleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error
+	CreateMessage(user *model.CoreUserRef, message *model.Message, async bool) (*model.Message, error)
+	UpdateMessage(userID *string, message *model.Message) (*model.Message, error)
+	DeleteUserMessage(orgID string, appID string, userID string, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
-	UpdateReadMessage(orgID string, appID string, ID string, userID *string) (*model.Message, error)
+	UpdateReadMessage(orgID string, appID string, ID string, userID string) (*model.Message, error)
+	UpdateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error
 
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
@@ -56,16 +57,16 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
-func (s *servicesImpl) StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error {
-	return s.app.storeFirebaseToken(orgID, appID, tokenInfo, user)
+func (s *servicesImpl) StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
+	return s.app.storeFirebaseToken(orgID, appID, tokenInfo, userID)
 }
 
-func (s *servicesImpl) SubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error {
-	return s.app.subscribeToTopic(orgID, appID, token, user, topic)
+func (s *servicesImpl) SubscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error {
+	return s.app.subscribeToTopic(orgID, appID, token, userID, anonymous, topic)
 }
 
-func (s *servicesImpl) UnsubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error {
-	return s.app.unsubscribeToTopic(orgID, appID, token, user, topic)
+func (s *servicesImpl) UnsubscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error {
+	return s.app.unsubscribeToTopic(orgID, appID, token, userID, anonymous, topic)
 }
 
 func (s *servicesImpl) GetTopics(orgID string, appID string) ([]model.Topic, error) {
@@ -84,7 +85,7 @@ func (s *servicesImpl) GetMessages(orgID string, appID string, userID *string, r
 	return s.app.getMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
-func (s *servicesImpl) GetMessagesStats(orgID string, appID string, userID *string) (*model.MessagesStats, error) {
+func (s *servicesImpl) GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error) {
 	return s.app.getMessagesStats(orgID, appID, userID)
 }
 
@@ -92,20 +93,24 @@ func (s *servicesImpl) GetMessage(orgID string, appID string, ID string) (*model
 	return s.app.getMessage(orgID, appID, ID)
 }
 
-func (s *servicesImpl) CreateMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error) {
+func (s *servicesImpl) CreateMessage(user *model.CoreUserRef, message *model.Message, async bool) (*model.Message, error) {
 	return s.app.createMessage(user, message, async)
 }
 
-func (s *servicesImpl) UpdateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
-	return s.app.updateMessage(user, message)
+func (s *servicesImpl) UpdateMessage(userID *string, message *model.Message) (*model.Message, error) {
+	return s.app.updateMessage(userID, message)
 }
 
-func (s *servicesImpl) UpdateReadMessage(orgID string, appID string, ID string, userID *string) (*model.Message, error) {
+func (s *servicesImpl) UpdateReadMessage(orgID string, appID string, ID string, userID string) (*model.Message, error) {
 	return s.app.updateReadMessage(orgID, appID, ID, userID)
 }
 
-func (s *servicesImpl) DeleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error {
-	return s.app.deleteUserMessage(orgID, appID, user, messageID)
+func (s *servicesImpl) UpdateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error {
+	return s.app.updateAllUserMessagesRead(orgID, appID, userID, read)
+}
+
+func (s *servicesImpl) DeleteUserMessage(orgID string, appID string, userID string, messageID string) error {
+	return s.app.deleteUserMessage(orgID, appID, userID, messageID)
 }
 
 func (s *servicesImpl) DeleteMessage(orgID string, appID string, messageID string) error {
@@ -147,12 +152,12 @@ type Storage interface {
 	DeleteUserWithID(orgID string, appID string, userID string) error
 
 	FindUserByToken(orgID string, appID string, token string) (*model.User, error)
-	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error
+	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
 	GetFirebaseTokensByRecipients(orgID string, appID string, recipient []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error)
 	GetRecipientsByTopic(orgID string, appID string, topic string) ([]model.Recipient, error)
 	GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error)
-	SubscribeToTopic(orgID string, appID string, token string, userID *string, topic string) error
-	UnsubscribeToTopic(orgID string, appID string, token string, userID *string, topic string) error
+	SubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
+	UnsubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
 	GetTopics(orgID string, appID string) ([]model.Topic, error)
 	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
@@ -163,9 +168,9 @@ type Storage interface {
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
-	GetMessagesStats(userID *string, read bool, mute bool) (*model.MessagesStats, error)
-	UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID *string) (*model.Message, error)
-
+	GetMessagesStats(userID string, read bool, mute bool) (*model.MessagesStats, error)
+	UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID string) (*model.Message, error)
+	UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
 }
@@ -182,4 +187,9 @@ type Firebase interface {
 // Mailer is used to wrap all Email Messaging functions
 type Mailer interface {
 	SendMail(toEmail string, subject string, body string) error
+}
+
+// Core exposes Core APIs for the driver adapters
+type Core interface {
+	RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]model.CoreAccount, error)
 }

@@ -1,16 +1,19 @@
  post:
   tags:
-  - Client
-  summary: Store Firebase token
+  - BBs
+  summary: Send email
   description: |
-    Store Firebase token
+    Sends an email
+    
+    **Auth:** Requires first-party service token with `send_mail` permission
   security:
     - bearerAuth: []
   requestBody:
+    description: sending mail
     content:
       application/json:
         schema:
-          $ref: "../../schemas/apis/token/request/Request.yaml"
+          $ref: "../../schemas/apis/mail/request/Request.yaml"
     required: true
   responses:
     200:

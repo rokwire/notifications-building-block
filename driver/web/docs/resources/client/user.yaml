@@ -51,7 +51,7 @@ delete:
       description: Unauthorized
     500:
       description: Internal error
-post:
+put:
   tags:
   - Client
   summary: Updates user record
@@ -60,13 +60,12 @@ post:
   security:
     - bearerAuth: []
   requestBody:
-    description: notifications_disabled
     content:
       application/json:
         schema:
           $ref: "../../schemas/apis/user/request/Request.yaml"
           type: array
-    required: trueg
+    required: true
   responses:
     200:
       description: Success

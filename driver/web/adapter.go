@@ -15,34 +15,48 @@
 package web
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
 	"notifications/driver/web/rest"
-	"notifications/utils"
-	"strings"
+	"os"
+	"time"
 
-	"github.com/casbin/casbin"
+	"gopkg.in/yaml.v2"
+
 	"github.com/gorilla/mux"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
+
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // Adapter entity
 type Adapter struct {
-	host                   string
-	port                   string
-	notificationServiceURL string
-	auth                   *Auth
-	authorization          *casbin.Enforcer
+	host string
+	port string
+
+	auth *Auth
+
+	cachedYamlDoc []byte
 
 	apisHandler         rest.ApisHandler
 	adminApisHandler    rest.AdminApisHandler
 	internalApisHandler rest.InternalApisHandler
+	bbsApisHandler      rest.BBsAPIsHandler
 
 	app *core.Application
+
+	logger *logs.Logger
 }
+
+type handlerFunc = func(*logs.Log, *http.Request, *tokenauth.Claims) logs.HTTPResponse
 
 // Start starts the module
 func (we Adapter) Start() {
@@ -50,140 +64,154 @@ func (we Adapter) Start() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// handle apis
-	mainRouter := router.PathPrefix("/notifications/api").Subrouter()
+	baseRouter := router.PathPrefix("/notifications").Subrouter()
+	baseRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
+	baseRouter.HandleFunc("/doc", we.serveDoc)
+	baseRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")
+
+	mainRouter := baseRouter.PathPrefix("/api").Subrouter()
+
+	// DEPRECATED
 	mainRouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	mainRouter.HandleFunc("/doc", we.serveDoc)
-	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+	mainRouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")
+	//
 
 	// Internal APIs
-	//deprecated
-	mainRouter.HandleFunc("/int/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessage)).Methods("POST")
-	mainRouter.HandleFunc("/int/v2/message", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMessageV2)).Methods("POST")
-	mainRouter.HandleFunc("/int/mail", we.internalAPIKeyAuthWrapFunc(we.internalApisHandler.SendMail)).Methods("POST")
+	// DEPRECATED - Use "bbs" APIs
+	mainRouter.HandleFunc("/int/message", we.wrapFunc(we.internalApisHandler.SendMessage, we.auth.internal)).Methods("POST")
+	mainRouter.HandleFunc("/int/v2/message", we.wrapFunc(we.internalApisHandler.SendMessageV2, we.auth.internal)).Methods("POST")
+	mainRouter.HandleFunc("/int/mail", we.wrapFunc(we.internalApisHandler.SendMail, we.auth.internal)).Methods("POST")
 
 	// Client APIs
-	mainRouter.HandleFunc("/token", we.coreWrapFunc(we.apisHandler.StoreFirebaseToken)).Methods("POST")
-	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.GetUser)).Methods("GET")
-	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.UpdateUser)).Methods("PUT")
-	mainRouter.HandleFunc("/user", we.coreWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
-	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.GetUserMessages)).Methods("GET")
-	mainRouter.HandleFunc("/messages", we.coreWrapFunc(we.apisHandler.DeleteUserMessages)).Methods("DELETE")
-	mainRouter.HandleFunc("/messages/stats", we.coreWrapFunc(we.apisHandler.GetUserMessagesStats)).Methods("GET")
-	// mainRouter.HandleFunc("/message", we.coreWrapFunc(we.apisHandler.CreateMessage)).Methods("POST")
-	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.GetMessage)).Methods("GET")
-	mainRouter.HandleFunc("/message/{id}", we.coreWrapFunc(we.apisHandler.DeleteUserMessage)).Methods("DELETE")
-	mainRouter.HandleFunc("/message/{id}/read", we.coreWrapFunc(we.apisHandler.UpdateReadMessage)).Methods("PUT")
-	mainRouter.HandleFunc("/topics", we.coreWrapFunc(we.apisHandler.GetTopics)).Methods("GET")
-	mainRouter.HandleFunc("/topic/{topic}/messages", we.coreWrapFunc(we.apisHandler.GetTopicMessages)).Methods("GET")
-	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.coreWrapFunc(we.apisHandler.Subscribe)).Methods("POST")
-	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.coreWrapFunc(we.apisHandler.Unsubscribe)).Methods("POST")
+	mainRouter.HandleFunc("/token", we.wrapFunc(we.apisHandler.StoreFirebaseToken, we.auth.client.Standard)).Methods("POST")
+	mainRouter.HandleFunc("/user", we.wrapFunc(we.apisHandler.GetUser, we.auth.client.Standard)).Methods("GET")
+	mainRouter.HandleFunc("/user", we.wrapFunc(we.apisHandler.UpdateUser, we.auth.client.Standard)).Methods("PUT")
+	mainRouter.HandleFunc("/user", we.wrapFunc(we.apisHandler.DeleteUser, we.auth.client.Standard)).Methods("DELETE")
+	mainRouter.HandleFunc("/messages", we.wrapFunc(we.apisHandler.GetUserMessages, we.auth.client.Standard)).Methods("GET")
+	mainRouter.HandleFunc("/messages", we.wrapFunc(we.apisHandler.DeleteUserMessages, we.auth.client.Standard)).Methods("DELETE")
+	mainRouter.HandleFunc("/messages/read", we.wrapFunc(we.apisHandler.UpdateAllUserMessagesRead, we.auth.client.Standard)).Methods("PUT")
+	mainRouter.HandleFunc("/messages/stats", we.wrapFunc(we.apisHandler.GetUserMessagesStats, we.auth.client.Standard)).Methods("GET")
+	mainRouter.HandleFunc("/message", we.wrapFunc(we.apisHandler.CreateMessage, we.auth.client.Permissions)).Methods("POST")
+	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.GetMessage, we.auth.client.Standard)).Methods("GET")
+	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.DeleteUserMessage, we.auth.client.Standard)).Methods("DELETE")
+	mainRouter.HandleFunc("/message/{id}/read", we.wrapFunc(we.apisHandler.UpdateReadMessage, we.auth.client.Standard)).Methods("PUT")
+	mainRouter.HandleFunc("/topics", we.wrapFunc(we.apisHandler.GetTopics, we.auth.client.Standard)).Methods("GET")
+	mainRouter.HandleFunc("/topic/{topic}/messages", we.wrapFunc(we.apisHandler.GetTopicMessages, we.auth.client.Standard)).Methods("GET")
+	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.wrapFunc(we.apisHandler.Subscribe, we.auth.client.Standard)).Methods("POST")
+	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.wrapFunc(we.apisHandler.Unsubscribe, we.auth.client.Standard)).Methods("POST")
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
-	adminRouter.HandleFunc("/app-versions", we.coreAdminWrapFunc(we.adminApisHandler.GetAllAppVersions)).Methods("GET")
-	adminRouter.HandleFunc("/app-platforms", we.coreAdminWrapFunc(we.adminApisHandler.GetAllAppPlatforms)).Methods("GET")
-	adminRouter.HandleFunc("/topics", we.coreAdminWrapFunc(we.adminApisHandler.GetTopics)).Methods("GET")
-	adminRouter.HandleFunc("/topic", we.coreAdminWrapFunc(we.adminApisHandler.UpdateTopic)).Methods("POST")
-	adminRouter.HandleFunc("/messages", we.coreAdminWrapFunc(we.adminApisHandler.GetMessages)).Methods("GET")
-	adminRouter.HandleFunc("/message", we.coreAdminWrapFunc(we.adminApisHandler.CreateMessage)).Methods("POST")
-	adminRouter.HandleFunc("/message", we.coreAdminWrapFunc(we.adminApisHandler.UpdateMessage)).Methods("PUT")
-	adminRouter.HandleFunc("/message/{id}", we.coreAdminWrapFunc(we.adminApisHandler.GetMessage)).Methods("GET")
-	adminRouter.HandleFunc("/message/{id}", we.coreAdminWrapFunc(we.adminApisHandler.DeleteMessage)).Methods("DELETE")
+	adminRouter.HandleFunc("/app-versions", we.wrapFunc(we.adminApisHandler.GetAllAppVersions, we.auth.admin.Permissions)).Methods("GET")
+	adminRouter.HandleFunc("/app-platforms", we.wrapFunc(we.adminApisHandler.GetAllAppPlatforms, we.auth.admin.Permissions)).Methods("GET")
+	adminRouter.HandleFunc("/topics", we.wrapFunc(we.adminApisHandler.GetTopics, we.auth.admin.Permissions)).Methods("GET")
+	adminRouter.HandleFunc("/topic", we.wrapFunc(we.adminApisHandler.UpdateTopic, we.auth.admin.Permissions)).Methods("POST")
+	adminRouter.HandleFunc("/messages", we.wrapFunc(we.adminApisHandler.GetMessages, we.auth.admin.Permissions)).Methods("GET")
+	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.CreateMessage, we.auth.admin.Permissions)).Methods("POST")
+	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.UpdateMessage, we.auth.admin.Permissions)).Methods("PUT")
+	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.GetMessage, we.auth.admin.Permissions)).Methods("GET")
+	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.DeleteMessage, we.auth.admin.Permissions)).Methods("DELETE")
+
+	// BB APIs
+	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()
+	bbsRouter.HandleFunc("/message", we.wrapFunc(we.bbsApisHandler.SendMessage, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("access-control-allow-origin", "*")
-	http.ServeFile(w, r, "./driver/web/docs/gen/def.yaml")
+
+	if we.cachedYamlDoc != nil {
+		http.ServeContent(w, r, "", time.Now(), bytes.NewReader([]byte(we.cachedYamlDoc)))
+	} else {
+		http.ServeFile(w, r, "./driver/web/docs/gen/def.yaml")
+	}
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/api/doc", we.notificationServiceURL)
+	url := fmt.Sprintf("%s/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
-func (we Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		handler(w, req)
+func loadDocsYAML(baseServerURL string) ([]byte, error) {
+	data, _ := os.ReadFile("./driver/web/docs/gen/def.yaml")
+	// yamlMap := make(map[string]interface{})
+	yamlMap := yaml.MapSlice{}
+	err := yaml.Unmarshal(data, &yamlMap)
+	if err != nil {
+		return nil, err
 	}
-}
 
-type coreAuthFunc = func(*model.CoreToken, http.ResponseWriter, *http.Request)
-
-func (we Adapter) coreWrapFunc(handler coreAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		authenticated, user := we.auth.coreAuth.coreAuthCheck(w, req)
-
-		if authenticated {
-			handler(user, w, req)
-			return
-		}
-		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-	}
-}
-
-type coreAdminAuthFunc = func(*model.CoreToken, http.ResponseWriter, *http.Request)
-
-func (we Adapter) coreAdminWrapFunc(handler coreAdminAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		authenticated, user := we.auth.coreAuth.coreAuthCheck(w, req)
-
-		if authenticated {
-			obj := req.URL.Path // the resource that is going to be accessed.
-			act := req.Method   // the operation that the user performs on the resource.
-			permissions := strings.Split(*user.Permissions, ",")
-
-			HasAccess := false
-			for _, s := range permissions {
-				HasAccess = we.authorization.Enforce(s, obj, act)
-				if HasAccess {
-					break
-				}
+	for index, item := range yamlMap {
+		if item.Key == "servers" {
+			var serverList []interface{}
+			if baseServerURL != "" {
+				serverList = []interface{}{yaml.MapSlice{yaml.MapItem{Key: "url", Value: baseServerURL}}}
 			}
-			if HasAccess {
-				handler(user, w, req)
+
+			item.Value = serverList
+			yamlMap[index] = item
+			break
+		}
+	}
+
+	yamlDoc, err := yaml.Marshal(&yamlMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return yamlDoc, nil
+}
+
+func (we Adapter) wrapFunc(handler handlerFunc, authorization tokenauth.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		logObj := we.logger.NewRequestLog(req)
+
+		logObj.RequestReceived()
+
+		var response logs.HTTPResponse
+		if authorization != nil {
+			responseStatus, claims, err := authorization.Check(req)
+			if err != nil {
+				logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, responseStatus, true))
 				return
 			}
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+
+			if claims != nil {
+				logObj.SetContext("account_id", claims.Subject)
+			}
+			response = handler(logObj, req, claims)
 		} else {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			response = handler(logObj, req, nil)
 		}
-	}
-}
 
-type internalAPIKeyAuthFunc = func(http.ResponseWriter, *http.Request)
-
-func (we Adapter) internalAPIKeyAuthWrapFunc(handler internalAPIKeyAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		apiKeyAuthenticated := we.auth.internalAuth.check(w, req)
-
-		if apiKeyAuthenticated {
-			handler(w, req)
-		} else {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		}
+		logObj.SendHTTPResponse(w, response)
+		logObj.RequestComplete()
 	}
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(host string, port string, app *core.Application, config *model.Config) Adapter {
-	auth := NewAuth(app, config)
-	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
+func NewWebAdapter(host string, port string, app *core.Application, config *model.Config, serviceRegManager *authservice.ServiceRegManager, logger *logs.Logger) Adapter {
+	yamlDoc, err := loadDocsYAML(host)
+	if err != nil {
+		logger.Fatalf("error parsing docs yaml - %s", err.Error())
+	}
+
+	auth, err := NewAuth(app, config, serviceRegManager)
+	if err != nil {
+		logger.Fatalf("error creating auth - %s", err.Error())
+	}
 
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port, notificationServiceURL: config.NotificationsServiceURL, auth: auth, authorization: authorization,
-		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app}
+	bbsApisHandler := rest.NewBBsAPIsHandler(app)
+	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth, apisHandler: apisHandler,
+		adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsApisHandler: bbsApisHandler,
+		app: app, logger: logger}
 }
 
 // AppListener implements core.ApplicationListener interface

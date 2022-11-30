@@ -25,14 +25,14 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) storeFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, user *model.CoreToken) error {
-	return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, user)
+func (app *Application) storeFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
+	return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, userID)
 }
 
-func (app *Application) subscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error {
+func (app *Application) subscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error {
 	var err error
-	if user != nil {
-		err = app.storage.SubscribeToTopic(orgID, appID, token, user.UserID, topic)
+	if !anonymous {
+		err = app.storage.SubscribeToTopic(orgID, appID, token, userID, topic)
 		if err == nil {
 			err = app.firebase.SubscribeToTopic(orgID, appID, token, topic)
 		}
@@ -43,10 +43,10 @@ func (app *Application) subscribeToTopic(orgID string, appID string, token strin
 	return err
 }
 
-func (app *Application) unsubscribeToTopic(orgID string, appID string, token string, user *model.CoreToken, topic string) error {
+func (app *Application) unsubscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error {
 	var err error
-	if user != nil {
-		err = app.storage.UnsubscribeToTopic(orgID, appID, token, user.UserID, topic)
+	if !anonymous {
+		err = app.storage.UnsubscribeToTopic(orgID, appID, token, userID, topic)
 		if err == nil {
 			err = app.firebase.UnsubscribeToTopic(orgID, appID, token, topic)
 		}
@@ -69,7 +69,7 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(user *model.CoreToken, message *model.Message, async bool) (*model.Message, error) {
+func (app *Application) createMessage(user *model.CoreUserRef, message *model.Message, async bool) (*model.Message, error) {
 	var persistedMessage *model.Message
 	var err error
 
@@ -81,7 +81,7 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 	}
 
 	if user != nil {
-		message.Sender = &model.Sender{Type: "user", User: &model.CoreUserRef{UserID: user.UserID, Name: user.Name}}
+		message.Sender = &model.Sender{Type: "user", User: user}
 	} else {
 		message.Sender = &model.Sender{Type: "system"}
 	}
@@ -145,6 +145,22 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)", messageRecipients, *message.ID, message.Subject, message.Body)
 	}
 
+	// recipients from account criteria
+	if len(message.RecipientAccountCriteria) > 0 {
+		accounts, err := app.core.RetrieveCoreUserAccountByCriteria(message.RecipientAccountCriteria, &appID, &orgID)
+		if err != nil {
+			fmt.Printf("error retrieving recipients by account criteria: %s", err)
+		}
+
+		for _, account := range accounts {
+			//TODO rework hardcoding NotificationDisabled, Mute,  and Read values
+			name := account.Profile.Name()
+			messageRecipient := model.Recipient{UserID: account.ID, Name: name, NotificationDisabled: false, Mute: false, Read: false}
+			messageRecipients = append(messageRecipients, messageRecipient)
+		}
+
+	}
+
 	if len(messageRecipients) > 0 {
 		message.Recipients = messageRecipients
 		if storeInInbox {
@@ -157,12 +173,16 @@ func (app *Application) createMessage(user *model.CoreToken, message *model.Mess
 		}
 
 		// retrieve tokens by recipients
+		//TODO handle the "all" app/org case
 		tokens, err := app.storage.GetFirebaseTokensByRecipients(orgID, appID, message.Recipients, message.RecipientsCriteriaList)
 		if err != nil {
 			log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
 			return nil, err
 		}
-		log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
+
+		if persistedMessage != nil && persistedMessage.ID != nil {
+			log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
+		}
 
 		// send message to tokens
 		if len(tokens) > 0 {
@@ -197,7 +217,7 @@ func (app *Application) getMessages(orgID string, appID string, userID *string, 
 	return app.storage.GetMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
-func (app *Application) getMessagesStats(orgID string, appID string, userID *string) (*model.MessagesStats, error) {
+func (app *Application) getMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error) {
 	read := false
 	mute := true
 	stats, _ := app.storage.GetMessagesStats(userID, read, mute)
@@ -208,11 +228,12 @@ func (app *Application) getMessage(orgID string, appID string, ID string) (*mode
 	return app.storage.GetMessage(orgID, appID, ID)
 }
 
-func (app *Application) updateMessage(user *model.CoreToken, message *model.Message) (*model.Message, error) {
-	if message.ID != nil {
+func (app *Application) updateMessage(userID *string, message *model.Message) (*model.Message, error) {
+	if message != nil && message.ID != nil {
 		persistedMessage, err := app.storage.GetMessage(message.OrgID, message.AppID, *message.ID)
 		if err == nil && persistedMessage != nil {
-			if persistedMessage.Sender.User != nil && persistedMessage.Sender.User.UserID == user.UserID {
+			// If userID is nil, treat as system update, otherwise check sender match
+			if userID == nil || (persistedMessage.Sender != nil && persistedMessage.Sender.User != nil && persistedMessage.Sender.User.UserID == *userID) {
 				return app.storage.UpdateMessage(message)
 			}
 			return nil, fmt.Errorf("only creator can update the original message")
@@ -221,7 +242,7 @@ func (app *Application) updateMessage(user *model.CoreToken, message *model.Mess
 	return nil, fmt.Errorf("missing id or record")
 }
 
-func (app *Application) updateReadMessage(orgID string, appID string, ID string, userID *string) (*model.Message, error) {
+func (app *Application) updateReadMessage(orgID string, appID string, ID string, userID string) (*model.Message, error) {
 	updateReadMessage, _ := app.storage.UpdateUnreadMessage(context.Background(), orgID, appID, ID, userID)
 	if updateReadMessage == nil {
 		return nil, nil
@@ -229,8 +250,12 @@ func (app *Application) updateReadMessage(orgID string, appID string, ID string,
 	return updateReadMessage, nil
 }
 
-func (app *Application) deleteUserMessage(orgID string, appID string, user *model.CoreToken, messageID string) error {
-	return app.storage.DeleteUserMessageWithContext(context.Background(), orgID, appID, *user.UserID, messageID)
+func (app *Application) updateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error {
+	return app.storage.UpdateAllUserMessagesRead(context.Background(), orgID, appID, userID, read)
+}
+
+func (app *Application) deleteUserMessage(orgID string, appID string, userID string, messageID string) error {
+	return app.storage.DeleteUserMessageWithContext(context.Background(), orgID, appID, userID, messageID)
 }
 
 func (app *Application) deleteMessage(orgID string, appID string, ID string) error {
@@ -286,10 +311,10 @@ func getCommonRecipients(s1, s2 []model.Recipient) []model.Recipient {
 	common := []model.Recipient{}
 	messageReciepientsMap := map[string]model.Recipient{}
 	for _, e := range s1 {
-		messageReciepientsMap[*e.UserID] = e
+		messageReciepientsMap[e.UserID] = e
 	}
 	for _, e := range s2 {
-		if val, ok := messageReciepientsMap[*e.UserID]; ok {
+		if val, ok := messageReciepientsMap[e.UserID]; ok {
 			common = append(common, val)
 		}
 	}

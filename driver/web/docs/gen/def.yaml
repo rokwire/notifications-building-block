@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Rokwire Notification Building Block API
   description: Notification Building Block API Documentation
-  version: 1.4.0
+  version: 1.5.0
 servers:
   - url: 'https://api.rokwire.illinois.edu/notifications'
     description: Production server
@@ -20,7 +20,7 @@ tags:
   - name: Client
     description: Client applications APIs.
 paths:
-  /int/message:
+  /api/int/message:
     post:
       tags:
         - Internal
@@ -52,11 +52,12 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /int/v2/message:
+  /api/int/v2/message:
     post:
       tags:
         - Internal
       summary: Create message
+      deprecated: true
       description: |
         Create message
       security:
@@ -66,12 +67,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                async:
-                  type: boolean
-                message:
-                  $ref: '#/components/schemas/Message'
+              $ref: '#/components/schemas/_client_req_messageV2'
         required: true
       responses:
         '200':
@@ -88,7 +84,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /int/mail:
+  /api/int/mail:
     post:
       tags:
         - Internal
@@ -103,12 +99,7 @@ paths:
         content:
           application/json:
             schema:
-              required:
-                - token
-              type: object
-              properties:
-                token:
-                  type: string
+              $ref: '#/components/schemas/_client_req_token'
         required: true
       responses:
         '200':
@@ -119,28 +110,20 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /token:
+  /api/token:
     post:
       tags:
         - Client
-      summary: Send mail
+      summary: Store Firebase token
       description: |
-        Send mail
+        Store Firebase token
       security:
         - bearerAuth: []
       requestBody:
-        description: sending mail
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                to_mail:
-                  type: string
-                subject:
-                  type: string
-                body:
-                  type: string
+              $ref: '#/components/schemas/_client_req_token'
         required: true
       responses:
         '200':
@@ -151,7 +134,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /user:
+  /api/user:
     get:
       tags:
         - Client
@@ -188,7 +171,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/paths/~1user/post/requestBody/content/application~1json/schema'
+              $ref: '#/components/schemas/_client_req_user'
               type: array
         required: true
       responses:
@@ -205,7 +188,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-    post:
+    put:
       tags:
         - Client
       summary: Updates user record
@@ -214,17 +197,12 @@ paths:
       security:
         - bearerAuth: []
       requestBody:
-        description: notifications_disabled
         content:
           application/json:
             schema:
+              $ref: '#/components/schemas/_client_req_user'
               type: array
-              required:
-                - notifications_disabled
-              properties:
-                notifications_disabled:
-                  type: boolean
-        required: trueg
+        required: true
       responses:
         '200':
           description: Success
@@ -240,14 +218,15 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /message:
+  /api/message:
     post:
       tags:
         - Client
-      deprecated: true
       summary: Create message
       description: |
         Create message
+
+        **Auth:** Requires user token with `send_message` permission
       security:
         - bearerAuth: []
       requestBody:
@@ -272,7 +251,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /messages:
+  /api/messages:
     get:
       tags:
         - Client
@@ -286,14 +265,7 @@ paths:
         content:
           application/json:
             schema:
-              required:
-                - _ids
-              type: object
-              properties:
-                _ids:
-                  type: array
-                  items:
-                    type: string
+              $ref: '#/components/schemas/_client_req_message'
         required: true
       parameters:
         - name: read
@@ -378,7 +350,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/paths/~1messages/get/requestBody/content/application~1json/schema'
+              $ref: '#/components/schemas/_client_req_message'
         required: true
       responses:
         '200':
@@ -395,7 +367,25 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /messages/stats:
+  /api/messages/read:
+    put:
+      tags:
+        - Client
+      summary: Update read status of all messages where the current user is defined as a recipient
+      description: |
+        Update read status of all messages where the current user is defined as a recipient
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /api/messages/stats:
     get:
       tags:
         - Client
@@ -413,7 +403,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  '/message/{id}':
+  '/api/message/{id}':
     get:
       tags:
         - Client
@@ -472,7 +462,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  'message/{message_id}/read':
+  '/api/message/{message_id}/read':
     put:
       tags:
         - Client
@@ -484,7 +474,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: id
+          description: offset
           required: true
           style: simple
           explode: false
@@ -505,7 +495,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /topics:
+  /api/topics:
     get:
       tags:
         - Client
@@ -529,7 +519,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  '/topic/{topic}/messages':
+  '/api/topic/{topic}/messages':
     get:
       tags:
         - Client
@@ -602,7 +592,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  '/topic/{topic}/subscribe':
+  '/api/topic/{topic}/subscribe':
     post:
       tags:
         - Client
@@ -616,7 +606,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/paths/~1int~1mail/post/requestBody/content/application~1json/schema'
+              $ref: '#/components/schemas/_client_req_token'
         required: true
       parameters:
         - name: topic
@@ -636,7 +626,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  '/topic/{topic}/unsubscribe':
+  '/api/topic/{topic}/unsubscribe':
     post:
       tags:
         - Client
@@ -650,7 +640,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/paths/~1int~1mail/post/requestBody/content/application~1json/schema'
+              $ref: '#/components/schemas/_client_req_token'
         required: true
       parameters:
         - name: topic
@@ -670,7 +660,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /admin/app-versions:
+  /api/admin/app-versions:
     get:
       tags:
         - Admin
@@ -693,7 +683,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /admin/app-platforms:
+  /api/admin/app-platforms:
     get:
       tags:
         - Admin
@@ -716,7 +706,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /admin/topics:
+  /api/admin/topics:
     get:
       tags:
         - Admin
@@ -740,7 +730,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /admin/topic:
+  /api/admin/topic:
     put:
       tags:
         - Admin
@@ -771,7 +761,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /admin/messages:
+  /api/admin/messages:
     get:
       tags:
         - Admin
@@ -785,7 +775,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/paths/~1messages/get/requestBody/content/application~1json/schema'
+              $ref: '#/components/schemas/_client_req_message'
         required: true
       parameters:
         - name: offset
@@ -843,7 +833,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /admin/message:
+  /api/admin/message:
     post:
       tags:
         - Admin
@@ -904,7 +894,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  '/admin/messages{id}':
+  '/api/admin/messages{id}':
     get:
       tags:
         - Admin
@@ -962,6 +952,66 @@ paths:
               schema:
                 type: string
                 example: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /api/bbs/message:
+    post:
+      tags:
+        - BBs
+      summary: Create message
+      description: |
+        Create message
+
+        **Auth:** Requires first-party service token with `send_message` permission
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_client_req_messageV2'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /api/bbs/mail:
+    post:
+      tags:
+        - BBs
+      summary: Send email
+      description: |
+        Sends an email
+
+        **Auth:** Requires first-party service token with `send_mail` permission
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: sending mail
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_client_req_mail'
+        required: true
+      responses:
+        '200':
+          description: Success
         '400':
           description: Bad request
         '401':
@@ -1058,6 +1108,8 @@ components:
         recipients_criteria_list:
           type: array
           $ref: '#/components/schemas/RecipientCriteria'
+        recipient_account_criteria:
+          type: object
         topic:
           type: string
         subject:
@@ -1141,3 +1193,48 @@ components:
           type: string
         date_updated:
           type: string
+    _client_req_mail:
+      type: object
+      properties:
+        to_mail:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+    _client_req_message:
+      required:
+        - _ids
+      type: object
+      properties:
+        _ids:
+          type: array
+          items:
+            type: string
+    _client_req_messageV2:
+      type: object
+      properties:
+        async:
+          type: boolean
+        message:
+          $ref: '#/components/schemas/Message'
+    _client_req_token:
+      required:
+        - token
+      type: object
+      properties:
+        token:
+          type: string
+        previous_token:
+          type: string
+        app_version:
+          type: string
+        app_platform:
+          type: string
+    _client_req_user:
+      required:
+        - notifications_disabled
+      type: object
+      properties:
+        notifications_disabled:
+          type: boolean

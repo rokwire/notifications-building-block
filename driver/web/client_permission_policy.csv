@@ -1,0 +1,1 @@
+p, send_message, /notifications/api/message, (POST), Send message

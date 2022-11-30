@@ -1,10 +1,11 @@
 post:
   tags:
-  - Internal
+  - BBs
   summary: Create message
-  deprecated: true
   description: |
     Create message
+
+    **Auth:** Requires first-party service token with `send_message` permission
   security:
     - bearerAuth: []
   requestBody:
@@ -12,7 +13,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../../schemas/apis/messageV2/request/Request.yaml" 
+          $ref: "../../schemas/apis/messageV2/request/Request.yaml" 
     required: true    
   responses:
     200:
@@ -22,7 +23,7 @@ post:
           schema:
             type: array
             items:
-              $ref: "../../../schemas/application/Message.yaml"
+              $ref: "../../schemas/application/Message.yaml"
     400:
       description: Bad request
     401:

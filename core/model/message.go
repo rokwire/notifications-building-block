@@ -25,32 +25,31 @@ type Message struct {
 	OrgID string `json:"org_id" bson:"org_id"`
 	AppID string `json:"app_id" bson:"app_id"`
 
-	ID                     *string             `json:"id" bson:"_id"`
-	DateCreated            *time.Time          `json:"date_created" bson:"date_created"`
-	DateUpdated            *time.Time          `json:"date_updated" bson:"date_updated"`
-	Priority               int                 `json:"priority" bson:"priority"`
-	Recipients             []Recipient         `json:"recipients" bson:"recipients"`
-	RecipientsCriteriaList []RecipientCriteria `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
-	Topic                  *string             `json:"topic" bson:"topic"`
-	Subject                string              `json:"subject" bson:"subject"`
-	Sender                 *Sender             `json:"sender,omitempty" bson:"sender,omitempty"`
-	Body                   string              `json:"body" bson:"body"`
-	Data                   map[string]string   `json:"data" bson:"data"`
+	ID                       *string                `json:"id" bson:"_id"`
+	DateCreated              *time.Time             `json:"date_created" bson:"date_created"`
+	DateUpdated              *time.Time             `json:"date_updated" bson:"date_updated"`
+	Priority                 int                    `json:"priority" bson:"priority"`
+	Recipients               []Recipient            `json:"recipients" bson:"recipients"`
+	RecipientsCriteriaList   []RecipientCriteria    `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
+	RecipientAccountCriteria map[string]interface{} `json:"recipient_account_criteria" bson:"recipient_account_criteria"`
+	Topic                    *string                `json:"topic" bson:"topic"`
+	Subject                  string                 `json:"subject" bson:"subject"`
+	Sender                   *Sender                `json:"sender,omitempty" bson:"sender,omitempty"`
+	Body                     string                 `json:"body" bson:"body"`
+	Data                     map[string]string      `json:"data" bson:"data"`
 }
 
 // HasUser checks if the user is the sender or as a recipient for the current message
 // Use better name
-func (m *Message) HasUser(token *CoreToken) bool {
-	if token != nil {
-		for _, recipient := range m.Recipients {
-			if recipient.UserID == token.UserID {
-				return true
-			}
-		}
-
-		if m.Sender.User.UserID != nil && token.UserID == m.Sender.User.UserID {
+func (m *Message) HasUser(id string) bool {
+	for _, recipient := range m.Recipients {
+		if recipient.UserID == id {
 			return true
 		}
+	}
+
+	if m.Sender != nil && m.Sender.User != nil && id == m.Sender.User.UserID {
+		return true
 	}
 	return false
 }
