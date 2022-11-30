@@ -195,7 +195,7 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 		for i, item := range inputMessage.Recipients {
 			cItem := model.MessageRecipient{OrgID: inputMessage.OrgID, AppID: inputMessage.AppID,
 				ID: uuid.NewString(), UserID: item.UserID,
-				MessageID: messageID, Name: item.Name, Mute: item.Mute, Read: false}
+				MessageID: messageID, Mute: item.Mute, Read: false}
 			list[i] = cItem
 		}
 

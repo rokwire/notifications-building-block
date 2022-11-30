@@ -22,7 +22,6 @@ type MessageRecipient struct {
 	ID        string `json:"id" bson:"_id"`
 	UserID    string `json:"user_id" bson:"user_id"`
 	MessageID string `json:"message_id" bson:"message_id"`
-	Name      string `json:"name" bson:"name"`
 	Mute      bool   `json:"mute" bson:"mute"`
 	Read      bool   `json:"read" bson:"read"`
 }
