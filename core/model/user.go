@@ -89,6 +89,7 @@ type CoreProfile struct {
 	LastName  string `json:"last_name" bson:"last_name"`
 } //@name CoreProfile
 
+// Name returns the full name from the profile
 func (c CoreProfile) Name() string {
 	return c.FirstName + " " + c.LastName
 }

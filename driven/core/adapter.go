@@ -13,6 +13,7 @@ import (
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
 )
 
+// Adapter is the adapter for Core BB APIs
 type Adapter struct {
 	coreURL               string
 	serviceAccountManager *authservice.ServiceAccountManager
@@ -23,7 +24,7 @@ func NewCoreAdapter(coreURL string, serviceAccountManager *authservice.ServiceAc
 	return &Adapter{coreURL: coreURL, serviceAccountManager: serviceAccountManager}
 }
 
-// RetrieveUseAccounts retrieves Core user account based on criteria
+// RetrieveCoreUserAccountByCriteria retrieves Core user account based on criteria
 func (a *Adapter) RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]model.CoreAccount, error) {
 
 	if a.serviceAccountManager == nil {
