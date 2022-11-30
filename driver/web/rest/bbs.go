@@ -71,6 +71,10 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
+	if !claims.AppOrg().CanAccessAppOrg(message.AppID, message.OrgID) {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusForbidden, false)
+	}
+
 	message, err = h.app.Services.CreateMessage(nil, message, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)

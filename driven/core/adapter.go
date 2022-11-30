@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"notifications/core/model"
 
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
 )
@@ -22,8 +23,8 @@ func NewCoreAdapter(coreURL string, serviceAccountManager *authservice.ServiceAc
 	return &Adapter{coreURL: coreURL, serviceAccountManager: serviceAccountManager}
 }
 
-// RetrieveUseAccounts retrieves Core user account based on critera
-func (a *Adapter) RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]map[string]interface{}, error) {
+// RetrieveUseAccounts retrieves Core user account based on criteria
+func (a *Adapter) RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]model.CoreAccount, error) {
 
 	if a.serviceAccountManager == nil {
 		log.Println("RetrieveCoreUserAccountByCriteria: service account manager is nil")
@@ -83,7 +84,7 @@ func (a *Adapter) RetrieveCoreUserAccountByCriteria(accountCriteria map[string]i
 		return nil, fmt.Errorf("RetrieveCoreUserAccountByCriteria: unable to parse json: %s", err)
 	}
 
-	var coreAccounts []map[string]interface{}
+	var coreAccounts []model.CoreAccount
 	err = json.Unmarshal(data, &coreAccounts)
 	if err != nil {
 		log.Printf("RetrieveCoreUserAccountByCriteria: unable to parse json: %s", err)

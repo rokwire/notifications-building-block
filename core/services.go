@@ -152,18 +152,10 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 			fmt.Printf("error retrieving recipients by account criteria: %s", err)
 		}
 
-		if len(appID) == 0 {
-			appID = "all"
-		}
-		if len(orgID) == 0 {
-			orgID = "all"
-		}
-
 		for _, account := range accounts {
 			//TODO rework hardcoding NotificationDisabled, Mute,  and Read values
-			accountProfile := account["profile"].(map[string]interface{})
-			name := accountProfile["first_name"].(string) + " " + accountProfile["last_name"].(string)
-			messageRecipient := model.Recipient{UserID: account["id"].(string), Name: name, NotificationDisabled: false, Mute: false, Read: false}
+			name := account.Profile.Name()
+			messageRecipient := model.Recipient{UserID: account.ID, Name: name, NotificationDisabled: false, Mute: false, Read: false}
 			messageRecipients = append(messageRecipients, messageRecipient)
 		}
 
@@ -181,14 +173,14 @@ func (app *Application) createMessage(user *model.CoreUserRef, message *model.Me
 		}
 
 		// retrieve tokens by recipients
-		//TODO need to find a way for the all case
+		//TODO handle the "all" app/org case
 		tokens, err := app.storage.GetFirebaseTokensByRecipients(orgID, appID, message.Recipients, message.RecipientsCriteriaList)
 		if err != nil {
 			log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
 			return nil, err
 		}
 
-		if persistedMessage.ID != nil {
+		if persistedMessage != nil && persistedMessage.ID != nil {
 			log.Printf("retrieve firebase tokens for message %s: %+v", *persistedMessage.ID, tokens)
 		}
 

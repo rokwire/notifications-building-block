@@ -191,5 +191,5 @@ type Mailer interface {
 
 // Core exposes Core APIs for the driver adapters
 type Core interface {
-	RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]map[string]interface{}, error)
+	RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]model.CoreAccount, error)
 }
