@@ -16,8 +16,6 @@ properties:
     type: array
     items:
       type: string
-  sender:
-    $ref: "./InputSender.yaml"
   recipients:
     type: array
     $ref: "./InputMessageRecipient.yaml"

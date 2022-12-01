@@ -1141,8 +1141,6 @@ components:
           type: array
           items:
             type: string
-        sender:
-          $ref: '#/components/schemas/InputSender'
         recipients:
           type: array
           $ref: '#/components/schemas/InputMessageRecipient'
@@ -1151,13 +1149,6 @@ components:
           $ref: '#/components/schemas/InputRecipientCriteria'
         recipient_account_criteria:
           type: object
-    InputSender:
-      type: object
-      properties:
-        user_id:
-          type: string
-        name:
-          type: string
     InputMessageRecipient:
       type: object
       properties:

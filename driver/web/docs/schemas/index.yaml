@@ -15,8 +15,6 @@ Message:
   $ref: "./application/Message.yaml"
 InputMessage:
   $ref: "./application/InputMessage.yaml"
-InputSender:
-  $ref: "./application/InputSender.yaml"
 InputMessageRecipient:
   $ref: "./application/InputMessageRecipient.yaml"
 InputRecipientCriteria:
