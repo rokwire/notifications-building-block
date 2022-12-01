@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Rokwire Notification Building Block API
   description: Notification Building Block API Documentation
-  version: 1.4.0
+  version: 1.5.0
 servers:
   - url: 'https://api.rokwire.illinois.edu/notifications'
     description: Production server
@@ -57,6 +57,7 @@ paths:
       tags:
         - Internal
       summary: Create message
+      deprecated: true
       description: |
         Create message
       security:
@@ -994,7 +995,6 @@ paths:
     post:
       tags:
         - BBs
-      deprecated: true
       summary: Send email
       description: |
         Sends an email
@@ -1108,6 +1108,8 @@ components:
         recipients_criteria_list:
           type: array
           $ref: '#/components/schemas/RecipientCriteria'
+        recipient_account_criteria:
+          type: object
         topic:
           type: string
         subject:

@@ -37,6 +37,8 @@ type Message struct {
 	RecipientsCriteriaList []RecipientCriteria `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
 	Topic                  *string             `json:"topic" bson:"topic"`
 
+	RecipientAccountCriteria map[string]interface{} `json:"recipient_account_criteria" bson:"recipient_account_criteria"`
+
 	//initialy calculated recipients count
 	//if nil then it means that the message was created before the refactoring
 	CalculatedRecipientsCount *int `json:"calculated_recipients_count" bson:"calculated_recipients_count"`

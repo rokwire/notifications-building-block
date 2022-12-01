@@ -49,6 +49,7 @@ type Adapter struct {
 	apisHandler         rest.ApisHandler
 	adminApisHandler    rest.AdminApisHandler
 	internalApisHandler rest.InternalApisHandler
+	bbsApisHandler      rest.BBsAPIsHandler
 
 	app *core.Application
 
@@ -114,8 +115,8 @@ func (we Adapter) Start() {
 
 	// BB APIs
 	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()
-	bbsRouter.HandleFunc("/message", we.wrapFunc(we.internalApisHandler.SendMessageV2, we.auth.bbs.Permissions)).Methods("POST")
-	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.internalApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/message", we.wrapFunc(we.bbsApisHandler.SendMessage, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -208,8 +209,10 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth,
-		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app, logger: logger}
+	bbsApisHandler := rest.NewBBsAPIsHandler(app)
+	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth, apisHandler: apisHandler,
+		adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsApisHandler: bbsApisHandler,
+		app: app, logger: logger}
 }
 
 // AppListener implements core.ApplicationListener interface

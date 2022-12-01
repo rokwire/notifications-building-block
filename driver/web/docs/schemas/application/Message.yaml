@@ -18,6 +18,8 @@ properties:
   recipients_criteria_list:
     type: array
     $ref: "./RecipientCriteria.yaml"
+  recipient_account_criteria:
+    type: object
   topic:
     type: string  
   subject:
