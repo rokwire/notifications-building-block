@@ -90,7 +90,6 @@ type InputMessage struct {
 
 	Priority int               `json:"priority"`
 	Subject  string            `json:"subject"`
-	Sender   *InputSender      `json:"sender"`
 	Body     string            `json:"body"`
 	Data     map[string]string `json:"data"`
 
@@ -99,12 +98,6 @@ type InputMessage struct {
 	RecipientsCriteriaList   []InputRecipientCriteria `json:"recipients_criteria_list"`
 	RecipientAccountCriteria map[string]interface{}   `json:"recipient_account_criteria"`
 	Topic                    *string                  `json:"topic"`
-}
-
-// InputSender is passed by the adapters for creating a message in the core module
-type InputSender struct {
-	UserID string `json:"user_id"`
-	Name   string `json:"name"`
 }
 
 // InputMessageRecipient is passed by the adapters for creating a message in the core module

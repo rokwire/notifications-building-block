@@ -71,7 +71,9 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusForbidden, false)
 	}
 
-	message, err := h.app.Services.CreateMessage(inputMessage, async)
+	sender := model.Sender{Type: "system", User: &model.CoreUserRef{UserID: claims.Subject, Name: claims.Name}}
+
+	message, err := h.app.Services.CreateMessage(inputMessage, sender, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}

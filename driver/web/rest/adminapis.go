@@ -150,9 +150,10 @@ func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *to
 
 	inputMessage.OrgID = claims.OrgID
 	inputMessage.AppID = claims.AppID
-	inputMessage.Sender = &model.InputSender{UserID: claims.Subject, Name: claims.Name}
 
-	message, err := h.app.Services.CreateMessage(*inputMessage, false)
+	sender := model.Sender{Type: "user", User: &model.CoreUserRef{UserID: claims.Subject, Name: claims.Name}}
+
+	message, err := h.app.Services.CreateMessage(*inputMessage, sender, false)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}

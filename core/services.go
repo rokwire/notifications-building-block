@@ -73,7 +73,7 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(inputMessage model.InputMessage, async bool) (*model.Message, error) {
+func (app *Application) createMessage(inputMessage model.InputMessage, sender model.Sender, async bool) (*model.Message, error) {
 	var err error
 	var persistedMessage *model.Message
 	var recipients []model.MessageRecipient
@@ -97,13 +97,6 @@ func (app *Application) createMessage(inputMessage model.InputMessage, async boo
 
 		priority := inputMessage.Priority
 		subject := inputMessage.Subject
-		var sender model.Sender
-		if inputMessage.Sender != nil {
-			senderUser := model.CoreUserRef{UserID: inputMessage.Sender.UserID, Name: inputMessage.Sender.Name}
-			sender = model.Sender{Type: "user", User: &senderUser}
-		} else {
-			sender = model.Sender{Type: "system"}
-		}
 		body := inputMessage.Body
 		data := inputMessage.Data
 		calculatedRecipients := len(recipients)

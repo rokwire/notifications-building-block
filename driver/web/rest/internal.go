@@ -90,7 +90,9 @@ func (h InternalApisHandler) processSendMessage(l *logs.Log, inputMessage model.
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
-	message, err := h.app.Services.CreateMessage(inputMessage, async)
+	sender := model.Sender{Type: "system"}
+
+	message, err := h.app.Services.CreateMessage(inputMessage, sender, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
