@@ -1067,7 +1067,7 @@ components:
           type: string
         anonymous:
           type: boolean
-    CoreUserRef:
+    CoreAccountRef:
       type: object
       properties:
         user_id:
@@ -1189,7 +1189,7 @@ components:
         type:
           type: string
         user:
-          $ref: '#/components/schemas/CoreUserRef'
+          $ref: '#/components/schemas/CoreAccountRef'
     TokenInfo:
       type: object
       properties:

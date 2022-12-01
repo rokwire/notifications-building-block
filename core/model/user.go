@@ -94,8 +94,8 @@ func (c CoreProfile) Name() string {
 	return c.FirstName + " " + c.LastName
 }
 
-// CoreUserRef user reference that contains ExternalID & Name
-type CoreUserRef struct {
+// CoreAccountRef represents Core BB account entity
+type CoreAccountRef struct {
 	UserID string `json:"user_id" bson:"user_id"`
 	Name   string `json:"name" bson:"name"`
-} //@name CoreUserRef
+}

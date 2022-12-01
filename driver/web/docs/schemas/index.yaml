@@ -7,8 +7,8 @@ Config:
   $ref: "./application/Config.yaml"
 CoreToken:
   $ref: "./application/CoreToken.yaml"
-CoreUserRef:
-  $ref: "./application/CoreUserRef.yaml"
+CoreAccountRef:
+  $ref: "./application/CoreAccountRef.yaml"
 FirebaseToken:
   $ref: "./application/FirebaseToken.yaml"
 Message:

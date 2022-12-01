@@ -462,7 +462,7 @@ func (h ApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenau
 	inputMessage.OrgID = claims.OrgID
 	inputMessage.AppID = claims.AppID
 
-	sender := model.Sender{Type: "user", User: &model.CoreUserRef{UserID: claims.Subject, Name: claims.Name}}
+	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
 	message, err := h.app.Services.CreateMessage(*inputMessage, sender, false)
 	if err != nil {
