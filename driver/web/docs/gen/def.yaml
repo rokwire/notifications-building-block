@@ -1149,6 +1149,8 @@ components:
         recipients_criteria_list:
           type: array
           $ref: '#/components/schemas/InputRecipientCriteria'
+        recipient_account_criteria:
+          type: object
     InputSender:
       type: object
       properties:

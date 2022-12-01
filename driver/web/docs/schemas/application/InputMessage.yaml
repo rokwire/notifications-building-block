@@ -24,3 +24,5 @@ properties:
   recipients_criteria_list:
     type: array
     $ref: "./InputRecipientCriteria.yaml"
+  recipient_account_criteria:
+    type: object
