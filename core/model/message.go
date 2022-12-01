@@ -33,11 +33,10 @@ type Message struct {
 	Data     map[string]string `json:"data" bson:"data"`
 
 	//recipients related
-	Recipients             []MessageRecipient  `json:"recipients" bson:"recipients"` //keep it for back compatability
-	RecipientsCriteriaList []RecipientCriteria `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
-	Topic                  *string             `json:"topic" bson:"topic"`
-
+	Recipients               []MessageRecipient     `json:"recipients" bson:"recipients"` //keep it for back compatability
+	RecipientsCriteriaList   []RecipientCriteria    `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
 	RecipientAccountCriteria map[string]interface{} `json:"recipient_account_criteria" bson:"recipient_account_criteria"`
+	Topic                    *string                `json:"topic" bson:"topic"`
 
 	//initialy calculated recipients count
 	//if nil then it means that the message was created before the refactoring
@@ -96,9 +95,10 @@ type InputMessage struct {
 	Data     map[string]string `json:"data"`
 
 	//recipients related
-	Recipients             []InputMessageRecipient  `json:"recipients"`
-	RecipientsCriteriaList []InputRecipientCriteria `json:"recipients_criteria_list"`
-	Topic                  *string                  `json:"topic"`
+	Recipients               []InputMessageRecipient  `json:"recipients"`
+	RecipientsCriteriaList   []InputRecipientCriteria `json:"recipients_criteria_list"`
+	RecipientAccountCriteria map[string]interface{}   `json:"recipient_account_criteria"`
+	Topic                    *string                  `json:"topic"`
 }
 
 // InputSender is passed by the adapters for creating a message in the core module

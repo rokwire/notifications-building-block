@@ -271,6 +271,25 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 			messageRecipients, messageID, inputMessage.Subject, inputMessage.Body)
 	}
 
+	// recipients from account criteria
+	if len(inputMessage.RecipientAccountCriteria) > 0 {
+		accounts, err := app.core.RetrieveCoreUserAccountByCriteria(inputMessage.RecipientAccountCriteria,
+			&inputMessage.AppID, &inputMessage.OrgID)
+		if err != nil {
+			fmt.Printf("error retrieving recipients by account criteria: %s", err)
+		}
+
+		for _, account := range accounts {
+			messageRecipient := model.MessageRecipient{
+				OrgID: inputMessage.OrgID, AppID: inputMessage.AppID,
+				ID: uuid.NewString(), UserID: account.ID, MessageID: messageID,
+			}
+
+			messageRecipients = append(messageRecipients, messageRecipient)
+		}
+
+	}
+
 	return messageRecipients, nil
 }
 
