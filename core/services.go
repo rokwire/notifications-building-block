@@ -156,9 +156,17 @@ func (app *Application) sendMessage(allRecipients []model.MessageRecipient, mess
 		return nil
 	}
 
+	//send notifications only for mute=false
+	recipients := []model.MessageRecipient{}
+	for _, item := range allRecipients {
+		if item.Mute == false {
+			recipients = append(recipients, item)
+		}
+	}
+
 	// retrieve tokens by recipients
 	tokens, err := app.storage.GetFirebaseTokensByRecipients(
-		message.OrgID, message.AppID, allRecipients, message.RecipientsCriteriaList)
+		message.OrgID, message.AppID, recipients, message.RecipientsCriteriaList)
 	if err != nil {
 		log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
 		return err
