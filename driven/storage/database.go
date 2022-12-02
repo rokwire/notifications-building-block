@@ -138,9 +138,57 @@ func (m *database) start() error {
 		return err
 	}
 
+	//apply recipients data to the new structure
+	err = m.fixRecipientsLegacyData(client, messages, messagesRecipients)
+	if err != nil {
+		return err
+	}
+
 	go m.firebaseConfigurations.Watch(nil)
 
 	return nil
+}
+
+// fix recipients legacy data
+func (m *database) fixRecipientsLegacyData(client *mongo.Client,
+	messages *collectionWrapper, messagesRecipients *collectionWrapper,
+) error {
+	fn := func(sessionContext mongo.SessionContext) error {
+		//start transaction
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a recipients legacy data fix transaction - %s", err)
+			return err
+		}
+
+		/// check if the data fix has been applied
+		messagesRecipientsCount, err := messagesRecipients.CountDocumentsWithContext(sessionContext, bson.D{})
+		if err != nil {
+			log.Println("error checking messages count")
+			return err
+		}
+		if messagesRecipientsCount == 0 {
+			log.Printf("recipients legacy data has NOT been applied, messages recipients:%d - applying data fix..", messagesRecipientsCount)
+
+			//TODO
+
+		} else {
+			log.Println("recipients legacy data has been applied, nothing to do")
+			return nil
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			abortTransaction(sessionContext)
+			fmt.Printf("error on commiting recipients data fix transaction - %s", err)
+			return err
+		}
+		log.Println("recipients data fix completed")
+		return nil
+	}
+	err := client.UseSession(context.Background(), fn)
+	return err
 }
 
 // it adds org id and app id for the current data to match the multi-tenancy requirements
