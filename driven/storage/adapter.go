@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"log"
 	"notifications/core/model"
-	"notifications/utils"
 	"strconv"
 	"time"
 
@@ -477,36 +476,19 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			}
 			if len(messages) > 0 {
 				for _, message := range messages {
+					err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, message.ID)
+					if err != nil {
+						fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
+					}
 
-					if message.CalculatedRecipientsCount == nil {
-						//the messsage has been written before the refactroing, so do what it was doing
-
-						if message.Recipients != nil && len(message.Recipients) > 1 {
-							err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, message.ID)
-							if err != nil {
-								fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
-							}
-						} else {
-							err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
-							if err != nil {
-								fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
-							}
-						}
-					} else {
-						//the messsage has been written after the refactroing
-						err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, message.ID)
+					if *message.CalculatedRecipientsCount == 1 {
+						//the message has had only one recipient, so we need to remove the message entity too
+						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
 						if err != nil {
-							fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
-						}
-
-						if *message.CalculatedRecipientsCount == 1 {
-							//the message has had only one recipient, so we need to remove the message entity too
-							err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
-							if err != nil {
-								fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
-							}
+							fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
 						}
 					}
+
 				}
 			}
 
@@ -548,136 +530,6 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 
 // GetMessagesStats counts read/unread and muted/unmuted messages
 func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error) {
-	oldData, err := sa.getOldMessagesStats(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	newData, err := sa.getNewMessagesStats(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	totalCoount := utils.GetInt64Value(oldData.TotalCount) + utils.GetInt64Value(newData.TotalCount)
-	muted := utils.GetInt64Value(oldData.Muted) + utils.GetInt64Value(newData.Muted)
-	Unmuted := utils.GetInt64Value(oldData.Unmuted) + utils.GetInt64Value(newData.Unmuted)
-	read := utils.GetInt64Value(oldData.Read) + utils.GetInt64Value(newData.Read)
-	unread := utils.GetInt64Value(oldData.Unread) + utils.GetInt64Value(newData.Unread)
-	result := model.MessagesStats{TotalCount: &totalCoount, Muted: &muted, Unmuted: &Unmuted,
-		Read: &read, Unread: &unread}
-	return &result, nil
-}
-
-func (sa *Adapter) getOldMessagesStats(userID string) (*model.MessagesStats, error) {
-	pipeline := bson.A{
-		bson.D{{"$match", bson.D{{"recipients.user_id", userID}}}},
-		bson.D{
-			{"$facet",
-				bson.D{
-					{"total_count",
-						bson.A{
-							bson.D{{"$count", "total_count"}},
-						},
-					},
-					{"muted_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"recipients.mute", true}}}},
-							bson.D{{"$count", "muted_count"}},
-						},
-					},
-					{"not_muted_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"recipients.mute", bson.D{{"$ne", true}}}}}},
-							bson.D{{"$count", "not_muted_count"}},
-						},
-					},
-					{"read_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"recipients.read", true}}}},
-							bson.D{{"$count", "read_count"}},
-						},
-					},
-					{"not_read_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"recipients.read", bson.D{{"$ne", true}}}}}},
-							bson.D{{"$count", "not_read_count"}},
-						},
-					},
-				},
-			},
-		},
-		bson.D{
-			{"$project",
-				bson.D{
-					{"total_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$total_count.total_count",
-									0,
-								},
-							},
-						},
-					},
-					{"muted_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$muted_count.muted_count",
-									0,
-								},
-							},
-						},
-					},
-					{"not_muted_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$not_muted_count.not_muted_count",
-									0,
-								},
-							},
-						},
-					},
-					{"read_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$read_count.read_count",
-									0,
-								},
-							},
-						},
-					},
-					{"not_read_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$not_read_count.not_read_count",
-									0,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	var stats []model.MessagesStats
-	err := sa.db.messages.AggregateWithContext(nil, pipeline, &stats, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(stats) > 0 {
-		stat := stats[0]
-		return &stat, err
-	}
-	return nil, nil
-}
-
-func (sa *Adapter) getNewMessagesStats(userID string) (*model.MessagesStats, error) {
 	filter := bson.D{
 		primitive.E{Key: "user_id", Value: userID},
 	}
@@ -899,107 +751,6 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *
 	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
 	offset *int64, limit *int64, order *string) ([]model.Message, error) {
 
-	//get old messages data
-	oldMessages, err := sa.getOldMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic,
-		offset, limit, order)
-	if err != nil {
-		return nil, err
-	}
-
-	//get new messages data
-	newMessages, err := sa.getNewMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic,
-		offset, limit, order)
-	if err != nil {
-		return nil, err
-	}
-
-	var list []model.Message
-	list = append(list, newMessages...)
-	list = append(list, oldMessages...)
-	return list, nil
-
-}
-
-//data before refactoring
-func (sa Adapter) getOldMessages(orgID string, appID string, userID *string, read *bool, mute *bool,
-	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
-	offset *int64, limit *int64, order *string) ([]model.Message, error) {
-
-	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-	}
-	innerFilter := []interface{}{}
-	if userID != nil {
-		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: userID}})
-	}
-
-	if len(innerFilter) > 0 {
-		filter = append(filter, primitive.E{Key: "recipients", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "$or", Value: innerFilter}}}}})
-	}
-	if filterTopic != nil {
-		filter = append(filter, primitive.E{Key: "topic", Value: filterTopic})
-	}
-	if len(messageIDs) > 0 {
-		filter = append(filter, primitive.E{Key: "_id", Value: bson.M{"$in": messageIDs}})
-	}
-
-	if read != nil {
-		if *read {
-			filter = append(filter, primitive.E{Key: "recipients.read", Value: true})
-		} else {
-			// support of existing records where "read" field is missing
-			filter = append(filter, primitive.E{Key: "recipients.read", Value: bson.M{"$ne": true}})
-		}
-	}
-
-	if mute != nil {
-		if *mute {
-			filter = append(filter, primitive.E{Key: "recipients.mute", Value: true})
-		} else {
-			// support of existing records where "mute" field is missing
-			filter = append(filter, primitive.E{Key: "recipients.mute", Value: bson.M{"$ne": true}})
-		}
-	}
-
-	if startDateEpoch != nil {
-		seconds := *startDateEpoch / 1000
-		timeValue := time.Unix(seconds, 0)
-		filter = append(filter, primitive.E{Key: "date_created", Value: bson.D{primitive.E{Key: "$gte", Value: &timeValue}}})
-	}
-	if endDateEpoch != nil {
-		seconds := *endDateEpoch / 1000
-		timeValue := time.Unix(seconds, 0)
-		filter = append(filter, primitive.E{Key: "date_created", Value: bson.D{primitive.E{Key: "$lte", Value: &timeValue}}})
-	}
-
-	findOptions := options.Find()
-	if order != nil && *order == "asc" {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
-	} else {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
-	}
-	if limit != nil {
-		findOptions.SetLimit(*limit)
-	}
-	if offset != nil {
-		findOptions.SetSkip(*offset)
-	}
-
-	var list []model.Message
-	err := sa.db.messages.Find(filter, &list, findOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-//data after refactoring
-func (sa Adapter) getNewMessages(orgID string, appID string, userID *string, read *bool, mute *bool,
-	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
-	offset *int64, limit *int64, order *string) ([]model.Message, error) {
-
 	pipeline := []bson.M{
 		{"$lookup": bson.M{
 			"from":         "messages_recipients",
@@ -1061,9 +812,8 @@ func (sa Adapter) getNewMessages(orgID string, appID string, userID *string, rea
 		return nil, errors.WrapErrorAction(logutils.ActionFind, "message", nil, err)
 	}
 
-	//TODO
-
 	return messages, nil
+
 }
 
 // GetMessage gets a message by id
@@ -1146,52 +896,18 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string
 		return fmt.Errorf("message with id (%s) not found: %s", messageID, err)
 	}
 
-	if persistedMessage.CalculatedRecipientsCount == nil {
-		//it is an old message data containing the recipients in the message collection
+	//remove the messages recipients records
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "message_id", Value: messageID},
+		primitive.E{Key: "user_id", Value: userID}}
 
-		updatesRecipients := []model.MessageRecipient{}
-		for _, recipient := range persistedMessage.Recipients {
-			if userID != recipient.UserID {
-				updatesRecipients = append(updatesRecipients, recipient)
-			}
-		}
-
-		if len(updatesRecipients) != len(persistedMessage.Recipients) {
-			filter := bson.D{
-				primitive.E{Key: "org_id", Value: orgID},
-				primitive.E{Key: "app_id", Value: appID},
-				primitive.E{Key: "_id", Value: messageID}}
-			update := bson.D{
-				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "recipients", Value: updatesRecipients},
-					primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-				}},
-			}
-
-			_, err = sa.db.messages.UpdateOneWithContext(ctx, filter, update, nil)
-			if err != nil {
-				fmt.Printf("warning: error while delete message (%s) for user (%s) %s", messageID, userID, err)
-				return err
-			}
-		}
-	} else {
-		//it is a new message data containing the recipients in a separate collection
-
-		//remove the messages recipients records
-		filter := bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "message_id", Value: messageID},
-			primitive.E{Key: "user_id", Value: userID}}
-
-		_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
-		if err != nil {
-			return errors.WrapErrorAction(logutils.ActionDelete, "message recipient",
-				&logutils.FieldArgs{"user_id": userID, "message_id": messageID}, err)
-		}
-		return nil
+	_, err = sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient",
+			&logutils.FieldArgs{"user_id": userID, "message_id": messageID}, err)
 	}
-
 	return nil
 }
 
