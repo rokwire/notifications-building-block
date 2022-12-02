@@ -18,8 +18,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"notifications/core/model"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/v2/logs"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -151,7 +153,7 @@ func (m *database) start() error {
 
 // fix recipients legacy data
 func (m *database) fixRecipientsLegacyData(client *mongo.Client,
-	messages *collectionWrapper, messagesRecipients *collectionWrapper,
+	messagesColl *collectionWrapper, messagesRecipientsColl *collectionWrapper,
 ) error {
 	fn := func(sessionContext mongo.SessionContext) error {
 		//start transaction
@@ -162,7 +164,7 @@ func (m *database) fixRecipientsLegacyData(client *mongo.Client,
 		}
 
 		/// check if the data fix has been applied
-		messagesRecipientsCount, err := messagesRecipients.CountDocumentsWithContext(sessionContext, bson.D{})
+		messagesRecipientsCount, err := messagesRecipientsColl.CountDocumentsWithContext(sessionContext, bson.D{})
 		if err != nil {
 			abortTransaction(sessionContext)
 			log.Println("error checking messages count")
@@ -171,7 +173,40 @@ func (m *database) fixRecipientsLegacyData(client *mongo.Client,
 		if messagesRecipientsCount == 0 {
 			log.Printf("recipients legacy data has NOT been applied, messages recipients:%d - applying data fix..", messagesRecipientsCount)
 
-			//TODO
+			//load all messages
+			var allMessages []model.Message
+			allMessagesTimeout := time.Minute * time.Duration(2)
+			err := messagesColl.FindWithContextTimeout(sessionContext, bson.D{}, &allMessages, nil, allMessagesTimeout) //long timeout
+			if err != nil {
+				abortTransaction(sessionContext)
+				log.Println("error loading all messages")
+				return err
+			}
+
+			for _, message := range allMessages {
+				if len(message.Recipients) == 0 {
+					continue //skip theses
+				}
+
+				//construct the new message recipients structure data
+				messagesRecipients := make([]interface{}, len(message.Recipients))
+				for i, recipient := range message.Recipients {
+					messageRecipient := model.MessageRecipient{OrgID: message.OrgID, AppID: message.AppID,
+						ID: uuid.NewString(), UserID: recipient.UserID, MessageID: message.ID,
+						Mute: recipient.Mute, Read: recipient.Read}
+					messagesRecipients[i] = messageRecipient
+				}
+
+				//store the new messages recipients
+				insertTimeout := time.Minute * time.Duration(3)
+				_, err := messagesRecipientsColl.InsertManyWithContextTimeout(sessionContext, messagesRecipients, nil, insertTimeout)
+				if err != nil {
+					abortTransaction(sessionContext)
+					log.Printf("error inserting messages recipeints for message %s", message.ID)
+					return err
+				}
+
+			}
 
 		} else {
 			log.Println("recipients legacy data has been applied, nothing to do")
