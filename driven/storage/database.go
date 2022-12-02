@@ -164,6 +164,7 @@ func (m *database) fixRecipientsLegacyData(client *mongo.Client,
 		/// check if the data fix has been applied
 		messagesRecipientsCount, err := messagesRecipients.CountDocumentsWithContext(sessionContext, bson.D{})
 		if err != nil {
+			abortTransaction(sessionContext)
 			log.Println("error checking messages count")
 			return err
 		}
@@ -210,12 +211,14 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 		// check users collection
 		usersCount, err := users.CountDocumentsWithContext(sessionContext, filter)
 		if err != nil {
+			abortTransaction(sessionContext)
 			log.Println("error checking users count")
 			return err
 		}
 		// check messages collection
 		messagesCount, err := messages.CountDocumentsWithContext(sessionContext, filter)
 		if err != nil {
+			abortTransaction(sessionContext)
 			log.Println("error checking messages count")
 			return err
 		}
@@ -236,6 +239,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			usersTimeout := time.Minute * time.Duration(2)
 			_, err := users.UpdateManyWithContextTimeout(sessionContext, updatefilter, update, nil, usersTimeout) //long timeout
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating users - %s", err)
 				return err
 			}
@@ -243,6 +247,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			//topics
 			_, err = topics.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating topics - %s", err)
 				return err
 			}
@@ -251,6 +256,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			messagesTimeout := time.Minute * time.Duration(2)
 			_, err = messages.UpdateManyWithContextTimeout(sessionContext, updatefilter, update, nil, messagesTimeout) //long timeout
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating messages - %s", err)
 				return err
 			}
@@ -258,6 +264,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			//app versions
 			_, err = appVersions.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating app versions - %s", err)
 				return err
 			}
@@ -265,6 +272,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			//app platforms
 			_, err = appPlatforms.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating app platforms - %s", err)
 				return err
 			}
