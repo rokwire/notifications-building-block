@@ -103,7 +103,6 @@ type InputMessage struct {
 // InputMessageRecipient is passed by the adapters for creating a message in the core module
 type InputMessageRecipient struct {
 	UserID string `json:"user_id"`
-	Name   string `json:"name"`
 	Mute   bool   `json:"mute"`
 }
 
