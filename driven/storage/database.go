@@ -160,7 +160,7 @@ func (m *database) fixRecipientsLegacyData(client *mongo.Client,
 	for {
 
 		//get messages bite
-		messagesBite, err := m.getMessagesBite(client, messagesColl, 2)
+		messagesBite, err := m.getMessagesBite(client, messagesColl, 400) //400 messages at once
 		if err != nil {
 			m.logger.Errorf("error on getting messages bite - %s", err)
 			return err
@@ -218,6 +218,7 @@ func (m *database) processMessagesBite(client *mongo.Client, messagesColl *colle
 		ids := make([]string, len(messages))
 		for i, message := range messages {
 
+			//we have records with empty recipients
 			if len(message.Recipients) > 0 {
 				//construct the new message recipients structure data
 				messagesRecipients := make([]interface{}, len(message.Recipients))
@@ -233,7 +234,7 @@ func (m *database) processMessagesBite(client *mongo.Client, messagesColl *colle
 				_, err := messagesRecipientsColl.InsertManyWithContextTimeout(sessionContext, messagesRecipients, nil, insertTimeout)
 				if err != nil {
 					abortTransaction(sessionContext)
-					log.Printf("error inserting messages recipeints for message %s", message.ID)
+					log.Printf("error inserting messages recipients for message %s", message.ID)
 					return err
 				}
 			}
