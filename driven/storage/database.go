@@ -155,6 +155,57 @@ func (m *database) start() error {
 func (m *database) fixRecipientsLegacyData(client *mongo.Client,
 	messagesColl *collectionWrapper, messagesRecipientsColl *collectionWrapper,
 ) error {
+
+	//while
+	for {
+
+		//get messages bite
+		messagesBite, err := m.getMessagesBite(client, messagesColl, 2)
+		if err != nil {
+			m.logger.Errorf("error on getting messages bite - %s", err)
+			return err
+		}
+
+		messagesCount := len(messagesBite)
+
+		if messagesCount == 0 {
+			m.logger.Info("no more messages for migrating")
+			break
+		} else {
+			m.logger.Infof("we have %d messages for migrating", messagesCount)
+
+			err = m.processMessagesBite(client, messagesColl, messagesRecipientsColl, messagesBite)
+			if err != nil {
+				m.logger.Errorf("error on process messages bite - %s", err)
+				return err
+			}
+		}
+	}
+
+	m.logger.Info("fixRecipientsLegacyData finished")
+	return nil
+}
+
+func (m *database) getMessagesBite(client *mongo.Client, messagesColl *collectionWrapper, count int) ([]model.Message, error) {
+	filter := bson.D{
+		primitive.E{Key: "recipients", Value: bson.M{"$ne": nil}},
+	}
+
+	findOptions := options.Find()
+	findOptions.SetLimit(int64(count))
+
+	var data []model.Message
+	err := messagesColl.Find(filter, &data, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// process messages bite
+func (m *database) processMessagesBite(client *mongo.Client, messagesColl *collectionWrapper,
+	messagesRecipientsColl *collectionWrapper, messages []model.Message) error {
+
 	fn := func(sessionContext mongo.SessionContext) error {
 		//start transaction
 		err := sessionContext.StartTransaction()
@@ -163,31 +214,11 @@ func (m *database) fixRecipientsLegacyData(client *mongo.Client,
 			return err
 		}
 
-		/// check if the data fix has been applied
-		messagesRecipientsCount, err := messagesRecipientsColl.CountDocumentsWithContext(sessionContext, bson.D{})
-		if err != nil {
-			abortTransaction(sessionContext)
-			log.Println("error checking messages count")
-			return err
-		}
-		if messagesRecipientsCount == 0 {
-			log.Printf("recipients legacy data has NOT been applied, messages recipients:%d - applying data fix..", messagesRecipientsCount)
+		//create the new messages
+		ids := make([]string, len(messages))
+		for i, message := range messages {
 
-			//load all messages
-			var allMessages []model.Message
-			allMessagesTimeout := time.Minute * time.Duration(2)
-			err := messagesColl.FindWithContextTimeout(sessionContext, bson.D{}, &allMessages, nil, allMessagesTimeout) //long timeout
-			if err != nil {
-				abortTransaction(sessionContext)
-				log.Println("error loading all messages")
-				return err
-			}
-
-			for _, message := range allMessages {
-				if len(message.Recipients) == 0 {
-					continue //skip theses
-				}
-
+			if len(message.Recipients) > 0 {
 				//construct the new message recipients structure data
 				messagesRecipients := make([]interface{}, len(message.Recipients))
 				for i, recipient := range message.Recipients {
@@ -205,12 +236,27 @@ func (m *database) fixRecipientsLegacyData(client *mongo.Client,
 					log.Printf("error inserting messages recipeints for message %s", message.ID)
 					return err
 				}
-
 			}
 
-		} else {
-			log.Println("recipients legacy data has been applied, nothing to do")
-			return nil
+			//messages ids for clearing the old recipients
+			ids[i] = message.ID
+		}
+
+		//clear the old recipients for the messages
+		updateFilter := bson.D{
+			primitive.E{Key: "_id", Value: bson.M{"$in": ids}},
+		}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "recipients", Value: nil},
+			}},
+		}
+		updateTimeout := time.Minute * time.Duration(2)
+		_, err = messagesColl.UpdateManyWithContextTimeout(sessionContext, updateFilter, update, nil, updateTimeout) //long timeout
+		if err != nil {
+			abortTransaction(sessionContext)
+			log.Printf("error updating messages - %s", err)
+			return err
 		}
 
 		//commit the transaction
@@ -220,7 +266,6 @@ func (m *database) fixRecipientsLegacyData(client *mongo.Client,
 			fmt.Printf("error on commiting recipients data fix transaction - %s", err)
 			return err
 		}
-		log.Println("recipients data fix completed")
 		return nil
 	}
 	err := client.UseSession(context.Background(), fn)
