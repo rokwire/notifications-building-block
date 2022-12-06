@@ -7,12 +7,18 @@ Config:
   $ref: "./application/Config.yaml"
 CoreToken:
   $ref: "./application/CoreToken.yaml"
-CoreUserRef:
-  $ref: "./application/CoreUserRef.yaml"
+CoreAccountRef:
+  $ref: "./application/CoreAccountRef.yaml"
 FirebaseToken:
   $ref: "./application/FirebaseToken.yaml"
 Message:
   $ref: "./application/Message.yaml"
+InputMessage:
+  $ref: "./application/InputMessage.yaml"
+InputMessageRecipient:
+  $ref: "./application/InputMessageRecipient.yaml"
+InputRecipientCriteria:
+  $ref: "./application/InputRecipientCriteria.yaml"
 Recipient:
   $ref: "./application/Recipients.yaml"
 RecipientCriteria:

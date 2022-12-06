@@ -377,7 +377,7 @@ func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *toke
 	return l.HTTPResponseSuccessJSON(data)
 }
 
-// GetMessage Retrieves a message by id
+// GetUserMessage Retrieves a message by id
 // @Description Retrieves a message by id
 // @Tags Client
 // @ID GetUserMessage
@@ -387,20 +387,16 @@ func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *toke
 // @Success 200 {object} model.Message
 // @Security UserAuth
 // @Router /message/{id} [get]
-func (h ApisHandler) GetMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+func (h ApisHandler) GetUserMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	message, err := h.app.Services.GetMessage(claims.OrgID, claims.AppID, id)
+	message, err := h.app.Services.GetUserMessage(claims.OrgID, claims.AppID, id, claims.Subject)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionGet, "message", nil, err, http.StatusInternalServerError, true)
-	}
-
-	if message == nil || !message.HasUser(claims.Subject) {
-		return l.HTTPResponseErrorData(logutils.StatusMissing, "message", nil, nil, http.StatusNotFound, false)
 	}
 
 	data, err := json.Marshal(message)
@@ -457,16 +453,18 @@ func (h ApisHandler) DeleteUserMessages(l *logs.Log, r *http.Request, claims *to
 // @Security UserAuth
 // @Router /message [post]
 func (h ApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.Message
-	err := json.NewDecoder(r.Body).Decode(&message)
+	var inputMessage *model.InputMessage
+	err := json.NewDecoder(r.Body).Decode(&inputMessage)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	message.OrgID = claims.OrgID
-	message.AppID = claims.AppID
+	inputMessage.OrgID = claims.OrgID
+	inputMessage.AppID = claims.AppID
 
-	message, err = h.app.Services.CreateMessage(&model.CoreUserRef{UserID: claims.Subject, Name: claims.Name}, message, false)
+	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
+
+	message, err := h.app.Services.CreateMessage(*inputMessage, sender, false)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}

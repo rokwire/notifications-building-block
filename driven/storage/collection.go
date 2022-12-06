@@ -35,7 +35,12 @@ func (collWrapper *collectionWrapper) Find(filter interface{}, result interface{
 }
 
 func (collWrapper *collectionWrapper) FindWithContext(ctx context.Context, filter interface{}, result interface{}, findOptions *options.FindOptions) error {
-	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
+	return collWrapper.FindWithContextTimeout(ctx, filter, result, findOptions, collWrapper.database.mongoTimeout)
+}
+
+func (collWrapper *collectionWrapper) FindWithContextTimeout(ctx context.Context, filter interface{},
+	result interface{}, findOptions *options.FindOptions, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	if filter == nil {
@@ -144,7 +149,12 @@ func (collWrapper *collectionWrapper) InsertMany(documents []interface{}, opts *
 }
 
 func (collWrapper *collectionWrapper) InsertManyWithContext(ctx context.Context, documents []interface{}, opts *options.InsertManyOptions) (*mongo.InsertManyResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
+	return collWrapper.InsertManyWithContextTimeout(ctx, documents, opts, collWrapper.database.mongoTimeout)
+}
+
+func (collWrapper *collectionWrapper) InsertManyWithContextTimeout(ctx context.Context, documents []interface{},
+	opts *options.InsertManyOptions, timeout time.Duration) (*mongo.InsertManyResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	result, err := collWrapper.coll.InsertMany(ctx, documents, opts)
