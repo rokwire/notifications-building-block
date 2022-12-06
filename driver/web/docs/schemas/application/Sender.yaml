@@ -3,5 +3,5 @@ properties:
   type:
     type: string
   user:
-    $ref: "./CoreUserRef.yaml"
+    $ref: "./CoreAccountRef.yaml"
      

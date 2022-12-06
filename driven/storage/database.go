@@ -18,8 +18,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"notifications/core/model"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/v2/logs"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -38,9 +40,10 @@ type database struct {
 	dbClient *mongo.Client
 	logger   *logs.Logger
 
-	users    *collectionWrapper
-	topics   *collectionWrapper
-	messages *collectionWrapper
+	users              *collectionWrapper
+	topics             *collectionWrapper
+	messages           *collectionWrapper
+	messagesRecipients *collectionWrapper
 
 	appVersions  *collectionWrapper
 	appPlatforms *collectionWrapper
@@ -95,6 +98,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	messagesRecipients := &collectionWrapper{database: m, coll: db.Collection("messages_recipients")}
+	err = m.applyMessagesRecipientsChecks(messagesRecipients)
+	if err != nil {
+		return err
+	}
+
 	appPlatforms := &collectionWrapper{database: m, coll: db.Collection("app_platforms")}
 	err = m.applyPlatformsChecks(appPlatforms)
 	if err != nil {
@@ -120,6 +129,7 @@ func (m *database) start() error {
 	m.users = users
 	m.topics = topics
 	m.messages = messages
+	m.messagesRecipients = messagesRecipients
 	m.appPlatforms = appPlatforms
 	m.appVersions = appVersions
 	m.firebaseConfigurations = firebaseConfigurations
@@ -130,9 +140,137 @@ func (m *database) start() error {
 		return err
 	}
 
+	//apply recipients data to the new structure
+	err = m.fixRecipientsLegacyData(client, messages, messagesRecipients)
+	if err != nil {
+		return err
+	}
+
 	go m.firebaseConfigurations.Watch(nil)
 
 	return nil
+}
+
+// fix recipients legacy data
+func (m *database) fixRecipientsLegacyData(client *mongo.Client,
+	messagesColl *collectionWrapper, messagesRecipientsColl *collectionWrapper,
+) error {
+
+	//while
+	for {
+
+		//get messages bite
+		messagesBite, err := m.getMessagesBite(client, messagesColl, 400) //400 messages at once
+		if err != nil {
+			m.logger.Errorf("error on getting messages bite - %s", err)
+			return err
+		}
+
+		messagesCount := len(messagesBite)
+
+		if messagesCount == 0 {
+			m.logger.Info("no more messages for migrating")
+			break
+		} else {
+			m.logger.Infof("we have %d messages for migrating", messagesCount)
+
+			err = m.processMessagesBite(client, messagesColl, messagesRecipientsColl, messagesBite)
+			if err != nil {
+				m.logger.Errorf("error on process messages bite - %s", err)
+				return err
+			}
+		}
+	}
+
+	m.logger.Info("fixRecipientsLegacyData finished")
+	return nil
+}
+
+func (m *database) getMessagesBite(client *mongo.Client, messagesColl *collectionWrapper, count int) ([]model.Message, error) {
+	filter := bson.D{
+		primitive.E{Key: "recipients", Value: bson.M{"$ne": nil}},
+	}
+
+	findOptions := options.Find()
+	findOptions.SetLimit(int64(count))
+
+	var data []model.Message
+	err := messagesColl.Find(filter, &data, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// process messages bite
+func (m *database) processMessagesBite(client *mongo.Client, messagesColl *collectionWrapper,
+	messagesRecipientsColl *collectionWrapper, messages []model.Message) error {
+
+	fn := func(sessionContext mongo.SessionContext) error {
+		//start transaction
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a recipients legacy data fix transaction - %s", err)
+			return err
+		}
+
+		//create the new messages
+		ids := make([]string, len(messages))
+		for i, message := range messages {
+
+			//we have records with empty recipients
+			if len(message.Recipients) > 0 {
+				//construct the new message recipients structure data
+				messagesRecipients := make([]interface{}, len(message.Recipients))
+				for i, recipient := range message.Recipients {
+					messageRecipient := model.MessageRecipient{OrgID: message.OrgID, AppID: message.AppID,
+						ID: uuid.NewString(), UserID: recipient.UserID, MessageID: message.ID,
+						Mute: recipient.Mute, Read: recipient.Read}
+					messagesRecipients[i] = messageRecipient
+				}
+
+				//store the new messages recipients
+				insertTimeout := time.Minute * time.Duration(3)
+				_, err := messagesRecipientsColl.InsertManyWithContextTimeout(sessionContext, messagesRecipients, nil, insertTimeout)
+				if err != nil {
+					abortTransaction(sessionContext)
+					log.Printf("error inserting messages recipients for message %s", message.ID)
+					return err
+				}
+			}
+
+			//messages ids for clearing the old recipients
+			ids[i] = message.ID
+		}
+
+		//clear the old recipients for the messages
+		updateFilter := bson.D{
+			primitive.E{Key: "_id", Value: bson.M{"$in": ids}},
+		}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "recipients", Value: nil},
+			}},
+		}
+		updateTimeout := time.Minute * time.Duration(2)
+		_, err = messagesColl.UpdateManyWithContextTimeout(sessionContext, updateFilter, update, nil, updateTimeout) //long timeout
+		if err != nil {
+			abortTransaction(sessionContext)
+			log.Printf("error updating messages - %s", err)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			abortTransaction(sessionContext)
+			fmt.Printf("error on commiting recipients data fix transaction - %s", err)
+			return err
+		}
+		return nil
+	}
+	err := client.UseSession(context.Background(), fn)
+	return err
 }
 
 // it adds org id and app id for the current data to match the multi-tenancy requirements
@@ -154,12 +292,14 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 		// check users collection
 		usersCount, err := users.CountDocumentsWithContext(sessionContext, filter)
 		if err != nil {
+			abortTransaction(sessionContext)
 			log.Println("error checking users count")
 			return err
 		}
 		// check messages collection
 		messagesCount, err := messages.CountDocumentsWithContext(sessionContext, filter)
 		if err != nil {
+			abortTransaction(sessionContext)
 			log.Println("error checking messages count")
 			return err
 		}
@@ -180,6 +320,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			usersTimeout := time.Minute * time.Duration(2)
 			_, err := users.UpdateManyWithContextTimeout(sessionContext, updatefilter, update, nil, usersTimeout) //long timeout
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating users - %s", err)
 				return err
 			}
@@ -187,6 +328,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			//topics
 			_, err = topics.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating topics - %s", err)
 				return err
 			}
@@ -195,6 +337,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			messagesTimeout := time.Minute * time.Duration(2)
 			_, err = messages.UpdateManyWithContextTimeout(sessionContext, updatefilter, update, nil, messagesTimeout) //long timeout
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating messages - %s", err)
 				return err
 			}
@@ -202,6 +345,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			//app versions
 			_, err = appVersions.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating app versions - %s", err)
 				return err
 			}
@@ -209,6 +353,7 @@ func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWr
 			//app platforms
 			_, err = appPlatforms.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
 			if err != nil {
+				abortTransaction(sessionContext)
 				log.Printf("error updating app platforms - %s", err)
 				return err
 			}
@@ -290,6 +435,37 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	}
 
 	log.Println("apply messages passed")
+	return nil
+}
+
+func (m *database) applyMessagesRecipientsChecks(messagesRecipients *collectionWrapper) error {
+	log.Println("apply messages recipients checks.....")
+
+	//add org id index
+	err := messagesRecipients.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add app id index
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "app_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add user id index
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add messages id index
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "message_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	log.Println("apply messages recipients passed")
 	return nil
 }
 

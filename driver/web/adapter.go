@@ -93,7 +93,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/messages/read", we.wrapFunc(we.apisHandler.UpdateAllUserMessagesRead, we.auth.client.Standard)).Methods("PUT")
 	mainRouter.HandleFunc("/messages/stats", we.wrapFunc(we.apisHandler.GetUserMessagesStats, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/message", we.wrapFunc(we.apisHandler.CreateMessage, we.auth.client.Permissions)).Methods("POST")
-	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.GetMessage, we.auth.client.Standard)).Methods("GET")
+	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.GetUserMessage, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.DeleteUserMessage, we.auth.client.Standard)).Methods("DELETE")
 	mainRouter.HandleFunc("/message/{id}/read", we.wrapFunc(we.apisHandler.UpdateReadMessage, we.auth.client.Standard)).Methods("PUT")
 	mainRouter.HandleFunc("/topics", we.wrapFunc(we.apisHandler.GetTopics, we.auth.client.Standard)).Methods("GET")
@@ -180,6 +180,7 @@ func (we Adapter) wrapFunc(handler handlerFunc, authorization tokenauth.Handler)
 				return
 			}
 
+			//do not crash the service if the deprecated internal auth type is used
 			if claims != nil {
 				logObj.SetContext("account_id", claims.Subject)
 			}

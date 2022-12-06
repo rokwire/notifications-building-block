@@ -49,6 +49,36 @@ func (sa *Adapter) RegisterStorageListener(storageListener Listener) {
 	sa.db.listeners = append(sa.db.listeners, storageListener)
 }
 
+// PerformTransaction performs a transaction
+func (sa *Adapter) PerformTransaction(transaction func(context TransactionContext) error, timeoutMilliSeconds int64) error {
+	// transaction
+	timeout := time.Millisecond * time.Duration(timeoutMilliSeconds)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	err := sa.db.dbClient.UseSession(ctx, func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return errors.WrapErrorAction(logutils.ActionStart, logutils.TypeTransaction, nil, err)
+		}
+
+		err = transaction(sessionContext)
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return errors.WrapErrorAction("performing", logutils.TypeTransaction, nil, err)
+		}
+
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return errors.WrapErrorAction(logutils.ActionCommit, logutils.TypeTransaction, nil, err)
+		}
+		return nil
+	})
+
+	return err
+}
+
 // NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string,
 	multiTenancyOrgID string, multiTenancyAppID string, logger *logs.Logger) *Adapter {
@@ -286,7 +316,7 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID stri
 }
 
 // GetFirebaseTokensByRecipients Gets all users mapped to the recipients input list
-func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, recipients []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error) {
+func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, recipients []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error) {
 	if len(recipients) > 0 {
 		innerFilter := []string{}
 		for _, recipient := range recipients {
@@ -335,8 +365,8 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 	return nil, fmt.Errorf("empty recient information")
 }
 
-// GetRecipientsByTopic Gets all users recipients by topic
-func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string) ([]model.Recipient, error) {
+// GetUsersByTopicWithContext Gets all users for topic topic
+func (sa Adapter) GetUsersByTopicWithContext(ctx context.Context, orgID string, appID string, topic string) ([]model.User, error) {
 	if len(topic) > 0 {
 		filter := bson.D{
 			primitive.E{Key: "org_id", Value: orgID},
@@ -345,30 +375,27 @@ func (sa Adapter) GetRecipientsByTopic(orgID string, appID string, topic string)
 		}
 
 		var tokenMappings []model.User
-		err := sa.db.users.Find(filter, &tokenMappings, nil)
+		err := sa.db.users.FindWithContext(ctx, filter, &tokenMappings, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		recipients := []model.Recipient{}
+		result := []model.User{}
 		for _, user := range tokenMappings {
 			if user.HasTopic(topic) {
-				recipients = append(recipients, model.Recipient{
-					UserID:               user.UserID,
-					NotificationDisabled: user.NotificationsDisabled,
-				})
+				result = append(result, user)
 			}
 		}
 
-		return recipients, nil
+		return result, nil
 	}
 	return nil, fmt.Errorf("no mapped recipients to %s topic", topic)
 }
 
-// GetRecipientsByRecipientCriterias gets recipients list by list of criteria
-func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error) {
+// GetUsersByRecipientCriteriasWithContext gets users list by list of criteria
+func (sa Adapter) GetUsersByRecipientCriteriasWithContext(ctx context.Context, orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.User, error) {
 	if len(recipientCriterias) > 0 {
-		var tokenMappings []model.User
+		var users []model.User
 		innerFilter := []interface{}{}
 
 		for _, criteria := range recipientCriterias {
@@ -390,20 +417,12 @@ func (sa Adapter) GetRecipientsByRecipientCriterias(orgID string, appID string, 
 			primitive.E{Key: "$or", Value: innerFilter},
 		}
 
-		err := sa.db.users.Find(filter, &tokenMappings, nil)
+		err := sa.db.users.FindWithContext(ctx, filter, &users, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		recipients := []model.Recipient{}
-		for _, user := range tokenMappings {
-			recipients = append(recipients, model.Recipient{
-				UserID:               user.UserID,
-				NotificationDisabled: user.NotificationsDisabled,
-			})
-		}
-
-		return recipients, nil
+		return users, nil
 	}
 	return nil, fmt.Errorf("no mapped recipients for the input criterias")
 }
@@ -457,17 +476,19 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			}
 			if len(messages) > 0 {
 				for _, message := range messages {
-					if message.Recipients != nil && len(message.Recipients) > 1 {
-						err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, *message.ID)
+					err = sa.DeleteUserMessageWithContext(sessionContext, orgID, appID, userID, message.ID)
+					if err != nil {
+						fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
+					}
+
+					if *message.CalculatedRecipientsCount == 1 {
+						//the message has had only one recipient, so we need to remove the message entity too
+						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
 						if err != nil {
-							fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", *message.ID, userID, err)
-						}
-					} else {
-						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, *message.ID)
-						if err != nil {
-							fmt.Printf("warning: unable to delete message(%s): %s\n", *message.ID, err)
+							fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
 						}
 					}
+
 				}
 			}
 
@@ -508,113 +529,43 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 }
 
 // GetMessagesStats counts read/unread and muted/unmuted messages
-func (sa *Adapter) GetMessagesStats(userID string, read bool, mute bool) (*model.MessagesStats, error) {
-	pipeline := bson.A{
-		bson.D{{"$match", bson.D{{"recipients.user_id", userID}}}},
-		bson.D{
-			{"$facet",
-				bson.D{
-					{"total_count",
-						bson.A{
-							bson.D{{"$count", "total_count"}},
-						},
-					},
-					{"muted_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"recipients.mute", true}}}},
-							bson.D{{"$count", "muted_count"}},
-						},
-					},
-					{"not_muted_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"recipients.mute", bson.D{{"$ne", true}}}}}},
-							bson.D{{"$count", "not_muted_count"}},
-						},
-					},
-					{"read_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"recipients.read", true}}}},
-							bson.D{{"$count", "read_count"}},
-						},
-					},
-					{"not_read_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"recipients.read", bson.D{{"$ne", true}}}}}},
-							bson.D{{"$count", "not_read_count"}},
-						},
-					},
-				},
-			},
-		},
-		bson.D{
-			{"$project",
-				bson.D{
-					{"total_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$total_count.total_count",
-									0,
-								},
-							},
-						},
-					},
-					{"muted_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$muted_count.muted_count",
-									0,
-								},
-							},
-						},
-					},
-					{"not_muted_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$not_muted_count.not_muted_count",
-									0,
-								},
-							},
-						},
-					},
-					{"read_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$read_count.read_count",
-									0,
-								},
-							},
-						},
-					},
-					{"not_read_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
-									"$not_read_count.not_read_count",
-									0,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error) {
+	filter := bson.D{
+		primitive.E{Key: "user_id", Value: userID},
 	}
 
-	var stats []model.MessagesStats
-	err := sa.db.messages.AggregateWithContext(nil, pipeline, &stats, nil)
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	if len(stats) > 0 {
-		stat := stats[0]
-		return &stat, err
+	if data == nil {
+		data = make([]model.MessageRecipient, 0)
 	}
-	return nil, nil
+
+	totalCount := int64(len(data))
+	muted := int64(0)
+	unmuted := int64(0)
+	read := int64(0)
+	unread := int64(0)
+
+	for _, messRec := range data {
+		if messRec.Read {
+			read++
+		} else {
+			unread++
+		}
+
+		if messRec.Mute {
+			muted++
+		} else {
+			unmuted++
+		}
+	}
+
+	stats := model.MessagesStats{TotalCount: &totalCount, Muted: &muted,
+		Unmuted: &unmuted, Read: &read, Unread: &unread}
+	return &stats, nil
 }
 
 // SubscribeToTopic subscribes the token to a topic
@@ -754,54 +705,92 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return topic, err
 }
 
-// GetMessages Gets all messages according to the filter
-func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+// FindMessagesRecipients finds messages recipients
+func (sa Adapter) FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error) {
 	filter := bson.D{
 		primitive.E{Key: "org_id", Value: orgID},
 		primitive.E{Key: "app_id", Value: appID},
-	}
-	innerFilter := []interface{}{}
-	if userID != nil {
-		innerFilter = append(innerFilter, bson.D{primitive.E{Key: "user_id", Value: userID}})
+		primitive.E{Key: "message_id", Value: messageID},
+		primitive.E{Key: "user_id", Value: userID},
 	}
 
-	if len(innerFilter) > 0 {
-		filter = append(filter, primitive.E{Key: "recipients", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "$or", Value: innerFilter}}}}})
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
+	if err != nil {
+		return nil, err
 	}
-	if filterTopic != nil {
-		filter = append(filter, primitive.E{Key: "topic", Value: filterTopic})
+
+	return data, nil
+}
+
+// InsertMessagesRecipientsWithContext inserts messages recipients
+func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error {
+	if len(items) == 0 {
+		return nil
 	}
-	if len(messageIDs) > 0 {
-		filter = append(filter, primitive.E{Key: "_id", Value: bson.M{"$in": messageIDs}})
+
+	data := make([]interface{}, len(items))
+	for i, p := range items {
+		data[i] = p
+	}
+
+	res, err := sa.db.messagesRecipients.InsertManyWithContext(ctx, data, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, "messages recipients", nil, err)
+	}
+
+	if len(res.InsertedIDs) != len(items) {
+		return errors.ErrorAction(logutils.ActionInsert, "messages recipients", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(items)})
+	}
+
+	return nil
+}
+
+// GetMessages Gets all messages according to the filter
+func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool,
+	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
+	offset *int64, limit *int64, order *string) ([]model.Message, error) {
+
+	pipeline := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "messages_recipients",
+			"localField":   "_id",
+			"foreignField": "message_id",
+			"as":           "mess_rec",
+		}},
+		{"$match": bson.M{"org_id": orgID}},
+		{"$match": bson.M{"app_id": appID}},
+	}
+
+	if userID != nil && len(*userID) > 0 {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.user_id": *userID}})
 	}
 
 	if read != nil {
-		if *read {
-			filter = append(filter, primitive.E{Key: "recipients.read", Value: true})
-		} else {
-			// support of existing records where "read" field is missing
-			filter = append(filter, primitive.E{Key: "recipients.read", Value: bson.M{"$ne": true}})
-		}
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.read": *read}})
 	}
 
 	if mute != nil {
-		if *mute {
-			filter = append(filter, primitive.E{Key: "recipients.mute", Value: true})
-		} else {
-			// support of existing records where "mute" field is missing
-			filter = append(filter, primitive.E{Key: "recipients.mute", Value: bson.M{"$ne": true}})
-		}
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.mute": *mute}})
+	}
+
+	if len(messageIDs) > 0 {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"_id": bson.M{"$in": messageIDs}}})
+	}
+
+	if filterTopic != nil {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"topic": *filterTopic}})
 	}
 
 	if startDateEpoch != nil {
 		seconds := *startDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)
-		filter = append(filter, primitive.E{Key: "date_created", Value: bson.D{primitive.E{Key: "$gte", Value: &timeValue}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
 	}
 	if endDateEpoch != nil {
 		seconds := *endDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)
-		filter = append(filter, primitive.E{Key: "date_created", Value: bson.D{primitive.E{Key: "$lte", Value: &timeValue}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
 	}
 
 	findOptions := options.Find()
@@ -817,13 +806,14 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *
 		findOptions.SetSkip(*offset)
 	}
 
-	var list []model.Message
-	err := sa.db.messages.Find(filter, &list, findOptions)
+	var messages []model.Message
+	err := sa.db.messages.Aggregate(pipeline, &messages, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "message", nil, err)
 	}
 
-	return list, nil
+	return messages, nil
+
 }
 
 // GetMessage gets a message by id
@@ -843,31 +833,31 @@ func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Mess
 	return message, nil
 }
 
-// CreateMessage creates a new message.
-func (sa Adapter) CreateMessage(message *model.Message) (*model.Message, error) {
-	if message.ID == nil {
+// CreateMessageWithContext creates a new message.
+func (sa Adapter) CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error) {
+	if len(message.ID) == 0 {
 		id := uuid.New().String()
-		message.ID = &id
+		message.ID = id
 	}
 	now := time.Now().UTC()
 	message.DateUpdated = &now
 	message.DateCreated = &now
 
-	_, err := sa.db.messages.InsertOne(&message)
+	_, err := sa.db.messages.InsertOneWithContext(ctx, &message)
 	if err != nil {
-		fmt.Printf("warning: error while store message (%s) - %s", *message.ID, err)
+		fmt.Printf("warning: error while store message (%s) - %s", message.ID, err)
 		return nil, err
 	}
 
-	return message, nil
+	return &message, nil
 }
 
 // UpdateMessage updates a message
 func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) {
-	if message != nil && message.ID != nil {
-		persistedMessage, err := sa.GetMessage(message.OrgID, message.AppID, *message.ID)
+	if message != nil {
+		persistedMessage, err := sa.GetMessage(message.OrgID, message.AppID, message.ID)
 		if err != nil || persistedMessage == nil {
-			return nil, fmt.Errorf("Message with id (%s) not found: %w", *message.ID, err)
+			return nil, fmt.Errorf("Message with id (%s) not found: %w", message.ID, err)
 		}
 
 		filter := bson.D{
@@ -879,7 +869,6 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "priority", Value: message.Priority},
-				primitive.E{Key: "recipients", Value: message.Recipients},
 				primitive.E{Key: "topic", Value: message.Topic},
 				primitive.E{Key: "subject", Value: message.Subject},
 				primitive.E{Key: "body", Value: message.Body},
@@ -889,7 +878,7 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 
 		_, err = sa.db.messages.UpdateOne(filter, update, nil)
 		if err != nil {
-			fmt.Printf("warning: error while update message (%s) - %s", *message.ID, err)
+			fmt.Printf("warning: error while update message (%s) - %s", message.ID, err)
 			return nil, err
 		}
 	}
@@ -907,32 +896,18 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string
 		return fmt.Errorf("message with id (%s) not found: %s", messageID, err)
 	}
 
-	updatesRecipients := []model.Recipient{}
-	for _, recipient := range persistedMessage.Recipients {
-		if userID != recipient.UserID {
-			updatesRecipients = append(updatesRecipients, recipient)
-		}
+	//remove the messages recipients records
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "message_id", Value: messageID},
+		primitive.E{Key: "user_id", Value: userID}}
+
+	_, err = sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient",
+			&logutils.FieldArgs{"user_id": userID, "message_id": messageID}, err)
 	}
-
-	if len(updatesRecipients) != len(persistedMessage.Recipients) {
-		filter := bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "_id", Value: messageID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "recipients", Value: updatesRecipients},
-				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-			}},
-		}
-
-		_, err = sa.db.messages.UpdateOneWithContext(ctx, filter, update, nil)
-		if err != nil {
-			fmt.Printf("warning: error while delete message (%s) for user (%s) %s", messageID, userID, err)
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -966,14 +941,14 @@ func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID s
 	filter := bson.D{primitive.E{Key: "_id", Value: ID},
 		primitive.E{Key: "app_id", Value: appID},
 		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "recipients.user_id", Value: userID}}
+		primitive.E{Key: "user_id", Value: userID}}
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "recipients.$.read", Value: read},
-			primitive.E{Key: "recipients.$.date_updated", Value: time.Now().UTC()},
+			primitive.E{Key: "read", Value: read},
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 		}},
 	}
-	_, err := sa.db.messages.UpdateManyWithContext(ctx, filter, update, nil)
+	_, err := sa.db.messagesRecipients.UpdateOneWithContext(ctx, filter, update, nil)
 	if err != nil {
 		fmt.Println("warning: error while updating massage", ID, userID, err)
 		return nil, err
@@ -986,14 +961,14 @@ func (sa Adapter) UpdateAllUserMessagesRead(ctx context.Context, orgID string, a
 	filter := bson.D{
 		primitive.E{Key: "app_id", Value: appID},
 		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "recipients.user_id", Value: userID}}
+		primitive.E{Key: "user_id", Value: userID}}
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "recipients.$.read", Value: read},
-			primitive.E{Key: "recipients.$.date_updated", Value: time.Now().UTC()},
+			primitive.E{Key: "read", Value: read},
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 		}},
 	}
-	_, err := sa.db.messages.UpdateManyWithContext(ctx, filter, update, nil)
+	_, err := sa.db.messagesRecipients.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
 		fmt.Println("warning: error while read/unread all user messages", userID, err)
 		return err
@@ -1040,7 +1015,19 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 	}
 }
 
+func (sa *Adapter) abortTransaction(sessionContext mongo.SessionContext) {
+	err := sessionContext.AbortTransaction(sessionContext)
+	if err != nil {
+		log.Printf("error aborting a transaction - %s", err)
+	}
+}
+
 // Listener represents storage listener
 type Listener interface {
 	OnFirebaseConfigurationsUpdated()
+}
+
+// TransactionContext represents storage transaction interface
+type TransactionContext interface {
+	mongo.SessionContext
 }
