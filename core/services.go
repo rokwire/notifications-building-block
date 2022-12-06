@@ -210,9 +210,8 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 		if err != nil {
 			fmt.Printf("error retrieving recipients by topic (%s): %s", *inputMessage.Topic, err)
 			return nil, err
-		} else {
-			log.Printf("retrieve recipients (%+v) for topic (%s)", topicUsers, *inputMessage.Topic)
 		}
+		log.Printf("retrieve recipients (%+v) for topic (%s)", topicUsers, *inputMessage.Topic)
 
 		topicRecipients := make([]model.MessageRecipient, len(topicUsers))
 		for i, item := range topicUsers {

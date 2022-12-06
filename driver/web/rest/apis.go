@@ -377,7 +377,7 @@ func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *toke
 	return l.HTTPResponseSuccessJSON(data)
 }
 
-// GetMessage Retrieves a message by id
+// GetUserMessage Retrieves a message by id
 // @Description Retrieves a message by id
 // @Tags Client
 // @ID GetUserMessage
