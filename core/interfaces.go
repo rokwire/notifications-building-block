@@ -36,11 +36,13 @@ type Services interface {
 	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
-	CreateMessage(user *model.CoreUserRef, message *model.Message, async bool) (*model.Message, error)
+	GetUserMessage(orgID string, appID string, ID string, accountID string) (*model.Message, error)
+	CreateMessage(inputMessage model.InputMessage, sender model.Sender, async bool) (*model.Message, error)
 	UpdateMessage(userID *string, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(orgID string, appID string, userID string, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
 	UpdateReadMessage(orgID string, appID string, ID string, userID string) (*model.Message, error)
+	UpdateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error
 
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
@@ -92,8 +94,12 @@ func (s *servicesImpl) GetMessage(orgID string, appID string, ID string) (*model
 	return s.app.getMessage(orgID, appID, ID)
 }
 
-func (s *servicesImpl) CreateMessage(user *model.CoreUserRef, message *model.Message, async bool) (*model.Message, error) {
-	return s.app.createMessage(user, message, async)
+func (s *servicesImpl) GetUserMessage(orgID string, appID string, ID string, accountID string) (*model.Message, error) {
+	return s.app.getUserMessage(orgID, appID, ID, accountID)
+}
+
+func (s *servicesImpl) CreateMessage(inputMessage model.InputMessage, sender model.Sender, async bool) (*model.Message, error) {
+	return s.app.createMessage(inputMessage, sender, async)
 }
 
 func (s *servicesImpl) UpdateMessage(userID *string, message *model.Message) (*model.Message, error) {
@@ -102,6 +108,10 @@ func (s *servicesImpl) UpdateMessage(userID *string, message *model.Message) (*m
 
 func (s *servicesImpl) UpdateReadMessage(orgID string, appID string, ID string, userID string) (*model.Message, error) {
 	return s.app.updateReadMessage(orgID, appID, ID, userID)
+}
+
+func (s *servicesImpl) UpdateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error {
+	return s.app.updateAllUserMessagesRead(orgID, appID, userID, read)
 }
 
 func (s *servicesImpl) DeleteUserMessage(orgID string, appID string, userID string, messageID string) error {
@@ -140,6 +150,8 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 type Storage interface {
 	RegisterStorageListener(storageListener storage.Listener)
 
+	PerformTransaction(func(context storage.TransactionContext) error, int64) error
+
 	LoadFirebaseConfigurations() ([]model.FirebaseConf, error)
 
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
@@ -148,24 +160,27 @@ type Storage interface {
 
 	FindUserByToken(orgID string, appID string, token string) (*model.User, error)
 	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
-	GetFirebaseTokensByRecipients(orgID string, appID string, recipient []model.Recipient, criteriaList []model.RecipientCriteria) ([]string, error)
-	GetRecipientsByTopic(orgID string, appID string, topic string) ([]model.Recipient, error)
-	GetRecipientsByRecipientCriterias(orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.Recipient, error)
+	GetFirebaseTokensByRecipients(orgID string, appID string, recipient []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error)
+	GetUsersByTopicWithContext(ctx context.Context, orgID string, appID string, topic string) ([]model.User, error)
+	GetUsersByRecipientCriteriasWithContext(ctx context.Context, orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.User, error)
 	SubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
 	UnsubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
 	GetTopics(orgID string, appID string) ([]model.Topic, error)
 	InsertTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
+	FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error)
+	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
+
 	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
-	CreateMessage(message *model.Message) (*model.Message, error)
+	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
-	GetMessagesStats(userID string, read bool, mute bool) (*model.MessagesStats, error)
+	GetMessagesStats(userID string) (*model.MessagesStats, error)
 	UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID string) (*model.Message, error)
-
+	UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
 }
@@ -182,4 +197,9 @@ type Firebase interface {
 // Mailer is used to wrap all Email Messaging functions
 type Mailer interface {
 	SendMail(toEmail string, subject string, body string) error
+}
+
+// Core exposes Core APIs for the driver adapters
+type Core interface {
+	RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]model.CoreAccount, error)
 }

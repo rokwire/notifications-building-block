@@ -1,7 +1,6 @@
  post:
   tags:
   - BBs
-  deprecated: true
   summary: Send email
   description: |
     Sends an email

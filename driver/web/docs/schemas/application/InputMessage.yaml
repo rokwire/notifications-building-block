@@ -1,0 +1,26 @@
+type: object
+properties:
+  org_id:
+    type: string
+  app_id:
+    type: string
+  priority:
+    type: string
+  topic:
+    type: string  
+  subject:
+    type: string
+  body:
+    type: string
+  data:
+    type: array
+    items:
+      type: string
+  recipients:
+    type: array
+    $ref: "./InputMessageRecipient.yaml"
+  recipients_criteria_list:
+    type: array
+    $ref: "./InputRecipientCriteria.yaml"
+  recipient_account_criteria:
+    type: object

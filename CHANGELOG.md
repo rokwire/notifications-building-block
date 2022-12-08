@@ -8,8 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix API docs [#110](https://github.com/rokwire/notifications-building-block/issues/110)
 
+## [1.6.0] - 2022-12-06
+### Added
+- Rate limits - part 1 [#98](https://github.com/rokwire/notifications-building-block/issues/98)
+
+## [1.5.0] - 2022-11-30
+### Added
+- Send notification by account data [#97](https://github.com/rokwire/notifications-building-block/issues/97)
+
+## [1.4.1] - 2022-11-25
 ### Added
 - Set logger [#80](https://github.com/rokwire/notifications-building-block/issues/80)
+- Add support of read/unread all user messages [#112](https://github.com/rokwire/notifications-building-block/issues/112)
 
 ### Changed
 - Use auth library authorization [#75](https://github.com/rokwire/notifications-building-block/issues/75)
