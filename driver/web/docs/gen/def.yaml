@@ -365,9 +365,24 @@ paths:
         Update read status of all messages where the current user is defined as a recipient
       security:
         - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: The message id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
         '200':
           description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
         '400':
           description: Bad request
         '401':
@@ -928,7 +943,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: The message
+          description: The message id
           required: true
           style: simple
           explode: false
