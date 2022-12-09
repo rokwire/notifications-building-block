@@ -235,13 +235,8 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 
 	// recipients from criteria
 	if (recipientsCriteriaList != nil) && checkCriteria {
-		criteriaList := make([]model.RecipientCriteria, len(recipientsCriteriaList))
-		for i, item := range recipientsCriteriaList {
-			criteriaList[i] = model.RecipientCriteria{AppVersion: item.AppVersion, AppPlatform: item.AppPlatform}
-		}
-
 		criteriaUsers, err := app.storage.GetUsersByRecipientCriteriasWithContext(context,
-			orgID, appID, criteriaList)
+			orgID, appID, recipientsCriteriaList)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by criteria: %s", err)
 			return nil, err

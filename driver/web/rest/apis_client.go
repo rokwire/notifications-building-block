@@ -459,12 +459,23 @@ func (h ApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenau
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	inputMessage.OrgID = claims.OrgID
-	inputMessage.AppID = claims.AppID
+	orgID := claims.OrgID
+	appID := claims.AppID
+
+	priority := inputMessage.Priority
+	subject := inputMessage.Subject
+	body := inputMessage.Body
+	inputData := inputMessage.Data
+	inputRecipients := messagesRecipientsListFromDef(inputMessage.Recipients)
+	recipientsCriteria := recipientsCriteriaListFromDef(inputMessage.RecipientsCriteriaList)
+	recipientsAccountCriteria := inputMessage.RecipientAccountCriteria
+	topic := inputMessage.Topic
 
 	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
-	message, err := h.app.Services.CreateMessage(*inputMessage, sender, false)
+	message, err := h.app.Services.CreateMessage(orgID, appID,
+		sender, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
+		recipientsAccountCriteria, topic, false)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}

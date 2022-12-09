@@ -52,7 +52,19 @@ func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *t
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	return h.processSendMessage(l, *message, false, r)
+	orgID := message.OrgID
+	appID := message.AppID
+	priority := message.Priority
+	subject := message.Subject
+	body := message.Body
+	inputData := message.Data
+	inputRecipients := messagesRecipientsListFromDef(message.Recipients)
+	recipientsCriteria := recipientsCriteriaListFromDef(message.RecipientsCriteriaList)
+	recipientsAccountCriteria := message.RecipientAccountCriteria
+	topic := message.Topic
+
+	return h.processSendMessage(l, orgID, appID, priority, subject, body, inputData,
+		inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic, false, r)
 }
 
 // sendMessageRequestBody message request body
@@ -82,17 +94,37 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 	if bodyData.Async != nil {
 		async = *bodyData.Async
 	}
-	return h.processSendMessage(l, message, async, r)
+
+	orgID := message.OrgID
+	appID := message.AppID
+	priority := message.Priority
+	subject := message.Subject
+	body := message.Body
+	inputData := message.Data
+	inputRecipients := messagesRecipientsListFromDef(message.Recipients)
+	recipientsCriteria := recipientsCriteriaListFromDef(message.RecipientsCriteriaList)
+	recipientsAccountCriteria := message.RecipientAccountCriteria
+	topic := message.Topic
+
+	return h.processSendMessage(l, orgID, appID, priority, subject, body, inputData,
+		inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic, async, r)
 }
 
-func (h InternalApisHandler) processSendMessage(l *logs.Log, inputMessage model.InputMessage, async bool, r *http.Request) logs.HTTPResponse {
-	if len(inputMessage.OrgID) == 0 || len(inputMessage.AppID) == 0 {
+func (h InternalApisHandler) processSendMessage(l *logs.Log,
+	orgID string, appID string, priority int, subject string, body string,
+	inputData map[string]string, inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+	recipientAccountCriteria map[string]interface{}, topic *string,
+	async bool, r *http.Request) logs.HTTPResponse {
+
+	if len(orgID) == 0 || len(appID) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
 	sender := model.Sender{Type: "system"}
 
-	message, err := h.app.Services.CreateMessage(inputMessage, sender, async)
+	message, err := h.app.Services.CreateMessage(orgID, appID, sender, priority,
+		subject, body, inputData, inputRecipients, recipientsCriteriaList,
+		recipientAccountCriteria, topic, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
