@@ -1266,12 +1266,6 @@ components:
       properties:
         token:
           type: string
-        previous_token:
-          type: string
-        app_version:
-          type: string
-        app_platform:
-          type: string
     _client_req_user:
       required:
         - notifications_disabled
