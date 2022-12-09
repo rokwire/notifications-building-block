@@ -12,7 +12,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../../schemas/apis/shared/requests/create-message/Request.yaml" 
+          $ref: "../../schemas/apis/shared/requests/create-message/Request.yaml"
     required: true    
   responses:
     200:
