@@ -213,7 +213,7 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	bbsApisHandler := rest.NewBBsAPIsHandler(app)
 	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth, apisHandler: apisHandler,
 		adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsApisHandler: bbsApisHandler,
-		app: app, logger: logger}
+		app: app, logger: logger, notificationsServiceURL: config.NotificationsServiceURL}
 }
 
 // AppListener implements core.ApplicationListener interface
