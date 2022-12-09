@@ -66,12 +66,6 @@ get:
   responses:
     200:
       description: Success
-      content:
-        application/json:
-          schema:
-            type: array
-            items:
-              $ref: "../../../schemas/application/Message.yaml"
     400:
       description: Bad request
     401:
