@@ -462,7 +462,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  '/api/message/{message_id}/read':
+  '/api/message/{id}/read':
     put:
       tags:
         - Client
