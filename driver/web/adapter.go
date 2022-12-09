@@ -39,8 +39,9 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	host string
-	port string
+	host                    string
+	port                    string
+	notificationsServiceURL string
 
 	auth *Auth
 
@@ -132,7 +133,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/doc", we.host)
+	url := fmt.Sprintf("%s/doc", we.notificationsServiceURL)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
