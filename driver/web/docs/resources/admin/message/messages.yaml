@@ -14,10 +14,23 @@ get:
           $ref: "../../../schemas/apis/message/request/Request.yaml" 
     required: true
   parameters:
+    - name: read
+      in: query
+      description: read
+      style: simple
+      explode: false
+      schema:
+        type: boolean
+    - name: mute
+      in: query
+      description: mute
+      style: simple
+      explode: false
+      schema:
+        type: boolean
     - name: offset
       in: query
       description: offset
-      required: true
       style: simple
       explode: false
       schema:
@@ -25,7 +38,6 @@ get:
     - name: limit
       in: query
       description: limit
-      required: true
       style: simple
       explode: false
       schema:
@@ -33,7 +45,6 @@ get:
     - name: order
       in: query
       description: "order - Possible values: asc, desc. Default: desc"
-      required: true
       style: simple
       explode: false
       schema:
@@ -41,7 +52,6 @@ get:
     - name: start_date
       in: query
       description: "start_date - Start date filter in milliseconds as an integer epoch value"
-      required: true
       style: simple
       explode: false
       schema:
@@ -49,11 +59,34 @@ get:
     - name: end_date
       in: query
       description: "end_date - End date filter in milliseconds as an integer epoch value"
-      required: true
       style: simple
       explode: false
       schema:
         type: string             
+  responses:
+    200:
+      description: Success
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error
+delete:
+  tags:
+  - Client
+  summary: Removes the current user from the recipient list of all described
+  description: |
+    Removes the current user from the recipient list of all described
+  security:
+    - bearerAuth: []
+  requestBody:
+    description: "body json of the all message ids that need to be filtered"
+    content:
+      application/json:
+        schema:
+          $ref: "../../../schemas/apis/message/request/Request.yaml" 
+    required: true
   responses:
     200:
       description: Success
@@ -68,5 +101,7 @@ get:
     401:
       description: Unauthorized
     500:
-      description: Internal error        
+      description: Internal error
+
+
                     
