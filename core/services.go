@@ -194,7 +194,7 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 			item.MessageID = messageID
 			item.Read = false
 
-			recipients[i] = item
+			list[i] = item
 		}
 
 		messageRecipients = append(messageRecipients, list...)
