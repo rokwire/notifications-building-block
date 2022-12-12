@@ -234,7 +234,7 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 	}
 
 	// recipients from criteria
-	if (recipientsCriteriaList != nil) && checkCriteria {
+	if (recipientsCriteriaList != nil && len(recipientAccountCriteria) > 0) && checkCriteria {
 		criteriaUsers, err := app.storage.GetUsersByRecipientCriteriasWithContext(context,
 			orgID, appID, recipientsCriteriaList)
 		if err != nil {
