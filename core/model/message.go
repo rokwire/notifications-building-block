@@ -82,32 +82,3 @@ type MessagesStats struct {
 }
 
 ///
-
-//InputMessage is passed by the adapters for creating a message in the core module
-type InputMessage struct {
-	OrgID string `json:"org_id"`
-	AppID string `json:"app_id"`
-
-	Priority int               `json:"priority"`
-	Subject  string            `json:"subject"`
-	Body     string            `json:"body"`
-	Data     map[string]string `json:"data"`
-
-	//recipients related
-	Recipients               []InputMessageRecipient  `json:"recipients"`
-	RecipientsCriteriaList   []InputRecipientCriteria `json:"recipients_criteria_list"`
-	RecipientAccountCriteria map[string]interface{}   `json:"recipient_account_criteria"`
-	Topic                    *string                  `json:"topic"`
-}
-
-// InputMessageRecipient is passed by the adapters for creating a message in the core module
-type InputMessageRecipient struct {
-	UserID string `json:"user_id"`
-	Mute   bool   `json:"mute"`
-}
-
-// InputRecipientCriteria is passed by the adapters for creating a message in the core module
-type InputRecipientCriteria struct {
-	AppVersion  *string `json:"app_version"`
-	AppPlatform *string `json:"app_platform"`
-}

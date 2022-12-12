@@ -35,7 +35,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InputMessage'
+              $ref: '#/components/schemas/_shared_req_CreateMessage'
         required: true
       responses:
         '200':
@@ -234,7 +234,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InputMessage'
+              $ref: '#/components/schemas/_shared_req_CreateMessage'
         required: true
       responses:
         '200':
@@ -466,7 +466,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  '/api/message/{message_id}/read':
+  '/api/message/{id}/read':
     put:
       tags:
         - Client
@@ -880,7 +880,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/_client_req_messageV2'
+              $ref: '#/components/schemas/_shared_req_CreateMessage'
         required: true
       responses:
         '200':
@@ -910,7 +910,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InputMessage'
+              $ref: '#/components/schemas/_shared_req_CreateMessage'
         required: true
       responses:
         '200':
@@ -1155,47 +1155,6 @@ components:
           type: array
           items:
             type: string
-    InputMessage:
-      type: object
-      properties:
-        org_id:
-          type: string
-        app_id:
-          type: string
-        priority:
-          type: string
-        topic:
-          type: string
-        subject:
-          type: string
-        body:
-          type: string
-        data:
-          type: array
-          items:
-            type: string
-        recipients:
-          type: array
-          $ref: '#/components/schemas/InputMessageRecipient'
-        recipients_criteria_list:
-          type: array
-          $ref: '#/components/schemas/InputRecipientCriteria'
-        recipient_account_criteria:
-          type: object
-    InputMessageRecipient:
-      type: object
-      properties:
-        user_id:
-          type: string
-        mute:
-          type: boolean
-    InputRecipientCriteria:
-      type: object
-      properties:
-        app_version:
-          type: string
-        app_platform:
-          type: string
     Recipient:
       type: object
       properties:
@@ -1291,7 +1250,7 @@ components:
         async:
           type: boolean
         message:
-          $ref: '#/components/schemas/InputMessage'
+          $ref: '#/components/schemas/_shared_req_CreateMessage'
     _client_req_token:
       required:
         - token
@@ -1306,3 +1265,57 @@ components:
       properties:
         notifications_disabled:
           type: boolean
+    _shared_req_CreateMessage:
+      required:
+        - org_id
+        - app_id
+        - priority
+        - subject
+        - body
+        - data
+        - recipients
+        - recipients_criteria_list
+        - recipient_account_criteria
+      type: object
+      properties:
+        org_id:
+          type: string
+        app_id:
+          type: string
+        priority:
+          type: integer
+        topic:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        data:
+          type: object
+        recipients:
+          type: array
+          items:
+            $ref: '#/components/schemas/_shared_req_CreateMessage_InputMessageRecipient'
+        recipients_criteria_list:
+          type: array
+          items:
+            $ref: '#/components/schemas/_shared_req_CreateMessage_InputRecipientCriteria'
+        recipient_account_criteria:
+          type: object
+    _shared_req_CreateMessage_InputMessageRecipient:
+      required:
+        - user_id
+        - mute
+      type: object
+      properties:
+        user_id:
+          type: string
+        mute:
+          type: boolean
+    _shared_req_CreateMessage_InputRecipientCriteria:
+      type: object
+      properties:
+        app_version:
+          type: string
+        app_platform:
+          type: string

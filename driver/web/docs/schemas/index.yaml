@@ -13,12 +13,6 @@ FirebaseToken:
   $ref: "./application/FirebaseToken.yaml"
 Message:
   $ref: "./application/Message.yaml"
-InputMessage:
-  $ref: "./application/InputMessage.yaml"
-InputMessageRecipient:
-  $ref: "./application/InputMessageRecipient.yaml"
-InputRecipientCriteria:
-  $ref: "./application/InputRecipientCriteria.yaml"
 Recipient:
   $ref: "./application/Recipients.yaml"
 RecipientCriteria:
@@ -42,3 +36,18 @@ _client_req_token:
   $ref: "./apis/token/request/Request.yaml"
 _client_req_user:
   $ref: "./apis/user/request/Request.yaml"
+
+
+##### APIs requests and responses - they are at bottom
+
+## SHARED requests and responses
+
+### requests
+_shared_req_CreateMessage:
+  $ref: "./apis/shared/requests/create-message/Request.yaml"
+_shared_req_CreateMessage_InputMessageRecipient:
+  $ref: "./apis/shared/requests/create-message/InputMessageRecipient.yaml"
+_shared_req_CreateMessage_InputRecipientCriteria:
+  $ref: "./apis/shared/requests/create-message/InputRecipientCriteria.yaml"
+
+### responses
