@@ -1266,6 +1266,9 @@ components:
         recipient_account_criteria:
           type: object
     _shared_req_CreateMessage_InputMessageRecipient:
+      required:
+        - user_id
+        - mute
       type: object
       properties:
         user_id:

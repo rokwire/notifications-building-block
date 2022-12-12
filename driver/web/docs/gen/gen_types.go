@@ -129,8 +129,8 @@ type SharedReqCreateMessage struct {
 
 // SharedReqCreateMessageInputMessageRecipient defines model for _shared_req_CreateMessage_InputMessageRecipient.
 type SharedReqCreateMessageInputMessageRecipient struct {
-	Mute   *bool   `json:"mute,omitempty"`
-	UserId *string `json:"user_id,omitempty"`
+	Mute   bool   `json:"mute"`
+	UserId string `json:"user_id"`
 }
 
 // SharedReqCreateMessageInputRecipientCriteria defines model for _shared_req_CreateMessage_InputRecipientCriteria.
