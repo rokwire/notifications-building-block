@@ -22,32 +22,6 @@ type FirebaseToken struct {
 	Token       *string `json:"token,omitempty"`
 }
 
-// InputMessage defines model for InputMessage.
-type InputMessage struct {
-	AppId                    *string                 `json:"app_id,omitempty"`
-	Body                     *string                 `json:"body,omitempty"`
-	Data                     *[]string               `json:"data,omitempty"`
-	OrgId                    *string                 `json:"org_id,omitempty"`
-	Priority                 *string                 `json:"priority,omitempty"`
-	RecipientAccountCriteria *map[string]interface{} `json:"recipient_account_criteria,omitempty"`
-	Recipients               *InputMessageRecipient  `json:"recipients,omitempty"`
-	RecipientsCriteriaList   *InputRecipientCriteria `json:"recipients_criteria_list,omitempty"`
-	Subject                  *string                 `json:"subject,omitempty"`
-	Topic                    *string                 `json:"topic,omitempty"`
-}
-
-// InputMessageRecipient defines model for InputMessageRecipient.
-type InputMessageRecipient struct {
-	Mute   *bool   `json:"mute,omitempty"`
-	UserId *string `json:"user_id,omitempty"`
-}
-
-// InputRecipientCriteria defines model for InputRecipientCriteria.
-type InputRecipientCriteria struct {
-	AppPlatform *string `json:"app_platform,omitempty"`
-	AppVersion  *string `json:"app_version,omitempty"`
-}
-
 // Message defines model for Message.
 type Message struct {
 	Id                       *string                 `json:"_id,omitempty"`
@@ -122,8 +96,8 @@ type ClientReqMessage struct {
 
 // ClientReqMessageV2 defines model for _client_req_messageV2.
 type ClientReqMessageV2 struct {
-	Async   *bool         `json:"async,omitempty"`
-	Message *InputMessage `json:"message,omitempty"`
+	Async   *bool                   `json:"async,omitempty"`
+	Message *SharedReqCreateMessage `json:"message,omitempty"`
 }
 
 // ClientReqToken defines model for _client_req_token.
@@ -139,11 +113,37 @@ type ClientReqUser struct {
 	NotificationsDisabled bool `json:"notifications_disabled"`
 }
 
+// SharedReqCreateMessage defines model for _shared_req_CreateMessage.
+type SharedReqCreateMessage struct {
+	AppId                    *string                                       `json:"app_id,omitempty"`
+	Body                     *string                                       `json:"body,omitempty"`
+	Data                     *[]string                                     `json:"data,omitempty"`
+	OrgId                    *string                                       `json:"org_id,omitempty"`
+	Priority                 *string                                       `json:"priority,omitempty"`
+	RecipientAccountCriteria *map[string]interface{}                       `json:"recipient_account_criteria,omitempty"`
+	Recipients               *SharedReqCreateMessageInputMessageRecipient  `json:"recipients,omitempty"`
+	RecipientsCriteriaList   *SharedReqCreateMessageInputRecipientCriteria `json:"recipients_criteria_list,omitempty"`
+	Subject                  *string                                       `json:"subject,omitempty"`
+	Topic                    *string                                       `json:"topic,omitempty"`
+}
+
+// SharedReqCreateMessageInputMessageRecipient defines model for _shared_req_CreateMessage_InputMessageRecipient.
+type SharedReqCreateMessageInputMessageRecipient struct {
+	Mute   *bool   `json:"mute,omitempty"`
+	UserId *string `json:"user_id,omitempty"`
+}
+
+// SharedReqCreateMessageInputRecipientCriteria defines model for _shared_req_CreateMessage_InputRecipientCriteria.
+type SharedReqCreateMessageInputRecipientCriteria struct {
+	AppPlatform *string `json:"app_platform,omitempty"`
+	AppVersion  *string `json:"app_version,omitempty"`
+}
+
 // PostApiAdminMessageJSONBody defines parameters for PostApiAdminMessage.
-type PostApiAdminMessageJSONBody = InputMessage
+type PostApiAdminMessageJSONBody = SharedReqCreateMessage
 
 // PutApiAdminMessageJSONBody defines parameters for PutApiAdminMessage.
-type PutApiAdminMessageJSONBody = InputMessage
+type PutApiAdminMessageJSONBody = SharedReqCreateMessage
 
 // GetApiAdminMessagesJSONBody defines parameters for GetApiAdminMessages.
 type GetApiAdminMessagesJSONBody = ClientReqMessage
@@ -179,13 +179,13 @@ type PostApiBbsMessageJSONBody = ClientReqMessageV2
 type PostApiIntMailJSONBody = ClientReqToken
 
 // PostApiIntMessageJSONBody defines parameters for PostApiIntMessage.
-type PostApiIntMessageJSONBody = InputMessage
+type PostApiIntMessageJSONBody = SharedReqCreateMessage
 
 // PostApiIntV2MessageJSONBody defines parameters for PostApiIntV2Message.
 type PostApiIntV2MessageJSONBody = ClientReqMessageV2
 
 // PostApiMessageJSONBody defines parameters for PostApiMessage.
-type PostApiMessageJSONBody = InputMessage
+type PostApiMessageJSONBody = SharedReqCreateMessage
 
 // DeleteApiMessagesJSONBody defines parameters for DeleteApiMessages.
 type DeleteApiMessagesJSONBody = ClientReqMessage

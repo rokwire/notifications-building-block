@@ -45,5 +45,9 @@ _client_req_user:
 ### requests
 _shared_req_CreateMessage:
   $ref: "./apis/shared/requests/create-message/Request.yaml"
+_shared_req_CreateMessage_InputMessageRecipient:
+  $ref: "./apis/shared/requests/create-message/InputMessageRecipient.yaml"
+_shared_req_CreateMessage_InputRecipientCriteria:
+  $ref: "./apis/shared/requests/create-message/InputRecipientCriteria.yaml"
 
 ### responses

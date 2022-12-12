@@ -1259,17 +1259,23 @@ components:
             type: string
         recipients:
           type: array
-          properties:
-            user_id:
-              type: string
-            mute:
-              type: boolean
+          $ref: '#/components/schemas/_shared_req_CreateMessage_InputMessageRecipient'
         recipients_criteria_list:
           type: array
-          properties:
-            app_version:
-              type: string
-            app_platform:
-              type: string
+          $ref: '#/components/schemas/_shared_req_CreateMessage_InputRecipientCriteria'
         recipient_account_criteria:
           type: object
+    _shared_req_CreateMessage_InputMessageRecipient:
+      type: object
+      properties:
+        user_id:
+          type: string
+        mute:
+          type: boolean
+    _shared_req_CreateMessage_InputRecipientCriteria:
+      type: object
+      properties:
+        app_version:
+          type: string
+        app_platform:
+          type: string
