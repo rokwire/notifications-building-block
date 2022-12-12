@@ -115,16 +115,16 @@ type ClientReqUser struct {
 
 // SharedReqCreateMessage defines model for _shared_req_CreateMessage.
 type SharedReqCreateMessage struct {
-	AppId                    *string                                       `json:"app_id,omitempty"`
-	Body                     *string                                       `json:"body,omitempty"`
-	Data                     *[]string                                     `json:"data,omitempty"`
-	OrgId                    *string                                       `json:"org_id,omitempty"`
-	Priority                 *string                                       `json:"priority,omitempty"`
-	RecipientAccountCriteria *map[string]interface{}                       `json:"recipient_account_criteria,omitempty"`
-	Recipients               *SharedReqCreateMessageInputMessageRecipient  `json:"recipients,omitempty"`
-	RecipientsCriteriaList   *SharedReqCreateMessageInputRecipientCriteria `json:"recipients_criteria_list,omitempty"`
-	Subject                  *string                                       `json:"subject,omitempty"`
-	Topic                    *string                                       `json:"topic,omitempty"`
+	AppId                    string                                         `json:"app_id"`
+	Body                     string                                         `json:"body"`
+	Data                     map[string]interface{}                         `json:"data"`
+	OrgId                    string                                         `json:"org_id"`
+	Priority                 int                                            `json:"priority"`
+	RecipientAccountCriteria map[string]interface{}                         `json:"recipient_account_criteria"`
+	Recipients               []SharedReqCreateMessageInputMessageRecipient  `json:"recipients"`
+	RecipientsCriteriaList   []SharedReqCreateMessageInputRecipientCriteria `json:"recipients_criteria_list"`
+	Subject                  string                                         `json:"subject"`
+	Topic                    *string                                        `json:"topic,omitempty"`
 }
 
 // SharedReqCreateMessageInputMessageRecipient defines model for _shared_req_CreateMessage_InputMessageRecipient.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package web
 
 import (
 	"encoding/json"
@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	Def "notifications/driver/web/docs/gen"
 	"strings"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
@@ -453,7 +454,7 @@ func (h ApisHandler) DeleteUserMessages(l *logs.Log, r *http.Request, claims *to
 // @Security UserAuth
 // @Router /message [post]
 func (h ApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var inputMessage *model.InputMessage
+	var inputMessage *Def.SharedReqCreateMessage
 	err := json.NewDecoder(r.Body).Decode(&inputMessage)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
@@ -465,7 +466,10 @@ func (h ApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenau
 	priority := inputMessage.Priority
 	subject := inputMessage.Subject
 	body := inputMessage.Body
-	inputData := inputMessage.Data
+	inputData := make(map[string]string, len(inputMessage.Data))
+	for key, value := range inputMessage.Data {
+		inputData[key] = fmt.Sprintf("%v", value)
+	}
 	inputRecipients := messagesRecipientsListFromDef(inputMessage.Recipients)
 	recipientsCriteria := recipientsCriteriaListFromDef(inputMessage.RecipientsCriteriaList)
 	recipientsAccountCriteria := inputMessage.RecipientAccountCriteria

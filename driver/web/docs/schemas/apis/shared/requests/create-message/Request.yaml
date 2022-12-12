@@ -1,3 +1,13 @@
+required:
+  - org_id
+  - app_id
+  - priority
+  - subject
+  - body
+  - data
+  - recipients
+  - recipients_criteria_list
+  - recipient_account_criteria
 type: object
 properties:
   org_id:
@@ -5,7 +15,7 @@ properties:
   app_id:
     type: string
   priority:
-    type: string
+    type: integer
   topic:
     type: string  
   subject:
@@ -13,14 +23,14 @@ properties:
   body:
     type: string
   data:
-    type: array
-    items:
-      type: string
+    type: object
   recipients:
     type: array
-    $ref: "./InputMessageRecipient.yaml"
+    items:
+      $ref: "./InputMessageRecipient.yaml"
   recipients_criteria_list:
     type: array
-    $ref: "./InputRecipientCriteria.yaml"
+    items:
+      $ref: "./InputRecipientCriteria.yaml"
   recipient_account_criteria:
     type: object

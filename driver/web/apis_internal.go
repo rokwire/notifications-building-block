@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	Def "notifications/driver/web/docs/gen"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -46,18 +48,21 @@ func NewInternalApisHandler(app *core.Application) InternalApisHandler {
 // @Router /int/message [post]
 // @Deprecated
 func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.InputMessage
+	var message *Def.SharedReqCreateMessage
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	orgID := message.OrgID
-	appID := message.AppID
+	orgID := message.OrgId
+	appID := message.AppId
 	priority := message.Priority
 	subject := message.Subject
 	body := message.Body
-	inputData := message.Data
+	inputData := make(map[string]string, len(message.Data))
+	for key, value := range message.Data {
+		inputData[key] = fmt.Sprintf("%v", value)
+	}
 	inputRecipients := messagesRecipientsListFromDef(message.Recipients)
 	recipientsCriteria := recipientsCriteriaListFromDef(message.RecipientsCriteriaList)
 	recipientsAccountCriteria := message.RecipientAccountCriteria
@@ -69,8 +74,8 @@ func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *t
 
 // sendMessageRequestBody message request body
 type sendMessageRequestBody struct {
-	Async   *bool              `json:"async"`
-	Message model.InputMessage `json:"message"`
+	Async   *bool                      `json:"async"`
+	Message Def.SharedReqCreateMessage `json:"message"`
 } // @name sendMessageRequestBody
 
 // SendMessageV2 Sends a message to a user, list of users or a topic
@@ -95,12 +100,15 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 		async = *bodyData.Async
 	}
 
-	orgID := message.OrgID
-	appID := message.AppID
+	orgID := message.OrgId
+	appID := message.AppId
 	priority := message.Priority
 	subject := message.Subject
 	body := message.Body
-	inputData := message.Data
+	inputData := make(map[string]string, len(message.Data))
+	for key, value := range message.Data {
+		inputData[key] = fmt.Sprintf("%v", value)
+	}
 	inputRecipients := messagesRecipientsListFromDef(message.Recipients)
 	recipientsCriteria := recipientsCriteriaListFromDef(message.RecipientsCriteriaList)
 	recipientsAccountCriteria := message.RecipientAccountCriteria

@@ -1239,6 +1239,16 @@ components:
         notifications_disabled:
           type: boolean
     _shared_req_CreateMessage:
+      required:
+        - org_id
+        - app_id
+        - priority
+        - subject
+        - body
+        - data
+        - recipients
+        - recipients_criteria_list
+        - recipient_account_criteria
       type: object
       properties:
         org_id:
@@ -1246,7 +1256,7 @@ components:
         app_id:
           type: string
         priority:
-          type: string
+          type: integer
         topic:
           type: string
         subject:
@@ -1254,15 +1264,15 @@ components:
         body:
           type: string
         data:
-          type: array
-          items:
-            type: string
+          type: object
         recipients:
           type: array
-          $ref: '#/components/schemas/_shared_req_CreateMessage_InputMessageRecipient'
+          items:
+            $ref: '#/components/schemas/_shared_req_CreateMessage_InputMessageRecipient'
         recipients_criteria_list:
           type: array
-          $ref: '#/components/schemas/_shared_req_CreateMessage_InputRecipientCriteria'
+          items:
+            $ref: '#/components/schemas/_shared_req_CreateMessage_InputRecipientCriteria'
         recipient_account_criteria:
           type: object
     _shared_req_CreateMessage_InputMessageRecipient:
