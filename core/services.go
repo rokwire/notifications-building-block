@@ -90,7 +90,7 @@ func (app *Application) createMessage(orgID string, appID string,
 
 		//calculate the recipients
 		recipients, err = app.calculateRecipients(context, orgID, appID,
-			subject, body, recipients, recipientsCriteriaList,
+			subject, body, inputRecipients, recipientsCriteriaList,
 			recipientAccountCriteria, topic, messageID)
 		if err != nil {
 			fmt.Printf("error on calculating recipients for a message: %s", err)
