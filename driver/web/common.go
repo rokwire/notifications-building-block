@@ -58,7 +58,11 @@ func getMessageData(inputMessage Def.SharedReqCreateMessage) (time.Time, int, st
 	map[string]string, []model.MessageRecipient, []model.RecipientCriteria,
 	map[string]interface{}, *string) {
 
-	time := time.Now() //for now
+	mTime := time.Now()
+	if inputMessage.Time != nil {
+		mTime = time.Unix(*inputMessage.Time, 0)
+	}
+
 	priority := inputMessage.Priority
 	subject := inputMessage.Subject
 	body := inputMessage.Body
@@ -71,6 +75,6 @@ func getMessageData(inputMessage Def.SharedReqCreateMessage) (time.Time, int, st
 	recipientsAccountCriteria := inputMessage.RecipientAccountCriteria
 	topic := inputMessage.Topic
 
-	return time, priority, subject, body, inputData, inputRecipients,
+	return mTime, priority, subject, body, inputData, inputRecipients,
 		recipientsCriteria, recipientsAccountCriteria, topic
 }

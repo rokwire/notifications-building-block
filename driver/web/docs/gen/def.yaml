@@ -1255,6 +1255,9 @@ components:
           type: string
         app_id:
           type: string
+        time:
+          type: integer
+          format: int64
         priority:
           type: integer
         topic:

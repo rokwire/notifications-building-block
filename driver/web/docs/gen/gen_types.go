@@ -124,6 +124,7 @@ type SharedReqCreateMessage struct {
 	Recipients               []SharedReqCreateMessageInputMessageRecipient  `json:"recipients"`
 	RecipientsCriteriaList   []SharedReqCreateMessageInputRecipientCriteria `json:"recipients_criteria_list"`
 	Subject                  string                                         `json:"subject"`
+	Time                     *int64                                         `json:"time,omitempty"`
 	Topic                    *string                                        `json:"topic,omitempty"`
 }
 
