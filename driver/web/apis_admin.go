@@ -17,11 +17,9 @@ package web
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
-	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -155,18 +153,7 @@ func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *to
 	orgID := claims.OrgID
 	appID := claims.AppID
 
-	time := time.Now() //for now
-	priority := inputMessage.Priority
-	subject := inputMessage.Subject
-	body := inputMessage.Body
-	inputData := make(map[string]string, len(inputMessage.Data))
-	for key, value := range inputMessage.Data {
-		inputData[key] = fmt.Sprintf("%v", value)
-	}
-	inputRecipients := messagesRecipientsListFromDef(inputMessage.Recipients)
-	recipientsCriteria := recipientsCriteriaListFromDef(inputMessage.RecipientsCriteriaList)
-	recipientsAccountCriteria := inputMessage.RecipientAccountCriteria
-	topic := inputMessage.Topic
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(inputMessage)
 
 	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 

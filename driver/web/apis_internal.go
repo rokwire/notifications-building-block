@@ -16,7 +16,6 @@ package web
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
@@ -49,7 +48,7 @@ func NewInternalApisHandler(app *core.Application) InternalApisHandler {
 // @Router /int/message [post]
 // @Deprecated
 func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *Def.SharedReqCreateMessage
+	var message Def.SharedReqCreateMessage
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
@@ -57,18 +56,8 @@ func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *t
 
 	orgID := message.OrgId
 	appID := message.AppId
-	time := time.Now() //for now
-	priority := message.Priority
-	subject := message.Subject
-	body := message.Body
-	inputData := make(map[string]string, len(message.Data))
-	for key, value := range message.Data {
-		inputData[key] = fmt.Sprintf("%v", value)
-	}
-	inputRecipients := messagesRecipientsListFromDef(message.Recipients)
-	recipientsCriteria := recipientsCriteriaListFromDef(message.RecipientsCriteriaList)
-	recipientsAccountCriteria := message.RecipientAccountCriteria
-	topic := message.Topic
+
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(message)
 
 	return h.processSendMessage(l, orgID, appID, time, priority, subject, body, inputData,
 		inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic, false, r)
@@ -104,18 +93,8 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 
 	orgID := message.OrgId
 	appID := message.AppId
-	time := time.Now() //for now
-	priority := message.Priority
-	subject := message.Subject
-	body := message.Body
-	inputData := make(map[string]string, len(message.Data))
-	for key, value := range message.Data {
-		inputData[key] = fmt.Sprintf("%v", value)
-	}
-	inputRecipients := messagesRecipientsListFromDef(message.Recipients)
-	recipientsCriteria := recipientsCriteriaListFromDef(message.RecipientsCriteriaList)
-	recipientsAccountCriteria := message.RecipientAccountCriteria
-	topic := message.Topic
+
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(message)
 
 	return h.processSendMessage(l, orgID, appID, time, priority, subject, body, inputData,
 		inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic, async, r)
