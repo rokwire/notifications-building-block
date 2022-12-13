@@ -74,7 +74,7 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 }
 
 func (app *Application) createMessage(orgID string, appID string,
-	sender model.Sender, priority int, subject string, body string, data map[string]string,
+	sender model.Sender, mTime time.Time, priority int, subject string, body string, data map[string]string,
 	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
 	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
 
@@ -100,7 +100,7 @@ func (app *Application) createMessage(orgID string, appID string,
 		//create message object
 		calculatedRecipients := len(recipients)
 		dateCreated := time.Now()
-		message := model.Message{OrgID: orgID, AppID: appID, ID: messageID, Priority: priority,
+		message := model.Message{OrgID: orgID, AppID: appID, ID: messageID, Priority: priority, Time: mTime,
 			Subject: subject, Sender: sender, Body: body, Data: data, RecipientsCriteriaList: recipientsCriteriaList,
 			Topic: topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
 

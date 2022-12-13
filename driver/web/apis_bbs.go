@@ -21,6 +21,7 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
+	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -76,6 +77,7 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	orgID := claims.OrgID
 	appID := claims.AppID
 
+	time := time.Now() //for now
 	priority := inputMessage.Priority
 	subject := inputMessage.Subject
 	body := inputMessage.Body
@@ -91,7 +93,7 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	sender := model.Sender{Type: "system", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
 	message, err := h.app.Services.CreateMessage(orgID, appID,
-		sender, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
+		sender, time, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
 		recipientsAccountCriteria, topic, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)

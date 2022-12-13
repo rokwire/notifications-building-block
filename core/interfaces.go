@@ -18,6 +18,7 @@ import (
 	"context"
 	"notifications/core/model"
 	"notifications/driven/storage"
+	"time"
 )
 
 // Services exposes APIs for the driver adapters
@@ -38,7 +39,7 @@ type Services interface {
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	GetUserMessage(orgID string, appID string, ID string, accountID string) (*model.Message, error)
 	CreateMessage(orgID string, appID string,
-		sender model.Sender, priority int, subject string, body string, data map[string]string,
+		sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
 		inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
 		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
 	UpdateMessage(userID *string, message *model.Message) (*model.Message, error)
@@ -102,10 +103,10 @@ func (s *servicesImpl) GetUserMessage(orgID string, appID string, ID string, acc
 }
 
 func (s *servicesImpl) CreateMessage(orgID string, appID string,
-	sender model.Sender, priority int, subject string, body string, data map[string]string,
+	sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
 	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
 	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
-	return s.app.createMessage(orgID, appID, sender, priority, subject, body, data,
+	return s.app.createMessage(orgID, appID, sender, time, priority, subject, body, data,
 		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
 }
 

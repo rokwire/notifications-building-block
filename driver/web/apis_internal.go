@@ -21,6 +21,7 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
+	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -56,6 +57,7 @@ func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *t
 
 	orgID := message.OrgId
 	appID := message.AppId
+	time := time.Now() //for now
 	priority := message.Priority
 	subject := message.Subject
 	body := message.Body
@@ -68,7 +70,7 @@ func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *t
 	recipientsAccountCriteria := message.RecipientAccountCriteria
 	topic := message.Topic
 
-	return h.processSendMessage(l, orgID, appID, priority, subject, body, inputData,
+	return h.processSendMessage(l, orgID, appID, time, priority, subject, body, inputData,
 		inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic, false, r)
 }
 
@@ -102,6 +104,7 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 
 	orgID := message.OrgId
 	appID := message.AppId
+	time := time.Now() //for now
 	priority := message.Priority
 	subject := message.Subject
 	body := message.Body
@@ -114,12 +117,12 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 	recipientsAccountCriteria := message.RecipientAccountCriteria
 	topic := message.Topic
 
-	return h.processSendMessage(l, orgID, appID, priority, subject, body, inputData,
+	return h.processSendMessage(l, orgID, appID, time, priority, subject, body, inputData,
 		inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic, async, r)
 }
 
 func (h InternalApisHandler) processSendMessage(l *logs.Log,
-	orgID string, appID string, priority int, subject string, body string,
+	orgID string, appID string, time time.Time, priority int, subject string, body string,
 	inputData map[string]string, inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
 	recipientAccountCriteria map[string]interface{}, topic *string,
 	async bool, r *http.Request) logs.HTTPResponse {
@@ -130,7 +133,7 @@ func (h InternalApisHandler) processSendMessage(l *logs.Log,
 
 	sender := model.Sender{Type: "system"}
 
-	message, err := h.app.Services.CreateMessage(orgID, appID, sender, priority,
+	message, err := h.app.Services.CreateMessage(orgID, appID, sender, time, priority,
 		subject, body, inputData, inputRecipients, recipientsCriteriaList,
 		recipientAccountCriteria, topic, async)
 	if err != nil {

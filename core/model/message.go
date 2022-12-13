@@ -26,6 +26,7 @@ type Message struct {
 	AppID string `json:"app_id" bson:"app_id"`
 
 	ID       string            `json:"id" bson:"_id"`
+	Time     time.Time         `json:"time" bson:"time"`
 	Priority int               `json:"priority" bson:"priority"`
 	Subject  string            `json:"subject" bson:"subject"`
 	Sender   Sender            `json:"sender,omitempty" bson:"sender,omitempty"`
