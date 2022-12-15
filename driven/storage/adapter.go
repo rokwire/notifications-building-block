@@ -30,7 +30,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Adapter implements the Storage interface
@@ -793,17 +792,17 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *
 		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
 	}
 
-	findOptions := options.Find()
 	if order != nil && *order == "asc" {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"date_created": 1}})
 	} else {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"date_created": -1}})
 	}
+
 	if limit != nil {
-		findOptions.SetLimit(*limit)
+		pipeline = append(pipeline, bson.M{"$limit": limit})
 	}
 	if offset != nil {
-		findOptions.SetSkip(*offset)
+		pipeline = append(pipeline, bson.M{"$skip": offset})
 	}
 
 	var messages []model.Message
