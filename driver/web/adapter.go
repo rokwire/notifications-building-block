@@ -97,7 +97,8 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.DeleteUserMessage, we.auth.client.Standard)).Methods("DELETE")
 	mainRouter.HandleFunc("/message/{id}/read", we.wrapFunc(we.apisHandler.UpdateReadMessage, we.auth.client.Standard)).Methods("PUT")
 	mainRouter.HandleFunc("/topics", we.wrapFunc(we.apisHandler.GetTopics, we.auth.client.Standard)).Methods("GET")
-	mainRouter.HandleFunc("/topic/{topic}/messages", we.wrapFunc(we.apisHandler.GetTopicMessages, we.auth.client.Standard)).Methods("GET")
+	//not used and disabled because of the refactoring
+	//mainRouter.HandleFunc("/topic/{topic}/messages", we.wrapFunc(we.apisHandler.GetTopicMessages, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.wrapFunc(we.apisHandler.Subscribe, we.auth.client.Standard)).Methods("POST")
 	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.wrapFunc(we.apisHandler.Unsubscribe, we.auth.client.Standard)).Methods("POST")
 
@@ -107,7 +108,8 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/app-platforms", we.wrapFunc(we.adminApisHandler.GetAllAppPlatforms, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/topics", we.wrapFunc(we.adminApisHandler.GetTopics, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/topic", we.wrapFunc(we.adminApisHandler.UpdateTopic, we.auth.admin.Permissions)).Methods("POST")
-	adminRouter.HandleFunc("/messages", we.wrapFunc(we.adminApisHandler.GetMessages, we.auth.admin.Permissions)).Methods("GET")
+	//not used and disabled because of the refactoring
+	//adminRouter.HandleFunc("/messages", we.wrapFunc(we.adminApisHandler.GetMessages, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.CreateMessage, we.auth.admin.Permissions)).Methods("POST")
 	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.UpdateMessage, we.auth.admin.Permissions)).Methods("PUT")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.GetMessage, we.auth.admin.Permissions)).Methods("GET")

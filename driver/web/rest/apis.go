@@ -391,7 +391,7 @@ func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *toke
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	return l.HTTPResponseSuccessJSON(data) */
+	return l.HTTPResponseSuccessJSON(data)*/
 }
 
 // GetUserMessage Retrieves a message by id
