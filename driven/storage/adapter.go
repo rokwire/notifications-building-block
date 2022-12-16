@@ -730,18 +730,18 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 
 	type recipientJoinMessage struct {
 		//message
-		Priority                  int                       `bson:"message.priority"`
-		Subject                   string                    `bson:"message.subject"`
-		Sender                    model.Sender              `bson:"message.sender"`
-		Body                      string                    `bson:"message.body"`
-		Data                      map[string]string         `bson:"message.data"`
-		Recipients                []model.MessageRecipient  `bson:"message.recipients"`
-		RecipientsCriteriaList    []model.RecipientCriteria `bson:"rmessage.ecipients_criteria_list"`
-		RecipientAccountCriteria  map[string]interface{}    `bson:"message.recipient_account_criteria"`
-		Topic                     *string                   `bson:"message.topic"`
-		CalculatedRecipientsCount *int                      `bson:"message.calculated_recipients_count"`
-		DateCreated               *time.Time                `bson:"message.date_created"`
-		DateUpdated               *time.Time                `bson:"message.date_updated"`
+		Priority                  int                       `bson:"priority"`
+		Subject                   string                    `bson:"subject"`
+		Sender                    model.Sender              `bson:"sender"`
+		Body                      string                    `bson:"body"`
+		Data                      map[string]string         `bson:"data"`
+		Recipients                []model.MessageRecipient  `bson:"recipients"`
+		RecipientsCriteriaList    []model.RecipientCriteria `bson:"recipients_criteria_list"`
+		RecipientAccountCriteria  map[string]interface{}    `bson:"recipient_account_criteria"`
+		Topic                     *string                   `bson:"topic"`
+		CalculatedRecipientsCount *int                      `bson:"calculated_recipients_count"`
+		DateCreated               *time.Time                `bson:"date_created"`
+		DateUpdated               *time.Time                `bson:"date_updated"`
 
 		//recipient
 		OrgID     string `bson:"org_id"`
@@ -811,6 +811,15 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 		pipeline = append(pipeline, bson.M{"$skip": *offset})
 	}
 
+	pipeline = append(pipeline, bson.M{"$unwind": "$message"})
+	pipeline = append(pipeline, bson.M{"$project": bson.M{"org_id": 1, "app_id": 1, "_id": 1,
+		"user_id": 1, "message_id": 1, "mute": 1, "read": 1,
+		"priority": "$message.priority", "subject": "$message.subject", "sender": "$message.sender",
+		"body": "$message.data", "data": "$message.data", "recipients": "$message.recipients",
+		"recipients_criteria_list": "$message.recipients_criteria_list", "recipient_account_criteria": "$message.recipient_account_criteria",
+		"topic": "$message.topic", "calculated_recipients_count": "$message.calculated_recipients_count",
+		"date_created": "$message.date_created", "date_updated": "$message.date_updated"}})
+
 	var items []recipientJoinMessage
 	err := sa.db.messagesRecipients.Aggregate(pipeline, &items, nil)
 	if err != nil {
@@ -820,7 +829,8 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 	result := make([]model.MessageRecipient, len(items))
 	for i, item := range items {
 
-		message := model.Message{OrgID: item.OrgID, AppID: item.AppID, Priority: item.Priority, Subject: item.Subject,
+		message := model.Message{OrgID: item.OrgID, AppID: item.AppID, ID: item.MessageID,
+			Priority: item.Priority, Subject: item.Subject,
 			Sender: item.Sender, Body: item.Body, Data: item.Data, Recipients: item.Recipients,
 			RecipientsCriteriaList: item.RecipientsCriteriaList, RecipientAccountCriteria: item.RecipientAccountCriteria,
 			Topic: item.Topic, CalculatedRecipientsCount: item.CalculatedRecipientsCount, DateCreated: item.DateCreated,
