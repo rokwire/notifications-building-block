@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"notifications/core/model"
+	"notifications/utils"
 	"strconv"
 	"time"
 
@@ -750,68 +751,102 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *
 	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
 	offset *int64, limit *int64, order *string) ([]model.Message, error) {
 
+	type recipientJoinMessage struct {
+		//message
+		Priority                  int                       `bson:"message.priority"`
+		Subject                   string                    `bson:"message.subject"`
+		Sender                    model.Sender              `bson:"message.sender"`
+		Body                      string                    `bson:"message.body"`
+		Data                      map[string]string         `bson:"message.data"`
+		Recipients                []model.MessageRecipient  `bson:"message.recipients"`
+		RecipientsCriteriaList    []model.RecipientCriteria `bson:"rmessage.ecipients_criteria_list"`
+		RecipientAccountCriteria  map[string]interface{}    `bson:"message.recipient_account_criteria"`
+		Topic                     *string                   `bson:"message.topic"`
+		CalculatedRecipientsCount *int                      `bson:"message.calculated_recipients_count"`
+		DateCreated               *time.Time                `bson:"message.date_created"`
+		DateUpdated               *time.Time                `bson:"message.date_updated"`
+
+		//recipient
+		OrgID     string `bson:"org_id"`
+		AppID     string `bson:"app_id"`
+		ID        string `bson:"_id"`
+		UserID    string `bson:"user_id"`
+		MessageID string `bson:"message_id"`
+		Mute      bool   `bson:"mute"`
+		Read      bool   `bson:"read"`
+	}
+
 	pipeline := []bson.M{
 		{"$lookup": bson.M{
-			"from":         "messages_recipients",
-			"localField":   "_id",
-			"foreignField": "message_id",
-			"as":           "mess_rec",
+			"from":         "messages",
+			"localField":   "message_id",
+			"foreignField": "_id",
+			"as":           "message",
 		}},
 		{"$match": bson.M{"org_id": orgID}},
 		{"$match": bson.M{"app_id": appID}},
 	}
 
 	if userID != nil && len(*userID) > 0 {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.user_id": *userID}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"user_id": *userID}})
 	}
 
 	if read != nil {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.read": *read}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"read": *read}})
 	}
 
 	if mute != nil {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.mute": *mute}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"mute": *mute}})
 	}
 
 	if len(messageIDs) > 0 {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"_id": bson.M{"$in": messageIDs}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"message_id": bson.M{"$in": messageIDs}}})
 	}
 
 	if filterTopic != nil {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"topic": *filterTopic}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.topic": *filterTopic}})
 	}
 
 	if startDateEpoch != nil {
 		seconds := *startDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.date_created": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
 	}
 	if endDateEpoch != nil {
 		seconds := *endDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
 	}
 
 	if order != nil && *order == "asc" {
-		pipeline = append(pipeline, bson.M{"$sort": bson.M{"date_created": 1}})
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"message.date_created": 1}})
 	} else {
-		pipeline = append(pipeline, bson.M{"$sort": bson.M{"date_created": -1}})
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"message.date_created": -1}})
 	}
 
 	if limit != nil {
-		pipeline = append(pipeline, bson.M{"$limit": limit})
+		//calculate real limit
+		offsetValue := utils.GetInt64Value(offset)
+		calculatedLimit := offsetValue + *limit
+		pipeline = append(pipeline, bson.M{"$limit": calculatedLimit})
 	}
 	if offset != nil {
-		pipeline = append(pipeline, bson.M{"$skip": offset})
+		pipeline = append(pipeline, bson.M{"$skip": *offset})
 	}
 
-	var messages []model.Message
-	err := sa.db.messages.Aggregate(pipeline, &messages, nil)
+	var items []recipientJoinMessage
+	err := sa.db.messagesRecipients.Aggregate(pipeline, &items, nil)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionFind, "message", nil, err)
 	}
 
-	return messages, nil
+	for _, item := range items {
+		log.Printf("recipient:%s\tmessage:%s", item.ID, item.MessageID)
+	}
+
+	return nil, nil
+
+	//return messages, nil
 
 }
 
