@@ -261,7 +261,8 @@ func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth
 // @Security UserAuth
 // @Router /messages [get]
 func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	offsetFilter := getInt64QueryParam(r, "offset")
+	return l.HTTPResponseSuccess()
+	/*offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
@@ -277,7 +278,7 @@ func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *token
 	}
 
 	var messages []model.Message
-	messages, err = h.app.Services.GetMessages(claims.OrgID, claims.AppID, &claims.Subject, read, mute, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+	messages, err = h.app.Services.GetMessagesRecipientsDeep(claims.OrgID, claims.AppID, &claims.Subject, read, mute, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages", nil, err, http.StatusInternalServerError, true)
 	}
@@ -290,7 +291,7 @@ func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *token
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	return l.HTTPResponseSuccessJSON(data) */
 }
 
 // GetUserMessagesStats Count the messages stats
@@ -352,7 +353,8 @@ func (h ApisHandler) GetTopics(l *logs.Log, r *http.Request, claims *tokenauth.C
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/messages [get]
 func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	offsetFilter := getInt64QueryParam(r, "offset")
+	return l.HTTPResponseSuccess()
+	/*offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
@@ -374,7 +376,7 @@ func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *toke
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	return l.HTTPResponseSuccessJSON(data) */
 }
 
 // GetUserMessage Retrieves a message by id

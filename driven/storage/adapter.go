@@ -468,7 +468,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 				return err
 			}
 
-			messages, err := sa.GetMessages(orgID, appID, &userID, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			messages, err := sa.FindMessagesRecipientsDeep(orgID, appID, &userID, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			if err != nil {
 				fmt.Printf("warning: unable to retrieve messages for user (%s): %s\n", userID, err)
 				abortTransaction(sessionContext)
@@ -481,7 +481,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 						fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
 					}
 
-					if *message.CalculatedRecipientsCount == 1 {
+					if *message.Message.CalculatedRecipientsCount == 1 {
 						//the message has had only one recipient, so we need to remove the message entity too
 						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
 						if err != nil {
@@ -723,33 +723,10 @@ func (sa Adapter) FindMessagesRecipients(orgID string, appID string, messageID s
 	return data, nil
 }
 
-// InsertMessagesRecipientsWithContext inserts messages recipients
-func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error {
-	if len(items) == 0 {
-		return nil
-	}
-
-	data := make([]interface{}, len(items))
-	for i, p := range items {
-		data[i] = p
-	}
-
-	res, err := sa.db.messagesRecipients.InsertManyWithContext(ctx, data, nil)
-	if err != nil {
-		return errors.WrapErrorAction(logutils.ActionInsert, "messages recipients", nil, err)
-	}
-
-	if len(res.InsertedIDs) != len(items) {
-		return errors.ErrorAction(logutils.ActionInsert, "messages recipients", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(items)})
-	}
-
-	return nil
-}
-
-// GetMessages Gets all messages according to the filter
-func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool,
+// FindMessagesRecipientsDeep finds messages recipients join with messages
+func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool,
 	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
-	offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {
 
 	type recipientJoinMessage struct {
 		//message
@@ -840,14 +817,45 @@ func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *
 		return nil, errors.WrapErrorAction(logutils.ActionFind, "message", nil, err)
 	}
 
-	for _, item := range items {
-		log.Printf("recipient:%s\tmessage:%s", item.ID, item.MessageID)
+	result := make([]model.MessageRecipient, len(items))
+	for i, item := range items {
+
+		message := model.Message{OrgID: item.OrgID, AppID: item.AppID, Priority: item.Priority, Subject: item.Subject,
+			Sender: item.Sender, Body: item.Body, Data: item.Data, Recipients: item.Recipients,
+			RecipientsCriteriaList: item.RecipientsCriteriaList, RecipientAccountCriteria: item.RecipientAccountCriteria,
+			Topic: item.Topic, CalculatedRecipientsCount: item.CalculatedRecipientsCount, DateCreated: item.DateCreated,
+			DateUpdated: item.DateUpdated}
+
+		recipient := model.MessageRecipient{OrgID: item.OrgID, AppID: item.AppID,
+			ID: item.ID, UserID: item.UserID, MessageID: item.MessageID, Mute: item.Mute,
+			Read: item.Read, Message: message}
+		result[i] = recipient
 	}
 
-	return nil, nil
+	return result, nil
+}
 
-	//return messages, nil
+// InsertMessagesRecipientsWithContext inserts messages recipients
+func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error {
+	if len(items) == 0 {
+		return nil
+	}
 
+	data := make([]interface{}, len(items))
+	for i, p := range items {
+		data[i] = p
+	}
+
+	res, err := sa.db.messagesRecipients.InsertManyWithContext(ctx, data, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, "messages recipients", nil, err)
+	}
+
+	if len(res.InsertedIDs) != len(items) {
+		return errors.ErrorAction(logutils.ActionInsert, "messages recipients", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(items)})
+	}
+
+	return nil
 }
 
 // GetMessage gets a message by id

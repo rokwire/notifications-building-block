@@ -105,7 +105,9 @@ func (h AdminApisHandler) UpdateTopic(l *logs.Log, r *http.Request, claims *toke
 // @Security AdminUserAuth
 // @Router /admin/messages [get]
 func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	userIDFilter := getStringQueryParam(r, "user")
+	return l.HTTPResponseSuccess()
+
+	/*userIDFilter := getStringQueryParam(r, "user")
 	topicFilter := getStringQueryParam(r, "topic")
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
@@ -129,7 +131,7 @@ func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *toke
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	return l.HTTPResponseSuccessJSON(data) */
 }
 
 // CreateMessage Creates a message
