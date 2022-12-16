@@ -1,8 +1,8 @@
 post:
   tags:
   - Internal
-  summary: Create message
   deprecated: true
+  summary: Create message
   description: |
     Create message
   security:

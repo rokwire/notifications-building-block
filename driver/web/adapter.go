@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
-	"notifications/driver/web/rest"
 	"os"
 	"time"
 
@@ -39,17 +38,18 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	host string
-	port string
+	host                    string
+	port                    string
+	notificationsServiceURL string
 
 	auth *Auth
 
 	cachedYamlDoc []byte
 
-	apisHandler         rest.ApisHandler
-	adminApisHandler    rest.AdminApisHandler
-	internalApisHandler rest.InternalApisHandler
-	bbsApisHandler      rest.BBsAPIsHandler
+	apisHandler         ApisHandler
+	adminApisHandler    AdminApisHandler
+	internalApisHandler InternalApisHandler
+	bbsApisHandler      BBsAPIsHandler
 
 	app *core.Application
 
@@ -132,7 +132,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/doc", we.host)
+	url := fmt.Sprintf("%s/doc", we.notificationsServiceURL)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
@@ -206,13 +206,13 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 		logger.Fatalf("error creating auth - %s", err.Error())
 	}
 
-	apisHandler := rest.NewApisHandler(app)
-	adminApisHandler := rest.NewAdminApisHandler(app)
-	internalApisHandler := rest.NewInternalApisHandler(app)
-	bbsApisHandler := rest.NewBBsAPIsHandler(app)
+	apisHandler := NewApisHandler(app)
+	adminApisHandler := NewAdminApisHandler(app)
+	internalApisHandler := NewInternalApisHandler(app)
+	bbsApisHandler := NewBBsAPIsHandler(app)
 	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth, apisHandler: apisHandler,
 		adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsApisHandler: bbsApisHandler,
-		app: app, logger: logger}
+		app: app, logger: logger, notificationsServiceURL: config.NotificationsServiceURL}
 }
 
 // AppListener implements core.ApplicationListener interface

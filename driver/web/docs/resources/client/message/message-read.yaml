@@ -6,15 +6,13 @@ put:
     Update message
   security:
     - bearerAuth: []
-  parameters:
-    - name: id
-      in: path
-      description: offset
-      required: true
-      style: simple
-      explode: false
-      schema:
-        type: string     
+  requestBody:
+    description: "body json of the read boolean"
+    content:
+      application/json:
+        schema:
+          $ref: "../../../schemas/apis/message-read/request/Request.yaml" 
+    required: true    
   responses:
     200:
       description: Success

@@ -41,7 +41,7 @@ delete:
   parameters:
     - name: id
       in: path
-      description: The message
+      description: The message id
       required: true
       style: simple
       explode: false

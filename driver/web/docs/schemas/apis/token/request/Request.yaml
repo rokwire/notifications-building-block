@@ -4,9 +4,3 @@ type: object
 properties:
   token: 
     type: string
-  previous_token:
-    type: string
-  app_version:
-    type: string
-  app_platform:
-    type: string

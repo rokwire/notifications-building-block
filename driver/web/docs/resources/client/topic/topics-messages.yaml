@@ -18,7 +18,6 @@
     - name: offset
       in: query
       description: offset
-      required: true
       style: simple
       explode: false
       schema:
@@ -26,7 +25,6 @@
     - name: limit
       in: query
       description: limit - limit the result
-      required: true
       style: simple
       explode: false
       schema:
@@ -34,7 +32,6 @@
     - name: order
       in: query
       description: "order - Possible values: asc, desc. Default: desc"
-      required: true
       style: simple
       explode: false
       schema:
@@ -42,7 +39,6 @@
     - name: start_date
       in: query
       description: "start_date - Start date filter in milliseconds as an integer epoch value"
-      required: true
       style: simple
       explode: false
       schema:
@@ -50,7 +46,6 @@
     - name: end_date
       in: query
       description: "end_date - End date filter in milliseconds as an integer epoch value"
-      required: true
       style: simple
       explode: false
       schema:

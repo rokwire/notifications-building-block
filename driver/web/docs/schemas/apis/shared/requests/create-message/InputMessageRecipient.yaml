@@ -1,3 +1,6 @@
+required:
+  - user_id
+  - mute
 type: object
 properties:
   user_id:
