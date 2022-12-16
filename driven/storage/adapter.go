@@ -760,6 +760,14 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 			"foreignField": "_id",
 			"as":           "message",
 		}},
+		{"$unwind": "$message"},
+		{"$project": bson.M{"org_id": 1, "app_id": 1, "_id": 1,
+			"user_id": 1, "message_id": 1, "mute": 1, "read": 1,
+			"priority": "$message.priority", "subject": "$message.subject", "sender": "$message.sender",
+			"body": "$message.body", "data": "$message.data", "recipients": "$message.recipients",
+			"recipients_criteria_list": "$message.recipients_criteria_list", "recipient_account_criteria": "$message.recipient_account_criteria",
+			"topic": "$message.topic", "calculated_recipients_count": "$message.calculated_recipients_count",
+			"date_created": "$message.date_created", "date_updated": "$message.date_updated"}},
 		{"$match": bson.M{"org_id": orgID}},
 		{"$match": bson.M{"app_id": appID}},
 	}
@@ -810,15 +818,6 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 	if offset != nil {
 		pipeline = append(pipeline, bson.M{"$skip": *offset})
 	}
-
-	pipeline = append(pipeline, bson.M{"$unwind": "$message"})
-	pipeline = append(pipeline, bson.M{"$project": bson.M{"org_id": 1, "app_id": 1, "_id": 1,
-		"user_id": 1, "message_id": 1, "mute": 1, "read": 1,
-		"priority": "$message.priority", "subject": "$message.subject", "sender": "$message.sender",
-		"body": "$message.data", "data": "$message.data", "recipients": "$message.recipients",
-		"recipients_criteria_list": "$message.recipients_criteria_list", "recipient_account_criteria": "$message.recipient_account_criteria",
-		"topic": "$message.topic", "calculated_recipients_count": "$message.calculated_recipients_count",
-		"date_created": "$message.date_created", "date_updated": "$message.date_updated"}})
 
 	var items []recipientJoinMessage
 	err := sa.db.messagesRecipients.Aggregate(pipeline, &items, nil)
