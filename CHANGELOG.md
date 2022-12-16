@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2022-12-16
+### Fixed
+- Bug get messages api returns wrong result [#126](https://github.com/rokwire/notifications-building-block/issues/126)
+
 ## [1.7.0] - 2022-12-15
 ### Fixed
 - Order of All Notifications [#120](https://github.com/rokwire/notifications-building-block/issues/120)
