@@ -33,7 +33,8 @@ type Services interface {
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
 
-	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	GetMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
+
 	GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	GetUserMessage(orgID string, appID string, ID string, accountID string) (*model.Message, error)
@@ -82,8 +83,8 @@ func (s *servicesImpl) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	return s.app.updateTopic(topic)
 }
 
-func (s *servicesImpl) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
-	return s.app.getMessages(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
+func (s *servicesImpl) GetMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {
+	return s.app.getMessagesRecipientsDeep(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }
 
 func (s *servicesImpl) GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error) {
@@ -170,9 +171,9 @@ type Storage interface {
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
 	FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error)
+	FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
 
-	GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)

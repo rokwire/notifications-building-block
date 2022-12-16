@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"notifications/core/model"
+	"notifications/utils"
 	"strconv"
 	"time"
 
@@ -467,7 +468,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 				return err
 			}
 
-			messages, err := sa.GetMessages(orgID, appID, &userID, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+			messages, err := sa.FindMessagesRecipientsDeep(orgID, appID, &userID, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 			if err != nil {
 				fmt.Printf("warning: unable to retrieve messages for user (%s): %s\n", userID, err)
 				abortTransaction(sessionContext)
@@ -480,7 +481,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 						fmt.Printf("warning: unable to unlink message(%s) for user(%s): %s\n", message.ID, userID, err)
 					}
 
-					if *message.CalculatedRecipientsCount == 1 {
+					if *message.Message.CalculatedRecipientsCount == 1 {
 						//the message has had only one recipient, so we need to remove the message entity too
 						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
 						if err != nil {
@@ -722,6 +723,127 @@ func (sa Adapter) FindMessagesRecipients(orgID string, appID string, messageID s
 	return data, nil
 }
 
+// FindMessagesRecipientsDeep finds messages recipients join with messages
+func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool,
+	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
+	offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {
+
+	type recipientJoinMessage struct {
+		//message
+		Priority                  int                       `bson:"priority"`
+		Subject                   string                    `bson:"subject"`
+		Sender                    model.Sender              `bson:"sender"`
+		Body                      string                    `bson:"body"`
+		Data                      map[string]string         `bson:"data"`
+		Recipients                []model.MessageRecipient  `bson:"recipients"`
+		RecipientsCriteriaList    []model.RecipientCriteria `bson:"recipients_criteria_list"`
+		RecipientAccountCriteria  map[string]interface{}    `bson:"recipient_account_criteria"`
+		Topic                     *string                   `bson:"topic"`
+		CalculatedRecipientsCount *int                      `bson:"calculated_recipients_count"`
+		DateCreated               *time.Time                `bson:"date_created"`
+		DateUpdated               *time.Time                `bson:"date_updated"`
+
+		//recipient
+		OrgID     string `bson:"org_id"`
+		AppID     string `bson:"app_id"`
+		ID        string `bson:"_id"`
+		UserID    string `bson:"user_id"`
+		MessageID string `bson:"message_id"`
+		Mute      bool   `bson:"mute"`
+		Read      bool   `bson:"read"`
+	}
+
+	pipeline := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "messages",
+			"localField":   "message_id",
+			"foreignField": "_id",
+			"as":           "message",
+		}},
+		{"$unwind": "$message"},
+		{"$project": bson.M{"org_id": 1, "app_id": 1, "_id": 1,
+			"user_id": 1, "message_id": 1, "mute": 1, "read": 1,
+			"priority": "$message.priority", "subject": "$message.subject", "sender": "$message.sender",
+			"body": "$message.body", "data": "$message.data", "recipients": "$message.recipients",
+			"recipients_criteria_list": "$message.recipients_criteria_list", "recipient_account_criteria": "$message.recipient_account_criteria",
+			"topic": "$message.topic", "calculated_recipients_count": "$message.calculated_recipients_count",
+			"date_created": "$message.date_created", "date_updated": "$message.date_updated"}},
+		{"$match": bson.M{"org_id": orgID}},
+		{"$match": bson.M{"app_id": appID}},
+	}
+
+	if userID != nil && len(*userID) > 0 {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"user_id": *userID}})
+	}
+
+	if read != nil {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"read": *read}})
+	}
+
+	if mute != nil {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"mute": *mute}})
+	}
+
+	if len(messageIDs) > 0 {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"message_id": bson.M{"$in": messageIDs}}})
+	}
+
+	if filterTopic != nil {
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.topic": *filterTopic}})
+	}
+
+	if startDateEpoch != nil {
+		seconds := *startDateEpoch / 1000
+		timeValue := time.Unix(seconds, 0)
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.date_created": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
+	}
+	if endDateEpoch != nil {
+		seconds := *endDateEpoch / 1000
+		timeValue := time.Unix(seconds, 0)
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
+	}
+
+	if order != nil && *order == "asc" {
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"message.date_created": 1}})
+	} else {
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"message.date_created": -1}})
+	}
+
+	if limit != nil {
+		//calculate real limit
+		offsetValue := utils.GetInt64Value(offset)
+		calculatedLimit := offsetValue + *limit
+		pipeline = append(pipeline, bson.M{"$limit": calculatedLimit})
+	}
+	if offset != nil {
+		pipeline = append(pipeline, bson.M{"$skip": *offset})
+	}
+
+	var items []recipientJoinMessage
+	err := sa.db.messagesRecipients.Aggregate(pipeline, &items, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "message", nil, err)
+	}
+
+	result := make([]model.MessageRecipient, len(items))
+	for i, item := range items {
+
+		message := model.Message{OrgID: item.OrgID, AppID: item.AppID, ID: item.MessageID,
+			Priority: item.Priority, Subject: item.Subject,
+			Sender: item.Sender, Body: item.Body, Data: item.Data, Recipients: item.Recipients,
+			RecipientsCriteriaList: item.RecipientsCriteriaList, RecipientAccountCriteria: item.RecipientAccountCriteria,
+			Topic: item.Topic, CalculatedRecipientsCount: item.CalculatedRecipientsCount, DateCreated: item.DateCreated,
+			DateUpdated: item.DateUpdated}
+
+		recipient := model.MessageRecipient{OrgID: item.OrgID, AppID: item.AppID,
+			ID: item.ID, UserID: item.UserID, MessageID: item.MessageID, Mute: item.Mute,
+			Read: item.Read, Message: message}
+		result[i] = recipient
+	}
+
+	return result, nil
+}
+
 // InsertMessagesRecipientsWithContext inserts messages recipients
 func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error {
 	if len(items) == 0 {
@@ -743,76 +865,6 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 	}
 
 	return nil
-}
-
-// GetMessages Gets all messages according to the filter
-func (sa Adapter) GetMessages(orgID string, appID string, userID *string, read *bool, mute *bool,
-	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
-	offset *int64, limit *int64, order *string) ([]model.Message, error) {
-
-	pipeline := []bson.M{
-		{"$lookup": bson.M{
-			"from":         "messages_recipients",
-			"localField":   "_id",
-			"foreignField": "message_id",
-			"as":           "mess_rec",
-		}},
-		{"$match": bson.M{"org_id": orgID}},
-		{"$match": bson.M{"app_id": appID}},
-	}
-
-	if userID != nil && len(*userID) > 0 {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.user_id": *userID}})
-	}
-
-	if read != nil {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.read": *read}})
-	}
-
-	if mute != nil {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"mess_rec.mute": *mute}})
-	}
-
-	if len(messageIDs) > 0 {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"_id": bson.M{"$in": messageIDs}}})
-	}
-
-	if filterTopic != nil {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"topic": *filterTopic}})
-	}
-
-	if startDateEpoch != nil {
-		seconds := *startDateEpoch / 1000
-		timeValue := time.Unix(seconds, 0)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
-	}
-	if endDateEpoch != nil {
-		seconds := *endDateEpoch / 1000
-		timeValue := time.Unix(seconds, 0)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
-	}
-
-	if order != nil && *order == "asc" {
-		pipeline = append(pipeline, bson.M{"$sort": bson.M{"date_created": 1}})
-	} else {
-		pipeline = append(pipeline, bson.M{"$sort": bson.M{"date_created": -1}})
-	}
-
-	if limit != nil {
-		pipeline = append(pipeline, bson.M{"$limit": limit})
-	}
-	if offset != nil {
-		pipeline = append(pipeline, bson.M{"$skip": offset})
-	}
-
-	var messages []model.Message
-	err := sa.db.messages.Aggregate(pipeline, &messages, nil)
-	if err != nil {
-		return nil, errors.WrapErrorAction(logutils.ActionFind, "message", nil, err)
-	}
-
-	return messages, nil
-
 }
 
 // GetMessage gets a message by id
