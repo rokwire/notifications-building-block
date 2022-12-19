@@ -44,6 +44,7 @@ type database struct {
 	topics             *collectionWrapper
 	messages           *collectionWrapper
 	messagesRecipients *collectionWrapper
+	queueData          *collectionWrapper
 
 	appVersions  *collectionWrapper
 	appPlatforms *collectionWrapper
@@ -104,6 +105,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	queueData := &collectionWrapper{database: m, coll: db.Collection("queue_data")}
+	err = m.applyQueueDataChecks(queueData)
+	if err != nil {
+		return err
+	}
+
 	appPlatforms := &collectionWrapper{database: m, coll: db.Collection("app_platforms")}
 	err = m.applyPlatformsChecks(appPlatforms)
 	if err != nil {
@@ -130,6 +137,7 @@ func (m *database) start() error {
 	m.topics = topics
 	m.messages = messages
 	m.messagesRecipients = messagesRecipients
+	m.queueData = queueData
 	m.appPlatforms = appPlatforms
 	m.appVersions = appVersions
 	m.firebaseConfigurations = firebaseConfigurations
@@ -466,6 +474,25 @@ func (m *database) applyMessagesRecipientsChecks(messagesRecipients *collectionW
 	}
 
 	log.Println("apply messages recipients passed")
+	return nil
+}
+
+func (m *database) applyQueueDataChecks(queueData *collectionWrapper) error {
+	log.Println("apply queue data checks.....")
+
+	//add time index
+	err := queueData.AddIndex(bson.D{primitive.E{Key: "time", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add priority index
+	err = queueData.AddIndex(bson.D{primitive.E{Key: "priority", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	log.Println("apply queue data passed")
 	return nil
 }
 
