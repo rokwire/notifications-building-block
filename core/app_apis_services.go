@@ -119,6 +119,15 @@ func (app *Application) createMessage(orgID string, appID string,
 			return err
 		}
 
+		//store the notifications in the queue
+		/*if len(recipients) > 0 {
+			err = app.sendMessage(recipients, *persistedMessage, async)
+			if err != nil {
+				fmt.Printf("error on sending message: %s", err)
+				return nil, fmt.Errorf("error on sending message: %s", err)
+			}
+		} */
+
 		return nil
 	}
 
@@ -129,50 +138,7 @@ func (app *Application) createMessage(orgID string, appID string,
 		return nil, err
 	}
 
-	//send message
-	if len(recipients) > 0 {
-		err = app.sendMessage(recipients, *persistedMessage, async)
-		if err != nil {
-			fmt.Printf("error on sending message: %s", err)
-			return nil, fmt.Errorf("error on sending message: %s", err)
-		}
-	}
-
 	return persistedMessage, nil
-}
-
-func (app *Application) sendMessage(allRecipients []model.MessageRecipient, message model.Message, async bool) error {
-	if len(allRecipients) == 0 {
-		fmt.Print("no recipients")
-		return nil
-	}
-
-	//send notifications only for mute=false
-	recipients := []model.MessageRecipient{}
-	for _, item := range allRecipients {
-		if item.Mute == false {
-			recipients = append(recipients, item)
-		}
-	}
-
-	// retrieve tokens by recipients
-	tokens, err := app.storage.GetFirebaseTokensByRecipients(
-		message.OrgID, message.AppID, recipients, message.RecipientsCriteriaList)
-	if err != nil {
-		log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
-		return err
-	}
-	log.Printf("retrieve firebase tokens for message %s: %+v", message.ID, tokens)
-
-	// send message to tokens
-	if len(tokens) > 0 {
-		if async {
-			go app.sendNotifications(message, tokens)
-		} else {
-			app.sendNotifications(message, tokens)
-		}
-	}
-	return nil
 }
 
 func (app *Application) calculateRecipients(context storage.TransactionContext,
@@ -297,17 +263,6 @@ func getCommonRecipients(s1, s2 []model.MessageRecipient) []model.MessageRecipie
 		}
 	}
 	return common
-}
-
-func (app *Application) sendNotifications(message model.Message, tokens []string) {
-	for _, token := range tokens {
-		sendErr := app.firebase.SendNotificationToToken(message.OrgID, message.AppID, token, message.Subject, message.Body, message.Data)
-		if sendErr != nil {
-			fmt.Printf("error send notification to token (%s): %s", token, sendErr)
-		} else {
-			log.Printf("message(%s:%s:%s) has been sent to token: %s", message.ID, message.Subject, message.Body, token)
-		}
-	}
 }
 
 func (app *Application) getMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {
