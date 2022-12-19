@@ -119,6 +119,9 @@ func (app *Application) createMessage(orgID string, appID string,
 			return err
 		}
 
+		//create the notifications queue items
+		//TODO
+
 		//store the notifications in the queue
 		/*if len(recipients) > 0 {
 			err = app.sendMessage(recipients, *persistedMessage, async)
@@ -139,6 +142,11 @@ func (app *Application) createMessage(orgID string, appID string,
 	}
 
 	return persistedMessage, nil
+}
+
+func (app *Application) createQueueItems() ([]model.QueueItem, error) {
+	//TODO
+	return nil, nil
 }
 
 func (app *Application) calculateRecipients(context storage.TransactionContext,
