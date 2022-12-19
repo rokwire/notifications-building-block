@@ -24,6 +24,7 @@ import (
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
 	"strings"
+	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -245,22 +246,29 @@ func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth
 	return l.HTTPResponseSuccess()
 }
 
+//TODO - for now all fields but almost all of them will be removed!
+type getUserMessageResponse struct {
+	OrgID                     string                    `json:"org_id"`
+	AppID                     string                    `json:"app_id"`
+	ID                        string                    `json:"id"`
+	Priority                  int                       `json:"priority"`
+	Subject                   string                    `json:"subject"`
+	Sender                    model.Sender              `json:"sender"`
+	Body                      string                    `json:"body"`
+	Data                      map[string]string         `json:"data"`
+	Recipients                []model.MessageRecipient  `json:"recipients"`
+	RecipientsCriteriaList    []model.RecipientCriteria `json:"recipients_criteria_list"`
+	RecipientAccountCriteria  map[string]interface{}    `json:"recipient_account_criteria"`
+	Topic                     *string                   `json:"topic"`
+	CalculatedRecipientsCount *int                      `json:"calculated_recipients_count"`
+	DateCreated               *time.Time                `json:"date_created"`
+	DateUpdated               *time.Time                `json:"date_updated"`
+
+	Mute bool `json:"mute"`
+	Read bool `json:"read"`
+}
+
 // GetUserMessages Gets all messages for the user
-// @Description Gets all messages to the authenticated user.
-// @Tags Client
-// @ID GetUserMessages
-// @Param read query bool "read"
-// @Param mute query bool "mute"
-// @Param offset query string false "offset"
-// @Param limit query string false "limit - limit the result"
-// @Param order query string false "order - Possible values: asc, desc. Default: desc"
-// @Param start_date query string false "start_date - Start date filter in milliseconds as an integer epoch value"
-// @Param end_date query string false "end_date - End date filter in milliseconds as an integer epoch value"
-// @Param data body getMessagesRequestBody false "body json of the all message ids that need to be filtered"
-// @Accept  json
-// @Success 200 {array} model.Message
-// @Security UserAuth
-// @Router /messages [get]
 func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
@@ -277,16 +285,24 @@ func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *token
 		messageIDs = body.IDs
 	}
 
-	var messages []model.Message
-	messages, err = h.app.Services.GetMessages(claims.OrgID, claims.AppID, &claims.Subject, read, mute, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+	recipientsMessages, err := h.app.Services.GetMessagesRecipientsDeep(claims.OrgID, claims.AppID, &claims.Subject, read, mute, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages", nil, err, http.StatusInternalServerError, true)
 	}
-	if messages == nil {
-		messages = []model.Message{}
-	}
+	result := make([]getUserMessageResponse, len(recipientsMessages))
+	for i, item := range recipientsMessages {
+		message := item.Message
 
-	data, err := json.Marshal(messages)
+		respItem := getUserMessageResponse{OrgID: message.OrgID, AppID: message.AppID,
+			ID: message.ID, Priority: message.Priority, Subject: message.Subject,
+			Sender: message.Sender, Body: message.Body, Data: message.Data, Recipients: message.Recipients,
+			RecipientsCriteriaList: message.RecipientsCriteriaList, RecipientAccountCriteria: message.RecipientAccountCriteria,
+			Topic: message.Topic, CalculatedRecipientsCount: message.CalculatedRecipientsCount,
+			DateCreated: message.DateCreated, DateUpdated: message.DateUpdated,
+			Mute: item.Mute, Read: item.Read}
+		result[i] = respItem
+	}
+	data, err := json.Marshal(result)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
@@ -353,7 +369,8 @@ func (h ApisHandler) GetTopics(l *logs.Log, r *http.Request, claims *tokenauth.C
 // @Security RokwireAuth UserAuth
 // @Router /topic/{topic}/messages [get]
 func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	offsetFilter := getInt64QueryParam(r, "offset")
+	return l.HTTPResponseSuccess()
+	/*offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
 	startDateFilter := getInt64QueryParam(r, "start_date")
@@ -375,7 +392,7 @@ func (h ApisHandler) GetTopicMessages(l *logs.Log, r *http.Request, claims *toke
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	return l.HTTPResponseSuccessJSON(data)*/
 }
 
 // GetUserMessage Retrieves a message by id
