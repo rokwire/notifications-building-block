@@ -804,9 +804,9 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 	}
 
 	if order != nil && *order == "asc" {
-		pipeline = append(pipeline, bson.M{"$sort": bson.M{"message.date_created": 1}})
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"date_created": 1}})
 	} else {
-		pipeline = append(pipeline, bson.M{"$sort": bson.M{"message.date_created": -1}})
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"date_created": -1}})
 	}
 
 	if limit != nil {
