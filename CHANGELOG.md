@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Rate limits [#98](https://github.com/rokwire/notifications-building-block/issues/98)
 
+## [1.9.1] - 2022-12-20
+### Fixed
+- Fix GET messages filter [#131](https://github.com/rokwire/notifications-building-block/issues/131)
+
+## [1.9.0] - 2022-12-19
+### Fixed
+- Bug Messages are not ordered [#128](https://github.com/rokwire/notifications-building-block/issues/128)
+
 ## [1.8.0] - 2022-12-16
 ### Fixed
 - Bug get messages api returns wrong result [#126](https://github.com/rokwire/notifications-building-block/issues/126)
