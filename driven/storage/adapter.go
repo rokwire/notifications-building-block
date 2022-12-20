@@ -789,7 +789,7 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 	}
 
 	if filterTopic != nil {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.topic": *filterTopic}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"topic": *filterTopic}})
 	}
 
 	if startDateEpoch != nil {

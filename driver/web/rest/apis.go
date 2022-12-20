@@ -272,6 +272,7 @@ func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *token
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
 	orderFilter := getStringQueryParam(r, "order")
+	topic := getStringQueryParam(r, "topic")
 	startDateFilter := getInt64QueryParam(r, "start_date")
 	endDateFilter := getInt64QueryParam(r, "end_date")
 	read := getBoolQueryParam(r, "read")
@@ -284,7 +285,7 @@ func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *token
 		messageIDs = body.IDs
 	}
 
-	recipientsMessages, err := h.app.Services.GetMessagesRecipientsDeep(claims.OrgID, claims.AppID, &claims.Subject, read, mute, messageIDs, startDateFilter, endDateFilter, nil, offsetFilter, limitFilter, orderFilter)
+	recipientsMessages, err := h.app.Services.GetMessagesRecipientsDeep(claims.OrgID, claims.AppID, &claims.Subject, read, mute, messageIDs, startDateFilter, endDateFilter, topic, offsetFilter, limitFilter, orderFilter)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages", nil, err, http.StatusInternalServerError, true)
 	}
