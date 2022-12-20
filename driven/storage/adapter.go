@@ -789,18 +789,18 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 	}
 
 	if filterTopic != nil {
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.topic": *filterTopic}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"topic": *filterTopic}})
 	}
 
 	if startDateEpoch != nil {
 		seconds := *startDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.date_created": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
 	}
 	if endDateEpoch != nil {
 		seconds := *endDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"message.date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"date_created": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
 	}
 
 	if order != nil && *order == "asc" {
