@@ -131,6 +131,9 @@ func (app *Application) createMessage(orgID string, appID string,
 				fmt.Printf("error on inserting queue data items: %s", err)
 				return err
 			}
+
+			//notify the queue that new items are added
+			go app.queueLogic.onQueuePush()
 		}
 
 		return nil

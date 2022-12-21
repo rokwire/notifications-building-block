@@ -27,6 +27,14 @@ type queueLogic struct {
 
 func (q queueLogic) start() {
 	q.logger.Info("queueLogic start")
+
+	//TODO
+}
+
+func (q queueLogic) onQueuePush() {
+	q.logger.Info("queueLogic onQueuePush")
+
+	//TODO
 }
 
 /* TODO

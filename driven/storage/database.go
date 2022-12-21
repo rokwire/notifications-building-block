@@ -458,6 +458,7 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 	}
 	nsMap := ns.(map[string]interface{})
 	coll := nsMap["coll"]
+	operationType := changeDoc["operationType"].(string)
 
 	switch coll {
 	case "firebase_configurations":
@@ -468,10 +469,7 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 		}
 	case "queue_data":
 		m.logger.Info("queue_data collection changed")
-
-		/*	for _, listener := range m.listeners {
-			go listener.OnFirebaseConfigurationsUpdated()
-		} */
+		m.logger.Info(operationType)
 	}
 
 }
