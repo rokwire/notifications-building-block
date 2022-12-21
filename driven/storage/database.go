@@ -41,6 +41,7 @@ type database struct {
 	topics             *collectionWrapper
 	messages           *collectionWrapper
 	messagesRecipients *collectionWrapper
+	queue              *collectionWrapper
 	queueData          *collectionWrapper
 
 	appVersions  *collectionWrapper
@@ -102,6 +103,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	queue := &collectionWrapper{database: m, coll: db.Collection("queue")}
+	err = m.applyQueueChecks(queue)
+	if err != nil {
+		return err
+	}
+
 	queueData := &collectionWrapper{database: m, coll: db.Collection("queue_data")}
 	err = m.applyQueueDataChecks(queueData)
 	if err != nil {
@@ -134,6 +141,7 @@ func (m *database) start() error {
 	m.topics = topics
 	m.messages = messages
 	m.messagesRecipients = messagesRecipients
+	m.queue = queue
 	m.queueData = queueData
 	m.appPlatforms = appPlatforms
 	m.appVersions = appVersions
@@ -234,6 +242,13 @@ func (m *database) applyMessagesRecipientsChecks(messagesRecipients *collectionW
 	}
 
 	log.Println("apply messages recipients passed")
+	return nil
+}
+
+func (m *database) applyQueueChecks(queue *collectionWrapper) error {
+	log.Println("apply queue checks.....")
+
+	log.Println("apply queue passed")
 	return nil
 }
 
