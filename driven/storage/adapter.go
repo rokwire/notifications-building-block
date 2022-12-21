@@ -548,6 +548,7 @@ func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error)
 	unmuted := int64(0)
 	read := int64(0)
 	unread := int64(0)
+	notreadnotmute := int64(0)
 
 	for _, messRec := range data {
 		if messRec.Read {
@@ -561,10 +562,13 @@ func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error)
 		} else {
 			unmuted++
 		}
+		if messRec.Read == false && messRec.Mute == false {
+			notreadnotmute++
+		}
 	}
 
 	stats := model.MessagesStats{TotalCount: &totalCount, Muted: &muted,
-		Unmuted: &unmuted, Read: &read, Unread: &unread}
+		Unmuted: &unmuted, Read: &read, Unread: &unread, NotReadNotMute: &notreadnotmute}
 	return &stats, nil
 }
 
