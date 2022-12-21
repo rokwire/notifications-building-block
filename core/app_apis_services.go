@@ -119,8 +119,8 @@ func (app *Application) createMessage(orgID string, appID string,
 			return err
 		}
 
-		//create the notifications queue items
-		//TODO
+		//create the notifications queue items and store them in the queue
+		queueItems := app.createQueueItems(*persistedMessage, recipients)
 
 		//store the notifications in the queue
 		/*if len(recipients) > 0 {
@@ -144,9 +144,32 @@ func (app *Application) createMessage(orgID string, appID string,
 	return persistedMessage, nil
 }
 
-func (app *Application) createQueueItems() ([]model.QueueItem, error) {
-	//TODO
-	return nil, nil
+func (app *Application) createQueueItems(message model.Message, messageRecipients []model.MessageRecipient) []model.QueueItem {
+	queueItems := []model.QueueItem{}
+
+	for _, messageRecipient := range messageRecipients {
+		orgID := messageRecipient.OrgID
+		appID := messageRecipient.AppID
+		id := uuid.NewString()
+
+		messageRecipientID := messageRecipient.ID
+		userID := messageRecipient.UserID
+
+		subject := message.Subject
+		body := message.Body
+		data := message.Data
+
+		time := message.Time
+		priority := message.Priority
+
+		queueItem := model.QueueItem{OrgID: orgID, AppID: appID, ID: id,
+			MessageRecipientID: messageRecipientID, UserID: userID,
+			Subject: subject, Body: body, Data: data, Time: time, Priority: priority}
+
+		queueItems = append(queueItems, queueItem)
+	}
+
+	return queueItems
 }
 
 func (app *Application) calculateRecipients(context storage.TransactionContext,
