@@ -21,7 +21,8 @@ import (
 type queueLogic struct {
 	logger *logs.Logger
 
-	storage Storage
+	storage  Storage
+	firebase Firebase
 }
 
 func (q queueLogic) start() {
