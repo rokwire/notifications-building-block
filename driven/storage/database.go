@@ -148,6 +148,7 @@ func (m *database) start() error {
 	m.firebaseConfigurations = firebaseConfigurations
 
 	go m.firebaseConfigurations.Watch(nil)
+	go m.queueData.Watch(nil)
 
 	return nil
 }
@@ -450,7 +451,7 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 	if changeDoc == nil {
 		return
 	}
-	log.Printf("onDataChanged: %+v\n", changeDoc)
+	m.logger.Infof("onDataChanged: %+v\n", changeDoc)
 	ns := changeDoc["ns"]
 	if ns == nil {
 		return
@@ -460,10 +461,17 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 
 	switch coll {
 	case "firebase_configurations":
-		log.Println("firebase_configurations collection changed")
+		m.logger.Info("firebase_configurations collection changed")
 
 		for _, listener := range m.listeners {
 			go listener.OnFirebaseConfigurationsUpdated()
 		}
+	case "queue_data":
+		m.logger.Info("queue_data collection changed")
+
+		/*	for _, listener := range m.listeners {
+			go listener.OnFirebaseConfigurationsUpdated()
+		} */
 	}
+
 }
