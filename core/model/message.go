@@ -74,11 +74,12 @@ type RecipientCriteria struct {
 // @name MessagesStats
 // @ID MessagesStats
 type MessagesStats struct {
-	TotalCount *int64 `json:"total_count" bson:"total_count"`
-	Muted      *int64 `json:"muted_count" bson:"muted_count"`
-	Unmuted    *int64 `json:"not_muted_count" bson:"not_muted_count"`
-	Read       *int64 `json:"read_count" bson:"read_count"`
-	Unread     *int64 `json:"not_read_count" bson:"not_read_count"`
+	TotalCount   *int64 `json:"total_count" bson:"total_count"`
+	Muted        *int64 `json:"muted_count" bson:"muted_count"`
+	Unmuted      *int64 `json:"not_muted_count" bson:"not_muted_count"`
+	Read         *int64 `json:"read_count" bson:"read_count"`
+	Unread       *int64 `json:"not_read_count" bson:"not_read_count"`
+	UnreadUnmute *int64 `json:"not_read_not_mute" bson:"not_read_not_mute"`
 }
 
 ///
