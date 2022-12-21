@@ -993,14 +993,13 @@ func (sa Adapter) DeleteMessageWithContext(ctx context.Context, orgID string, ap
 // UpdateUnreadMessage updates a unread message in the recipients to read
 func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID string) (*model.Message, error) {
 	read := true
-	filter := bson.D{primitive.E{Key: "_id", Value: ID},
+	filter := bson.D{primitive.E{Key: "message_id", Value: ID},
 		primitive.E{Key: "app_id", Value: appID},
 		primitive.E{Key: "org_id", Value: orgID},
 		primitive.E{Key: "user_id", Value: userID}}
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "read", Value: read},
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 		}},
 	}
 	_, err := sa.db.messagesRecipients.UpdateOneWithContext(ctx, filter, update, nil)
@@ -1020,7 +1019,6 @@ func (sa Adapter) UpdateAllUserMessagesRead(ctx context.Context, orgID string, a
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "read", Value: read},
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 		}},
 	}
 	_, err := sa.db.messagesRecipients.UpdateManyWithContext(ctx, filter, update, nil)
