@@ -16,6 +16,12 @@ package model
 
 import "time"
 
+// Queue represent queue status entity
+type Queue struct {
+	Status            string `bson:"status"`
+	ProcessItemsCount int    `bson:"process_items_count"`
+}
+
 // QueueItem represent notifications queue data item
 type QueueItem struct {
 	OrgID string `bson:"org_id"`
