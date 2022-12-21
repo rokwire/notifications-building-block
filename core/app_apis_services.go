@@ -98,6 +98,10 @@ func (app *Application) createMessage(orgID string, appID string,
 		}
 
 		//create message object
+		if data == nil { //we add message id to the data
+			data = map[string]string{}
+		}
+		data["message_id"] = messageID
 		calculatedRecipients := len(recipients)
 		dateCreated := time.Now()
 		message := model.Message{OrgID: orgID, AppID: appID, ID: messageID, Priority: priority, Time: mTime,
