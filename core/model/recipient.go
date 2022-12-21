@@ -19,12 +19,11 @@ type MessageRecipient struct {
 	OrgID string `json:"org_id" bson:"org_id"`
 	AppID string `json:"app_id" bson:"app_id"`
 
-	ID             string `json:"id" bson:"_id"`
-	UserID         string `json:"user_id" bson:"user_id"`
-	MessageID      string `json:"message_id" bson:"message_id"`
-	Mute           bool   `json:"mute" bson:"mute"`
-	Read           bool   `json:"read" bson:"read"`
-	NotReadNotMute bool   `json:"not_read_not_mute" bson:"not_read_not_mute"`
+	ID        string `json:"id" bson:"_id"`
+	UserID    string `json:"user_id" bson:"user_id"`
+	MessageID string `json:"message_id" bson:"message_id"`
+	Mute      bool   `json:"mute" bson:"mute"`
+	Read      bool   `json:"read" bson:"read"`
 
 	Message Message `json:"-" bson:"-"`
 }
