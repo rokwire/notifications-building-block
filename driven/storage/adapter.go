@@ -568,7 +568,7 @@ func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error)
 	}
 
 	stats := model.MessagesStats{TotalCount: &totalCount, Muted: &muted,
-		Unmuted: &unmuted, Read: &read, Unread: &unread, NotReadNotMute: &notreadnotmute}
+		Unmuted: &unmuted, Read: &read, Unread: &unread, UnreadUnmute: &notreadnotmute}
 	return &stats, nil
 }
 
