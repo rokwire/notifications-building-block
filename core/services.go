@@ -98,7 +98,14 @@ func (app *Application) createMessage(inputMessage model.InputMessage, sender mo
 		priority := inputMessage.Priority
 		subject := inputMessage.Subject
 		body := inputMessage.Body
+
+		//we add message id to the data
 		data := inputMessage.Data
+		if data == nil {
+			data = map[string]string{}
+		}
+		data["message_id"] = messageID
+
 		calculatedRecipients := len(recipients)
 		var recipientsCriteriaList []model.RecipientCriteria
 		if len(inputMessage.RecipientsCriteriaList) > 0 {

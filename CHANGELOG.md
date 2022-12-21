@@ -6,7 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Improve stats API [#133] (https://github.com/rokwire/notifications-building-block/issues/133)
+- Add message id in the notification [#135](https://github.com/rokwire/notifications-building-block/issues/135)
+- Improve stats API [#133](https://github.com/rokwire/notifications-building-block/issues/133)
 
 ## [1.9.1] - 2022-12-20
 ### Fixed
