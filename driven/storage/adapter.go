@@ -1059,6 +1059,29 @@ func (sa Adapter) GetAllAppPlatforms(orgID string, appID string) ([]model.AppPla
 	return platforms, nil
 }
 
+// InsertQueueDataItemsWithContext inserts queue data items
+func (sa Adapter) InsertQueueDataItemsWithContext(ctx context.Context, items []model.QueueItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	data := make([]interface{}, len(items))
+	for i, p := range items {
+		data[i] = p
+	}
+
+	res, err := sa.db.queueData.InsertManyWithContext(ctx, data, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, "queue data items", nil, err)
+	}
+
+	if len(res.InsertedIDs) != len(items) {
+		return errors.ErrorAction(logutils.ActionInsert, "queue data items", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(items)})
+	}
+
+	return nil
+}
+
 func abortTransaction(sessionContext mongo.SessionContext) {
 	err := sessionContext.AbortTransaction(sessionContext)
 	if err != nil {

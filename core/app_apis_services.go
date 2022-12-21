@@ -121,15 +121,13 @@ func (app *Application) createMessage(orgID string, appID string,
 
 		//create the notifications queue items and store them in the queue
 		queueItems := app.createQueueItems(*persistedMessage, recipients)
-
-		//store the notifications in the queue
-		/*if len(recipients) > 0 {
-			err = app.sendMessage(recipients, *persistedMessage, async)
+		if len(queueItems) > 0 {
+			err = app.storage.InsertQueueDataItemsWithContext(context, queueItems)
 			if err != nil {
-				fmt.Printf("error on sending message: %s", err)
-				return nil, fmt.Errorf("error on sending message: %s", err)
+				fmt.Printf("error on inserting queue data items: %s", err)
+				return err
 			}
-		} */
+		}
 
 		return nil
 	}

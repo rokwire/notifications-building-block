@@ -192,6 +192,8 @@ type Storage interface {
 	UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
+
+	InsertQueueDataItemsWithContext(ctx context.Context, items []model.QueueItem) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
