@@ -1084,6 +1084,24 @@ func (sa Adapter) InsertQueueDataItemsWithContext(ctx context.Context, items []m
 	return nil
 }
 
+// LoadQueueWithContext loads the queue object
+func (sa Adapter) LoadQueueWithContext(ctx context.Context) (*model.Queue, error) {
+	filter := bson.D{}
+
+	var queue []model.Queue
+	err := sa.db.queue.FindWithContext(ctx, filter, &queue, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(queue) == 0 {
+		return nil, nil
+	}
+
+	res := queue[0] //we support only one record
+	return &res, nil
+}
+
 func abortTransaction(sessionContext mongo.SessionContext) {
 	err := sessionContext.AbortTransaction(sessionContext)
 	if err != nil {

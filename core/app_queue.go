@@ -15,6 +15,10 @@
 package core
 
 import (
+	"fmt"
+	"notifications/core/model"
+	"notifications/driven/storage"
+
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
@@ -28,7 +32,7 @@ type queueLogic struct {
 func (q queueLogic) start() {
 	q.logger.Info("queueLogic start")
 
-	//TODO set timer
+	q.processQueue()
 }
 
 func (q queueLogic) onQueuePush() {
@@ -40,7 +44,44 @@ func (q queueLogic) onQueuePush() {
 func (q queueLogic) processQueue() {
 	q.logger.Info("queueLogic processQueue")
 
+	var err error
+	var queue *model.Queue
+	queueAvailable := true
+
+	// check if the queue is locked and lock it for processing
+	// in transaction
+	transaction := func(context storage.TransactionContext) error {
+		//load queue
+		queue, err = q.storage.LoadQueueWithContext(context)
+		if err != nil {
+			q.logger.Infof("error on loading queue: %s", err)
+			return err
+		}
+
+		//check if available
+		if queue.Status != "ready" {
+			q.logger.Infof("the queue is not ready but %s", queue.Status)
+			queueAvailable = false
+			return nil
+		}
+
+		return nil
+	}
+	//perform transactions
+	err = q.storage.PerformTransaction(transaction, 2000)
+	if err != nil {
+		fmt.Printf("error performing TODO - %s", err)
+		return
+	}
+
+	if !queueAvailable {
+		q.logger.Info("the queue is locked, so do nothing")
+		return
+	}
+
 	//TODO
+
+	//TODO set timer
 }
 
 /* TODO

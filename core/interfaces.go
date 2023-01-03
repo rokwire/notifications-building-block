@@ -194,6 +194,7 @@ type Storage interface {
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
 
 	InsertQueueDataItemsWithContext(ctx context.Context, items []model.QueueItem) error
+	LoadQueueWithContext(ctx context.Context) (*model.Queue, error)
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
