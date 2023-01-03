@@ -1102,6 +1102,16 @@ func (sa Adapter) LoadQueueWithContext(ctx context.Context) (*model.Queue, error
 	return &res, nil
 }
 
+// SaveQueueWithContext saves queue with context
+func (sa *Adapter) SaveQueueWithContext(ctx context.Context, queue model.Queue) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: queue.ID}}
+	err := sa.db.queue.ReplaceOneWithContext(ctx, filter, queue, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionUpdate, "queue", &logutils.FieldArgs{"_id": queue.ID}, err)
+	}
+	return nil
+}
+
 func abortTransaction(sessionContext mongo.SessionContext) {
 	err := sessionContext.AbortTransaction(sessionContext)
 	if err != nil {

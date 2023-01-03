@@ -65,6 +65,14 @@ func (q queueLogic) processQueue() {
 			return nil
 		}
 
+		//lock it
+		queue.Status = "processing"
+		err = q.storage.SaveQueueWithContext(context, *queue)
+		if err != nil {
+			q.logger.Infof("error on marking the queue locked: %s", err)
+			return err
+		}
+
 		return nil
 	}
 	//perform transactions

@@ -18,6 +18,7 @@ import "time"
 
 // Queue represent queue status entity
 type Queue struct {
+	ID                string `bson:"_id"`
 	Status            string `bson:"status"`
 	ProcessItemsCount int    `bson:"process_items_count"`
 }
