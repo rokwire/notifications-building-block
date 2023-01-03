@@ -16,6 +16,7 @@ package core
 
 import (
 	"fmt"
+	"log"
 	"notifications/core/model"
 	"notifications/driven/storage"
 
@@ -44,11 +45,28 @@ func (q queueLogic) onQueuePush() {
 func (q queueLogic) processQueue() {
 	q.logger.Info("queueLogic processQueue")
 
+	// check if the queue is locked and lock it for processing
+	queueAvailable, queue, err := q.lockQueue()
+	if err != nil {
+		q.logger.Errorf("error on locking queue", err)
+		return
+	}
+	if !*queueAvailable {
+		q.logger.Info("the queue is locked, so do nothing")
+		return
+	}
+
+	//TODO
+	log.Println(queue)
+
+	//TODO set timer
+}
+
+func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
 	var err error
 	var queue *model.Queue
 	queueAvailable := true
 
-	// check if the queue is locked and lock it for processing
 	// in transaction
 	transaction := func(context storage.TransactionContext) error {
 		//load queue
@@ -78,18 +96,11 @@ func (q queueLogic) processQueue() {
 	//perform transactions
 	err = q.storage.PerformTransaction(transaction, 2000)
 	if err != nil {
-		fmt.Printf("error performing TODO - %s", err)
-		return
+		fmt.Printf("error performing lock queue transaction - %s", err)
+		return nil, nil, err
 	}
 
-	if !queueAvailable {
-		q.logger.Info("the queue is locked, so do nothing")
-		return
-	}
-
-	//TODO
-
-	//TODO set timer
+	return &queueAvailable, queue, nil
 }
 
 /* TODO
