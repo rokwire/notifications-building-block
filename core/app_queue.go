@@ -28,7 +28,7 @@ type queueLogic struct {
 func (q queueLogic) start() {
 	q.logger.Info("queueLogic start")
 
-	//TODO
+	//TODO set timer
 }
 
 func (q queueLogic) onQueuePush() {
