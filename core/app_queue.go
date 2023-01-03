@@ -34,6 +34,12 @@ func (q queueLogic) start() {
 func (q queueLogic) onQueuePush() {
 	q.logger.Info("queueLogic onQueuePush")
 
+	q.processQueue()
+}
+
+func (q queueLogic) processQueue() {
+	q.logger.Info("queueLogic processQueue")
+
 	//TODO
 }
 
