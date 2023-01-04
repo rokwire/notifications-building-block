@@ -113,6 +113,7 @@ func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
 }
 
 func (q queueLogic) unlockQueue(queue model.Queue) {
+	queue.Status = "ready"
 	err := q.storage.SaveQueue(queue)
 	if err != nil {
 		q.logger.Errorf("error unlocking the queue - %s", err) //cannot be done anything else
