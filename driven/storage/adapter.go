@@ -1134,7 +1134,7 @@ func (sa *Adapter) FindQueueData(time time.Time, limit int) ([]model.QueueItem, 
 	findOptions.SetLimit(int64(limit))
 
 	//set sort
-	findOptions.SetSort(bson.D{primitive.E{Key: "time", Value: 1}})
+	findOptions.SetSort(bson.D{primitive.E{Key: "time", Value: 1}, primitive.E{Key: "priority", Value: 1}})
 
 	var result []model.QueueItem
 	err := sa.db.queueData.Find(filter, &result, findOptions)
