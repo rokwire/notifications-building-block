@@ -198,7 +198,7 @@ type Storage interface {
 	SaveQueueWithContext(ctx context.Context, queue model.Queue) error
 	SaveQueue(queue model.Queue) error
 
-	FindQueueData(limit int) ([]model.QueueItem, error)
+	FindQueueData(time time.Time, limit int) ([]model.QueueItem, error)
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions

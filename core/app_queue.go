@@ -19,6 +19,7 @@ import (
 	"log"
 	"notifications/core/model"
 	"notifications/driven/storage"
+	"time"
 
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
@@ -58,7 +59,9 @@ func (q queueLogic) processQueue() {
 
 	//TODO
 
-	queueItems, err := q.storage.FindQueueData(1)
+	time := time.Now()
+	limit := queue.ProcessItemsCount
+	queueItems, err := q.storage.FindQueueData(time, limit)
 	if err != nil {
 		q.logger.Errorf("error on finding queue data", err)
 
