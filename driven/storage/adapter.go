@@ -1113,6 +1113,16 @@ func (sa *Adapter) SaveQueueWithContext(ctx context.Context, queue model.Queue) 
 	return nil
 }
 
+// SaveQueue saves queue
+func (sa *Adapter) SaveQueue(queue model.Queue) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: queue.ID}}
+	err := sa.db.queue.ReplaceOne(filter, queue, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionUpdate, "queue", &logutils.FieldArgs{"_id": queue.ID}, err)
+	}
+	return nil
+}
+
 // FindQueueData finds queue data
 func (sa *Adapter) FindQueueData(limit int) ([]model.QueueItem, error) {
 	filter := bson.D{}
