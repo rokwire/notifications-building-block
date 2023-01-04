@@ -31,6 +31,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Adapter implements the Storage interface
@@ -1110,6 +1111,22 @@ func (sa *Adapter) SaveQueueWithContext(ctx context.Context, queue model.Queue) 
 		return errors.WrapErrorAction(logutils.ActionUpdate, "queue", &logutils.FieldArgs{"_id": queue.ID}, err)
 	}
 	return nil
+}
+
+// FindQueueData finds queue data
+func (sa *Adapter) FindQueueData(limit int) ([]model.QueueItem, error) {
+	filter := bson.D{}
+	var result []model.QueueItem
+
+	//set limit
+	findOptions := options.Find()
+	findOptions.SetLimit(int64(limit))
+
+	err := sa.db.queueData.Find(filter, &result, findOptions)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "queue data", nil, err)
+	}
+	return result, nil
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {

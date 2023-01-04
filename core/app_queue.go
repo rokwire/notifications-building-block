@@ -57,6 +57,13 @@ func (q queueLogic) processQueue() {
 	}
 
 	//TODO
+
+	queueItems, err := q.storage.FindQueueData(1)
+	if err != nil {
+		q.logger.Errorf("error on finding queue data", err)
+		return
+	}
+
 	log.Println(queue)
 
 	//TODO set timer
@@ -101,6 +108,10 @@ func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
 	}
 
 	return &queueAvailable, queue, nil
+}
+
+func (q queueLogic) unlockQueue(queue model.Queue) error {
+
 }
 
 /* TODO
