@@ -69,10 +69,13 @@ func (q queueLogic) processQueue() {
 			return
 		}
 
-		if len(queueItems) == 0 {
+		itemsCount := len(queueItems)
+		if itemsCount == 0 {
 			q.logger.Info("no more items for processing, stop iterating")
 			break //no more items for processing, stop iterating
 		}
+
+		q.logger.Infof("%d items to processes", itemsCount)
 
 		//process the current items
 		err = q.processQueueItem(queueItems)
