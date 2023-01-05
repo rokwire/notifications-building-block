@@ -16,7 +16,6 @@ package core
 
 import (
 	"fmt"
-	"log"
 	"notifications/core/model"
 	"notifications/driven/storage"
 	"time"
@@ -57,19 +56,22 @@ func (q queueLogic) processQueue() {
 		return
 	}
 
-	//TODO
-
+	// process the queue items until they are available
 	time := time.Now()
 	limit := queue.ProcessItemsCount
-	queueItems, err := q.storage.FindQueueData(time, limit)
-	if err != nil {
-		q.logger.Errorf("error on finding queue data", err)
+	for {
+		queueItems, err := q.storage.FindQueueData(time, limit)
+		if err != nil {
+			q.logger.Errorf("error on finding queue data", err)
 
-		q.unlockQueue(*queue) //always unlock the queue on error
-		return
+			q.unlockQueue(*queue) //always unlock the queue on error
+			return
+		}
+
+		if len(queueItems) == 0 {
+			break //no more items for processing
+		}
 	}
-
-	log.Println(queueItems)
 
 	//TODO set timer
 }
