@@ -106,6 +106,22 @@ func (sa Adapter) LoadFirebaseConfigurations() ([]model.FirebaseConf, error) {
 	return result, nil
 }
 
+// FindUsersByIDs finds users by ids
+func (sa Adapter) FindUsersByIDs(usersIDs []string) ([]model.User, error) {
+	filter := bson.D{
+		primitive.E{Key: "user_id", Value: bson.M{"$in": usersIDs}},
+	}
+
+	var result []model.User
+	err := sa.db.users.Find(filter, &result, nil)
+	if err != nil {
+		log.Printf("warning: error while retriving users - %s", err)
+		return nil, err
+	}
+
+	return result, err
+}
+
 // FindUserByToken finds firebase token
 func (sa Adapter) FindUserByToken(orgID string, appID string, token string) (*model.User, error) {
 	return sa.findUserByTokenWithContext(context.Background(), orgID, appID, token)
@@ -1142,6 +1158,16 @@ func (sa *Adapter) FindQueueData(time time.Time, limit int) ([]model.QueueItem, 
 		return nil, errors.WrapErrorAction(logutils.ActionFind, "queue data", nil, err)
 	}
 	return result, nil
+}
+
+// DeleteQueueData removes queue data
+func (sa *Adapter) DeleteQueueData(ids []string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
+	_, err := sa.db.queueData.DeleteMany(filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"ids": ids}, err)
+	}
+	return nil
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {

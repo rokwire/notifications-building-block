@@ -45,7 +45,7 @@ func (q queueLogic) onQueuePush() {
 func (q queueLogic) processQueue() {
 	q.logger.Info("queueLogic processQueue")
 
-	// check if the queue is locked and lock it for processing
+	//check if the queue is locked and lock it for processing
 	queueAvailable, queue, err := q.lockQueue()
 	if err != nil {
 		q.logger.Errorf("error on locking queue", err)
@@ -56,10 +56,11 @@ func (q queueLogic) processQueue() {
 		return
 	}
 
-	// process the queue items until they are available
+	//process the queue items until they are available
 	time := time.Now()
 	limit := queue.ProcessItemsCount
 	for {
+		//get the current items
 		queueItems, err := q.storage.FindQueueData(time, limit)
 		if err != nil {
 			q.logger.Errorf("error on finding queue data", err)
@@ -69,11 +70,24 @@ func (q queueLogic) processQueue() {
 		}
 
 		if len(queueItems) == 0 {
-			break //no more items for processing
+			q.logger.Info("no more items for processing, stop iterating")
+			break //no more items for processing, stop iterating
+		}
+
+		//process the current items
+		err = q.processQueueItem(queueItems)
+		if err != nil {
+			q.logger.Errorf("error on processing items", err)
+
+			q.unlockQueue(*queue) //always unlock the queue on error
+			return
 		}
 	}
 
 	//TODO set timer
+
+	//unlock the queue at the end
+	q.unlockQueue(*queue)
 }
 
 func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
@@ -125,49 +139,64 @@ func (q queueLogic) unlockQueue(queue model.Queue) {
 	}
 }
 
-/* TODO
-func (app *Application) sendMessage(allRecipients []model.MessageRecipient, message model.Message, async bool) error {
-	if len(allRecipients) == 0 {
-		fmt.Print("no recipients")
-		return nil
-	}
+func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 
-	//send notifications only for mute=false
-	recipients := []model.MessageRecipient{}
-	for _, item := range allRecipients {
-		if item.Mute == false {
-			recipients = append(recipients, item)
-		}
+	//get the users as we need their tokens and if they have disabled notifications
+	usersIDs := make([]string, len(queueItems))
+	for i, item := range queueItems {
+		usersIDs[i] = item.UserID
 	}
-
-	// retrieve tokens by recipients
-	tokens, err := app.storage.GetFirebaseTokensByRecipients(
-		message.OrgID, message.AppID, recipients, message.RecipientsCriteriaList)
+	users, err := q.storage.FindUsersByIDs(usersIDs)
 	if err != nil {
-		log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
+		q.logger.Errorf("error on getting users - %s", err)
 		return err
 	}
-	log.Printf("retrieve firebase tokens for message %s: %+v", message.ID, tokens)
 
-	// send message to tokens
-	if len(tokens) > 0 {
-		if async {
-			go app.sendNotifications(message, tokens)
-		} else {
-			app.sendNotifications(message, tokens)
+	//process every item
+	itemsIDs := make([]string, len(queueItems))
+	for i, item := range queueItems {
+		itemsIDs[i] = item.ID
+
+		var user *model.User
+
+		//get the user
+		for _, cUser := range users {
+			if cUser.UserID == item.UserID {
+				user = &cUser
+				break
+			}
 		}
+
+		if user == nil {
+			continue //for some reasons there is no a corresponding user
+		}
+
+		if user.NotificationsDisabled {
+			continue //do not send notification if disabled for the user
+		}
+
+		tokens := user.FirebaseTokens
+		go q.sendNotifications(item, tokens) //new thread
 	}
+
+	//remove the items from the queue
+	err = q.storage.DeleteQueueData(itemsIDs)
+	if err != nil {
+		q.logger.Errorf("error on deleting queue datas - %s", err)
+		return err
+	}
+
 	return nil
-} */
+}
 
-/*
-func (app *Application) sendNotifications(message model.Message, tokens []string) {
-	for _, token := range tokens {
-		sendErr := app.firebase.SendNotificationToToken(message.OrgID, message.AppID, token, message.Subject, message.Body, message.Data)
+func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.FirebaseToken) {
+	for _, fToken := range tokens {
+		token := fToken.Token
+		sendErr := q.firebase.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
 		if sendErr != nil {
-			fmt.Printf("error send notification to token (%s): %s", token, sendErr)
+			q.logger.Errorf("error send notification to token (%s): %s", token, sendErr)
 		} else {
-			log.Printf("message(%s:%s:%s) has been sent to token: %s", message.ID, message.Subject, message.Body, token)
+			q.logger.Errorf("queue item(%s:%s:%s) has been sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
 		}
 	}
-} */
+}

@@ -163,6 +163,7 @@ type Storage interface {
 
 	LoadFirebaseConfigurations() ([]model.FirebaseConf, error)
 
+	FindUsersByIDs(usersIDs []string) ([]model.User, error)
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
@@ -199,6 +200,7 @@ type Storage interface {
 	SaveQueue(queue model.Queue) error
 
 	FindQueueData(time time.Time, limit int) ([]model.QueueItem, error)
+	DeleteQueueData(ids []string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
