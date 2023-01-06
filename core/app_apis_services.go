@@ -81,6 +81,7 @@ func (app *Application) createMessage(orgID string, appID string,
 	var err error
 	var persistedMessage *model.Message
 	var recipients []model.MessageRecipient
+	notifyQueue := false
 
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
@@ -133,7 +134,7 @@ func (app *Application) createMessage(orgID string, appID string,
 			}
 
 			//notify the queue that new items are added
-			go app.queueLogic.onQueuePush()
+			notifyQueue = true
 		}
 
 		return nil
@@ -144,6 +145,11 @@ func (app *Application) createMessage(orgID string, appID string,
 	if err != nil {
 		fmt.Printf("error performing sync data transaction - %s", err)
 		return nil, err
+	}
+
+	//notify the queue that new items are added
+	if notifyQueue {
+		go app.queueLogic.onQueuePush()
 	}
 
 	return persistedMessage, nil
