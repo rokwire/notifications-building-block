@@ -287,17 +287,24 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 	return messageRecipients, nil
 }
 
-func getCommonRecipients(s1, s2 []model.MessageRecipient) []model.MessageRecipient {
+func getCommonRecipients(messageRecipients, topicRecipients []model.MessageRecipient) []model.MessageRecipient {
+	//
+	// Recipients who don't belong to a topic will still receive a muted message (just skipping the push notification)
+	//
 	common := []model.MessageRecipient{}
-	messageReciepientsMap := map[string]model.MessageRecipient{}
-	for _, e := range s1 {
-		messageReciepientsMap[e.UserID] = e
+	topicReciepientsMap := map[string]model.MessageRecipient{}
+
+	for _, e := range topicRecipients {
+		topicReciepientsMap[e.UserID] = e
 	}
-	for _, e := range s2 {
-		if val, ok := messageReciepientsMap[e.UserID]; ok {
-			common = append(common, val)
+
+	for _, recipient := range messageRecipients {
+		if _, ok := topicReciepientsMap[recipient.UserID]; !ok {
+			recipient.Mute = true
 		}
+		common = append(common, recipient)
 	}
+
 	return common
 }
 
