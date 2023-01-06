@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Rate limits [#98](https://github.com/rokwire/notifications-building-block/issues/98)
 
+## [1.11.0] - 2023-01-06
 ### Changed
 - Mute message if the global settings is set to false instead of ignoring the message [#137](https://github.com/rokwire/notifications-building-block/issues/137)
 
