@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2023-01-06
+### Changed
+- Mute message if the global settings is set to false instead of ignoring the message [#137](https://github.com/rokwire/notifications-building-block/issues/137)
+
 ## [1.10.0] - 2022-12-21
 ### Added
 - Add message id in the notification [#135](https://github.com/rokwire/notifications-building-block/issues/135)
