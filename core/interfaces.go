@@ -199,7 +199,7 @@ type Storage interface {
 	SaveQueueWithContext(ctx context.Context, queue model.Queue) error
 	SaveQueue(queue model.Queue) error
 
-	FindQueueData(time time.Time, limit int) ([]model.QueueItem, error)
+	FindQueueData(time *time.Time, limit int) ([]model.QueueItem, error)
 	DeleteQueueData(ids []string) error
 }
 

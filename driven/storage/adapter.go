@@ -1140,9 +1140,12 @@ func (sa *Adapter) SaveQueue(queue model.Queue) error {
 }
 
 // FindQueueData finds queue data
-func (sa *Adapter) FindQueueData(time time.Time, limit int) ([]model.QueueItem, error) {
-	filter := bson.D{
-		primitive.E{Key: "time", Value: bson.M{"$lte": time}},
+func (sa *Adapter) FindQueueData(time *time.Time, limit int) ([]model.QueueItem, error) {
+	filter := bson.D{}
+
+	//time
+	if time != nil {
+		filter = append(filter, primitive.E{Key: "time", Value: bson.M{"$lte": time}})
 	}
 
 	//set limit

@@ -70,7 +70,8 @@ func (app *Application) Start() {
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, firebase Firebase, mailer *mailer.Adapter, logger *logs.Logger, core *core.Adapter) *Application {
 
-	queueLogic := queueLogic{logger: logger, storage: storage, firebase: firebase}
+	timerDone := make(chan bool)
+	queueLogic := queueLogic{logger: logger, storage: storage, firebase: firebase, timerDone: timerDone}
 
 	application := Application{version: version, build: build, storage: storage, firebase: firebase,
 		mailer: mailer, logger: logger, core: core, queueLogic: queueLogic}

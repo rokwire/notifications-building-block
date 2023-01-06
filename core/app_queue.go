@@ -28,6 +28,10 @@ type queueLogic struct {
 
 	storage  Storage
 	firebase Firebase
+
+	//timer
+	queueTimer *time.Timer
+	timerDone  chan bool
 }
 
 func (q queueLogic) start() {
@@ -48,7 +52,7 @@ func (q queueLogic) processQueue() {
 	//check if the queue is locked and lock it for processing
 	queueAvailable, queue, err := q.lockQueue()
 	if err != nil {
-		q.logger.Errorf("error on locking queue", err)
+		q.logger.Errorf("error on locking queue - %s", err)
 		return
 	}
 	if !*queueAvailable {
@@ -61,9 +65,9 @@ func (q queueLogic) processQueue() {
 	limit := queue.ProcessItemsCount
 	for {
 		//get the current items
-		queueItems, err := q.storage.FindQueueData(time, limit)
+		queueItems, err := q.storage.FindQueueData(&time, limit)
 		if err != nil {
-			q.logger.Errorf("error on finding queue data", err)
+			q.logger.Errorf("error on finding queue data - %s", err)
 
 			q.unlockQueue(*queue) //always unlock the queue on error
 			return
@@ -80,17 +84,44 @@ func (q queueLogic) processQueue() {
 		//process the current items
 		err = q.processQueueItem(queueItems)
 		if err != nil {
-			q.logger.Errorf("error on processing items", err)
+			q.logger.Errorf("error on processing items - %s", err)
 
 			q.unlockQueue(*queue) //always unlock the queue on error
 			return
 		}
 	}
 
-	//TODO set timer
+	//set timer if there is still items in the queue for scheduled messages
+	err = q.setTimer()
+	if err != nil {
+		q.logger.Errorf("error on setting timer - %s", err)
+
+		q.unlockQueue(*queue) //always unlock the queue on error
+		return
+	}
 
 	//unlock the queue at the end
 	q.unlockQueue(*queue)
+}
+
+func (q queueLogic) setTimer() error {
+	//check if there is scheduled messages
+	scheduled, err := q.storage.FindQueueData(nil, 1) //it gives the first upcoming message
+	if err != nil {
+		return err
+	}
+
+	if len(scheduled) == 0 {
+		q.logger.Info("there is no upcoming messages in the queue, so not seting timer")
+		return nil
+	}
+
+	upcomingTime := scheduled[0].Time
+	q.logger.Infof("there is upcoming message at - %s", upcomingTime)
+
+	//TODO
+
+	return nil
 }
 
 func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
