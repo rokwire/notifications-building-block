@@ -92,7 +92,7 @@ func (q queueLogic) processQueue() {
 	}
 
 	//set timer if there is still items in the queue for scheduled messages
-	err = q.setTimer()
+	err = q.setTimerIfNecessary()
 	if err != nil {
 		q.logger.Errorf("error on setting timer - %s", err)
 
@@ -104,7 +104,7 @@ func (q queueLogic) processQueue() {
 	q.unlockQueue(*queue)
 }
 
-func (q queueLogic) setTimer() error {
+func (q queueLogic) setTimerIfNecessary() error {
 	//check if there is scheduled messages
 	scheduled, err := q.storage.FindQueueData(nil, 1) //it gives the first upcoming message
 	if err != nil {
@@ -112,14 +112,39 @@ func (q queueLogic) setTimer() error {
 	}
 
 	if len(scheduled) == 0 {
-		q.logger.Info("there is no upcoming messages in the queue, so not seting timer")
+		q.logger.Info("there is no upcoming messages in the queue, so not setting timer")
 		return nil
 	}
 
 	upcomingTime := scheduled[0].Time
 	q.logger.Infof("there is upcoming message at - %s", upcomingTime)
 
-	//TODO
+	//set timer
+	go q.setTimer(upcomingTime)
+
+	return nil
+}
+
+func (q queueLogic) setTimer(upcomingTime time.Time) error {
+	nowInSeconds := time.Now().Unix()
+	upcomingInSeconds := upcomingTime.Unix()
+	durationInSeconds := (upcomingInSeconds - nowInSeconds) + 2 //add two seconds to be sure that the timer will be executed after the message time
+	duration := time.Second * time.Duration(durationInSeconds)
+
+	q.logger.Infof("setting timer after - %s", duration)
+
+	q.queueTimer = time.NewTimer(duration)
+	select {
+	case <-q.queueTimer.C:
+		q.logger.Info("setTimer -> queue timer expired")
+		q.queueTimer = nil
+
+		q.processQueue()
+	case <-q.timerDone:
+		// timer aborted
+		q.logger.Info("setTimer -> queue timer aborted")
+		q.queueTimer = nil
+	}
 
 	return nil
 }
