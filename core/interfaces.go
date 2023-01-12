@@ -18,6 +18,7 @@ import (
 	"context"
 	"notifications/core/model"
 	"notifications/driven/storage"
+	"time"
 )
 
 // Services exposes APIs for the driver adapters
@@ -38,7 +39,10 @@ type Services interface {
 	GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	GetUserMessage(orgID string, appID string, ID string, accountID string) (*model.Message, error)
-	CreateMessage(inputMessage model.InputMessage, sender model.Sender, async bool) (*model.Message, error)
+	CreateMessage(orgID string, appID string,
+		sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
+		inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
 	UpdateMessage(userID *string, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(orgID string, appID string, userID string, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
@@ -99,8 +103,12 @@ func (s *servicesImpl) GetUserMessage(orgID string, appID string, ID string, acc
 	return s.app.getUserMessage(orgID, appID, ID, accountID)
 }
 
-func (s *servicesImpl) CreateMessage(inputMessage model.InputMessage, sender model.Sender, async bool) (*model.Message, error) {
-	return s.app.createMessage(inputMessage, sender, async)
+func (s *servicesImpl) CreateMessage(orgID string, appID string,
+	sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
+	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
+	return s.app.createMessage(orgID, appID, sender, time, priority, subject, body, data,
+		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
 }
 
 func (s *servicesImpl) UpdateMessage(userID *string, message *model.Message) (*model.Message, error) {
@@ -155,6 +163,7 @@ type Storage interface {
 
 	LoadFirebaseConfigurations() ([]model.FirebaseConf, error)
 
+	FindUsersByIDs(usersIDs []string) ([]model.User, error)
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
@@ -184,6 +193,14 @@ type Storage interface {
 	UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error
 	GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error)
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
+
+	InsertQueueDataItemsWithContext(ctx context.Context, items []model.QueueItem) error
+	LoadQueueWithContext(ctx context.Context) (*model.Queue, error)
+	SaveQueueWithContext(ctx context.Context, queue model.Queue) error
+	SaveQueue(queue model.Queue) error
+
+	FindQueueData(time *time.Time, limit int) ([]model.QueueItem, error)
+	DeleteQueueData(ids []string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions

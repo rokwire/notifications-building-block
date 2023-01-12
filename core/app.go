@@ -54,6 +54,8 @@ type Application struct {
 	firebase Firebase
 	mailer   Mailer
 	core     Core
+
+	queueLogic queueLogic
 }
 
 // Start starts the core part of the application
@@ -61,12 +63,18 @@ func (app *Application) Start() {
 	//set storage listener
 	storageListener := storageListener{app: app}
 	app.storage.RegisterStorageListener(&storageListener)
+
+	app.queueLogic.start()
 }
 
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, firebase Firebase, mailer *mailer.Adapter, logger *logs.Logger, core *core.Adapter) *Application {
 
-	application := Application{version: version, build: build, storage: storage, firebase: firebase, mailer: mailer, logger: logger, core: core}
+	timerDone := make(chan bool)
+	queueLogic := queueLogic{logger: logger, storage: storage, firebase: firebase, timerDone: timerDone}
+
+	application := Application{version: version, build: build, storage: storage, firebase: firebase,
+		mailer: mailer, logger: logger, core: core, queueLogic: queueLogic}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

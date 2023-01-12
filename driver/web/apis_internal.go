@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package web
 
 import (
 	"encoding/json"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	Def "notifications/driver/web/docs/gen"
+	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -46,19 +48,25 @@ func NewInternalApisHandler(app *core.Application) InternalApisHandler {
 // @Router /int/message [post]
 // @Deprecated
 func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.InputMessage
+	var message Def.SharedReqCreateMessage
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	return h.processSendMessage(l, *message, false, r)
+	orgID := message.OrgId
+	appID := message.AppId
+
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(message)
+
+	return h.processSendMessage(l, orgID, appID, time, priority, subject, body, inputData,
+		inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic, false, r)
 }
 
 // sendMessageRequestBody message request body
 type sendMessageRequestBody struct {
-	Async   *bool              `json:"async"`
-	Message model.InputMessage `json:"message"`
+	Async   *bool                      `json:"async"`
+	Message Def.SharedReqCreateMessage `json:"message"`
 } // @name sendMessageRequestBody
 
 // SendMessageV2 Sends a message to a user, list of users or a topic
@@ -82,17 +90,31 @@ func (h InternalApisHandler) SendMessageV2(l *logs.Log, r *http.Request, claims 
 	if bodyData.Async != nil {
 		async = *bodyData.Async
 	}
-	return h.processSendMessage(l, message, async, r)
+
+	orgID := message.OrgId
+	appID := message.AppId
+
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(message)
+
+	return h.processSendMessage(l, orgID, appID, time, priority, subject, body, inputData,
+		inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic, async, r)
 }
 
-func (h InternalApisHandler) processSendMessage(l *logs.Log, inputMessage model.InputMessage, async bool, r *http.Request) logs.HTTPResponse {
-	if len(inputMessage.OrgID) == 0 || len(inputMessage.AppID) == 0 {
+func (h InternalApisHandler) processSendMessage(l *logs.Log,
+	orgID string, appID string, time time.Time, priority int, subject string, body string,
+	inputData map[string]string, inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+	recipientAccountCriteria map[string]interface{}, topic *string,
+	async bool, r *http.Request) logs.HTTPResponse {
+
+	if len(orgID) == 0 || len(appID) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
 	sender := model.Sender{Type: "system"}
 
-	message, err := h.app.Services.CreateMessage(inputMessage, sender, async)
+	message, err := h.app.Services.CreateMessage(orgID, appID, sender, time, priority,
+		subject, body, inputData, inputRecipients, recipientsCriteriaList,
+		recipientAccountCriteria, topic, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}

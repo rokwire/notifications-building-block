@@ -73,10 +73,15 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(inputMessage model.InputMessage, sender model.Sender, async bool) (*model.Message, error) {
+func (app *Application) createMessage(orgID string, appID string,
+	sender model.Sender, mTime time.Time, priority int, subject string, body string, data map[string]string,
+	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
+
 	var err error
 	var persistedMessage *model.Message
 	var recipients []model.MessageRecipient
+	notifyQueue := false
 
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
@@ -85,38 +90,22 @@ func (app *Application) createMessage(inputMessage model.InputMessage, sender mo
 		messageID := uuid.NewString()
 
 		//calculate the recipients
-		recipients, err = app.calculateRecipients(context, inputMessage, messageID)
+		recipients, err = app.calculateRecipients(context, orgID, appID,
+			subject, body, inputRecipients, recipientsCriteriaList,
+			recipientAccountCriteria, topic, messageID)
 		if err != nil {
 			fmt.Printf("error on calculating recipients for a message: %s", err)
 			return err
 		}
 
 		//create message object
-		orgID := inputMessage.OrgID
-		appID := inputMessage.AppID
-
-		priority := inputMessage.Priority
-		subject := inputMessage.Subject
-		body := inputMessage.Body
-
-		//we add message id to the data
-		data := inputMessage.Data
-		if data == nil {
+		if data == nil { //we add message id to the data
 			data = map[string]string{}
 		}
 		data["message_id"] = messageID
-
 		calculatedRecipients := len(recipients)
-		var recipientsCriteriaList []model.RecipientCriteria
-		if len(inputMessage.RecipientsCriteriaList) > 0 {
-			recipientsCriteriaList = make([]model.RecipientCriteria, len(inputMessage.RecipientsCriteriaList))
-			for i, item := range inputMessage.RecipientsCriteriaList {
-				recipientsCriteriaList[i] = model.RecipientCriteria{AppVersion: item.AppVersion, AppPlatform: item.AppPlatform}
-			}
-		}
-		topic := inputMessage.Topic
 		dateCreated := time.Now()
-		message := model.Message{OrgID: orgID, AppID: appID, ID: messageID, Priority: priority,
+		message := model.Message{OrgID: orgID, AppID: appID, ID: messageID, Priority: priority, Time: mTime,
 			Subject: subject, Sender: sender, Body: body, Data: data, RecipientsCriteriaList: recipientsCriteriaList,
 			Topic: topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
 
@@ -135,6 +124,19 @@ func (app *Application) createMessage(inputMessage model.InputMessage, sender mo
 			return err
 		}
 
+		//create the notifications queue items and store them in the queue
+		queueItems := app.createQueueItems(*persistedMessage, recipients)
+		if len(queueItems) > 0 {
+			err = app.storage.InsertQueueDataItemsWithContext(context, queueItems)
+			if err != nil {
+				fmt.Printf("error on inserting queue data items: %s", err)
+				return err
+			}
+
+			//notify the queue that new items are added
+			notifyQueue = true
+		}
+
 		return nil
 	}
 
@@ -145,85 +147,81 @@ func (app *Application) createMessage(inputMessage model.InputMessage, sender mo
 		return nil, err
 	}
 
-	//send message
-	if len(recipients) > 0 {
-		err = app.sendMessage(recipients, *persistedMessage, async)
-		if err != nil {
-			fmt.Printf("error on sending message: %s", err)
-			return nil, fmt.Errorf("error on sending message: %s", err)
-		}
+	//notify the queue that new items are added
+	if notifyQueue {
+		go app.queueLogic.onQueuePush()
 	}
 
 	return persistedMessage, nil
 }
 
-func (app *Application) sendMessage(allRecipients []model.MessageRecipient, message model.Message, async bool) error {
-	if len(allRecipients) == 0 {
-		fmt.Print("no recipients")
-		return nil
+func (app *Application) createQueueItems(message model.Message, messageRecipients []model.MessageRecipient) []model.QueueItem {
+	queueItems := []model.QueueItem{}
+
+	for _, messageRecipient := range messageRecipients {
+		orgID := messageRecipient.OrgID
+		appID := messageRecipient.AppID
+		id := uuid.NewString()
+
+		messageRecipientID := messageRecipient.ID
+		userID := messageRecipient.UserID
+
+		subject := message.Subject
+		body := message.Body
+		data := message.Data
+
+		time := message.Time
+		priority := message.Priority
+
+		queueItem := model.QueueItem{OrgID: orgID, AppID: appID, ID: id,
+			MessageRecipientID: messageRecipientID, UserID: userID,
+			Subject: subject, Body: body, Data: data, Time: time, Priority: priority}
+
+		queueItems = append(queueItems, queueItem)
 	}
 
-	//send notifications only for mute=false
-	recipients := []model.MessageRecipient{}
-	for _, item := range allRecipients {
-		if item.Mute == false {
-			recipients = append(recipients, item)
-		}
-	}
-
-	// retrieve tokens by recipients
-	tokens, err := app.storage.GetFirebaseTokensByRecipients(
-		message.OrgID, message.AppID, recipients, message.RecipientsCriteriaList)
-	if err != nil {
-		log.Printf("error on GetFirebaseTokensByRecipients: %s", err)
-		return err
-	}
-	log.Printf("retrieve firebase tokens for message %s: %+v", message.ID, tokens)
-
-	// send message to tokens
-	if len(tokens) > 0 {
-		if async {
-			go app.sendNotifications(message, tokens)
-		} else {
-			app.sendNotifications(message, tokens)
-		}
-	}
-	return nil
+	return queueItems
 }
 
 func (app *Application) calculateRecipients(context storage.TransactionContext,
-	inputMessage model.InputMessage, messageID string) ([]model.MessageRecipient, error) {
+	orgID string, appID string,
+	subject string, body string,
+	recipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+	recipientAccountCriteria map[string]interface{}, topic *string, messageID string) ([]model.MessageRecipient, error) {
 
 	messageRecipients := []model.MessageRecipient{}
 	checkCriteria := true
 
 	// recipients from message
-	if len(inputMessage.Recipients) > 0 {
-		list := make([]model.MessageRecipient, len(inputMessage.Recipients))
-		for i, item := range inputMessage.Recipients {
-			cItem := model.MessageRecipient{OrgID: inputMessage.OrgID, AppID: inputMessage.AppID,
-				ID: uuid.NewString(), UserID: item.UserID,
-				MessageID: messageID, Mute: item.Mute, Read: false}
-			list[i] = cItem
+	if len(recipients) > 0 {
+		list := make([]model.MessageRecipient, len(recipients))
+		for i, item := range recipients {
+			item.OrgID = orgID
+			item.AppID = appID
+			item.ID = uuid.NewString()
+			item.MessageID = messageID
+			item.Read = false
+
+			list[i] = item
 		}
 
 		messageRecipients = append(messageRecipients, list...)
 	}
 
 	// recipients from topic
-	if inputMessage.Topic != nil {
-		topicUsers, err := app.storage.GetUsersByTopicWithContext(context, inputMessage.OrgID,
-			inputMessage.AppID, *inputMessage.Topic)
+	if topic != nil {
+		topicUsers, err := app.storage.GetUsersByTopicWithContext(context, orgID,
+			appID, *topic)
 		if err != nil {
-			fmt.Printf("error retrieving recipients by topic (%s): %s", *inputMessage.Topic, err)
+			fmt.Printf("error retrieving recipients by topic (%s): %s", *topic, err)
 			return nil, err
 		}
-		log.Printf("retrieve recipients (%+v) for topic (%s)", topicUsers, *inputMessage.Topic)
+		log.Printf("retrieve recipients (%+v) for topic (%s)", topicUsers, *topic)
 
 		topicRecipients := make([]model.MessageRecipient, len(topicUsers))
 		for i, item := range topicUsers {
 			topicRecipients[i] = model.MessageRecipient{
-				OrgID: inputMessage.OrgID, AppID: inputMessage.AppID,
+				OrgID: orgID, AppID: appID,
 				ID: uuid.NewString(), UserID: item.UserID, MessageID: messageID,
 			}
 		}
@@ -240,18 +238,13 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 		}
 
 		log.Printf("construct recipients (%+v) for message (%s:%s:%s)",
-			messageRecipients, messageID, inputMessage.Subject, inputMessage.Body)
+			messageRecipients, messageID, subject, body)
 	}
 
 	// recipients from criteria
-	if (inputMessage.RecipientsCriteriaList != nil) && checkCriteria {
-		criteriaList := make([]model.RecipientCriteria, len(inputMessage.RecipientsCriteriaList))
-		for i, item := range inputMessage.RecipientsCriteriaList {
-			criteriaList[i] = model.RecipientCriteria{AppVersion: item.AppVersion, AppPlatform: item.AppPlatform}
-		}
-
+	if (recipientsCriteriaList != nil && len(recipientAccountCriteria) > 0) && checkCriteria {
 		criteriaUsers, err := app.storage.GetUsersByRecipientCriteriasWithContext(context,
-			inputMessage.OrgID, inputMessage.AppID, criteriaList)
+			orgID, appID, recipientsCriteriaList)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by criteria: %s", err)
 			return nil, err
@@ -260,7 +253,7 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 		criteriaRecipients := make([]model.MessageRecipient, len(criteriaUsers))
 		for i, item := range criteriaUsers {
 			criteriaRecipients[i] = model.MessageRecipient{
-				OrgID: inputMessage.OrgID, AppID: inputMessage.AppID,
+				OrgID: orgID, AppID: appID,
 				ID: uuid.NewString(), UserID: item.UserID, MessageID: messageID,
 			}
 		}
@@ -275,20 +268,20 @@ func (app *Application) calculateRecipients(context storage.TransactionContext,
 			messageRecipients = nil
 		}
 		log.Printf("construct message criteria recipients (%+v) for message (%s:%s:%s)",
-			messageRecipients, messageID, inputMessage.Subject, inputMessage.Body)
+			messageRecipients, messageID, subject, body)
 	}
 
 	// recipients from account criteria
-	if len(inputMessage.RecipientAccountCriteria) > 0 {
-		accounts, err := app.core.RetrieveCoreUserAccountByCriteria(inputMessage.RecipientAccountCriteria,
-			&inputMessage.AppID, &inputMessage.OrgID)
+	if len(recipientAccountCriteria) > 0 {
+		accounts, err := app.core.RetrieveCoreUserAccountByCriteria(recipientAccountCriteria,
+			&appID, &orgID)
 		if err != nil {
 			fmt.Printf("error retrieving recipients by account criteria: %s", err)
 		}
 
 		for _, account := range accounts {
 			messageRecipient := model.MessageRecipient{
-				OrgID: inputMessage.OrgID, AppID: inputMessage.AppID,
+				OrgID: orgID, AppID: appID,
 				ID: uuid.NewString(), UserID: account.ID, MessageID: messageID,
 			}
 
@@ -319,17 +312,6 @@ func getCommonRecipients(messageRecipients, topicRecipients []model.MessageRecip
 	}
 
 	return common
-}
-
-func (app *Application) sendNotifications(message model.Message, tokens []string) {
-	for _, token := range tokens {
-		sendErr := app.firebase.SendNotificationToToken(message.OrgID, message.AppID, token, message.Subject, message.Body, message.Data)
-		if sendErr != nil {
-			fmt.Printf("error send notification to token (%s): %s", token, sendErr)
-		} else {
-			log.Printf("message(%s:%s:%s) has been sent to token: %s", message.ID, message.Subject, message.Body, token)
-		}
-	}
 }
 
 func (app *Application) getMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {

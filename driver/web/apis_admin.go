@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package web
 
 import (
 	"encoding/json"
@@ -24,6 +24,8 @@ import (
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
+
+	Def "notifications/driver/web/docs/gen"
 
 	"github.com/gorilla/mux"
 )
@@ -144,18 +146,22 @@ func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *toke
 // @Security AdminUserAuth
 // @Router /admin/message [post]
 func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var inputMessage *model.InputMessage
+	var inputMessage Def.SharedReqCreateMessage
 	err := json.NewDecoder(r.Body).Decode(&inputMessage)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	inputMessage.OrgID = claims.OrgID
-	inputMessage.AppID = claims.AppID
+	orgID := claims.OrgID
+	appID := claims.AppID
+
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(inputMessage)
 
 	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
-	message, err := h.app.Services.CreateMessage(*inputMessage, sender, false)
+	message, err := h.app.Services.CreateMessage(orgID, appID,
+		sender, time, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
+		recipientsAccountCriteria, topic, false)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}

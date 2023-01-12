@@ -31,6 +31,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Adapter implements the Storage interface
@@ -103,6 +104,22 @@ func (sa Adapter) LoadFirebaseConfigurations() ([]model.FirebaseConf, error) {
 		return nil, errors.WrapErrorAction(logutils.ActionFind, "firebase configuration", nil, err)
 	}
 	return result, nil
+}
+
+// FindUsersByIDs finds users by ids
+func (sa Adapter) FindUsersByIDs(usersIDs []string) ([]model.User, error) {
+	filter := bson.D{
+		primitive.E{Key: "user_id", Value: bson.M{"$in": usersIDs}},
+	}
+
+	var result []model.User
+	err := sa.db.users.Find(filter, &result, nil)
+	if err != nil {
+		log.Printf("warning: error while retriving users - %s", err)
+		return nil, err
+	}
+
+	return result, err
 }
 
 // FindUserByToken finds firebase token
@@ -1059,6 +1076,101 @@ func (sa Adapter) GetAllAppPlatforms(orgID string, appID string) ([]model.AppPla
 	}
 
 	return platforms, nil
+}
+
+// InsertQueueDataItemsWithContext inserts queue data items
+func (sa Adapter) InsertQueueDataItemsWithContext(ctx context.Context, items []model.QueueItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	data := make([]interface{}, len(items))
+	for i, p := range items {
+		data[i] = p
+	}
+
+	res, err := sa.db.queueData.InsertManyWithContext(ctx, data, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, "queue data items", nil, err)
+	}
+
+	if len(res.InsertedIDs) != len(items) {
+		return errors.ErrorAction(logutils.ActionInsert, "queue data items", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(items)})
+	}
+
+	return nil
+}
+
+// LoadQueueWithContext loads the queue object
+func (sa Adapter) LoadQueueWithContext(ctx context.Context) (*model.Queue, error) {
+	filter := bson.D{}
+
+	var queue []model.Queue
+	err := sa.db.queue.FindWithContext(ctx, filter, &queue, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(queue) == 0 {
+		return nil, nil
+	}
+
+	res := queue[0] //we support only one record
+	return &res, nil
+}
+
+// SaveQueueWithContext saves queue with context
+func (sa *Adapter) SaveQueueWithContext(ctx context.Context, queue model.Queue) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: queue.ID}}
+	err := sa.db.queue.ReplaceOneWithContext(ctx, filter, queue, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionUpdate, "queue", &logutils.FieldArgs{"_id": queue.ID}, err)
+	}
+	return nil
+}
+
+// SaveQueue saves queue
+func (sa *Adapter) SaveQueue(queue model.Queue) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: queue.ID}}
+	err := sa.db.queue.ReplaceOne(filter, queue, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionUpdate, "queue", &logutils.FieldArgs{"_id": queue.ID}, err)
+	}
+	return nil
+}
+
+// FindQueueData finds queue data
+func (sa *Adapter) FindQueueData(time *time.Time, limit int) ([]model.QueueItem, error) {
+	filter := bson.D{}
+
+	//time
+	if time != nil {
+		filter = append(filter, primitive.E{Key: "time", Value: bson.M{"$lte": time}})
+	}
+
+	//set limit
+	findOptions := options.Find()
+	findOptions.SetLimit(int64(limit))
+
+	//set sort
+	findOptions.SetSort(bson.D{primitive.E{Key: "time", Value: 1}, primitive.E{Key: "priority", Value: 1}})
+
+	var result []model.QueueItem
+	err := sa.db.queueData.Find(filter, &result, findOptions)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "queue data", nil, err)
+	}
+	return result, nil
+}
+
+// DeleteQueueData removes queue data
+func (sa *Adapter) DeleteQueueData(ids []string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
+	_, err := sa.db.queueData.DeleteMany(filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"ids": ids}, err)
+	}
+	return nil
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {

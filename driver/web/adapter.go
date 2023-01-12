@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
-	"notifications/driver/web/rest"
 	"os"
 	"time"
 
@@ -46,10 +45,10 @@ type Adapter struct {
 
 	cachedYamlDoc []byte
 
-	apisHandler         rest.ApisHandler
-	adminApisHandler    rest.AdminApisHandler
-	internalApisHandler rest.InternalApisHandler
-	bbsApisHandler      rest.BBsAPIsHandler
+	apisHandler         ApisHandler
+	adminApisHandler    AdminApisHandler
+	internalApisHandler InternalApisHandler
+	bbsApisHandler      BBsAPIsHandler
 
 	app *core.Application
 
@@ -208,10 +207,10 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 		logger.Fatalf("error creating auth - %s", err.Error())
 	}
 
-	apisHandler := rest.NewApisHandler(app)
-	adminApisHandler := rest.NewAdminApisHandler(app)
-	internalApisHandler := rest.NewInternalApisHandler(app)
-	bbsApisHandler := rest.NewBBsAPIsHandler(app)
+	apisHandler := NewApisHandler(app)
+	adminApisHandler := NewAdminApisHandler(app)
+	internalApisHandler := NewInternalApisHandler(app)
+	bbsApisHandler := NewBBsAPIsHandler(app)
 	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth, apisHandler: apisHandler,
 		adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsApisHandler: bbsApisHandler,
 		app: app, logger: logger}

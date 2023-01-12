@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package web
 
 import (
 	"encoding/json"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	Def "notifications/driver/web/docs/gen"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -37,8 +38,8 @@ func NewBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
 
 // sendMessageRequestBody message request body
 type bbsSendMessageRequestBody struct {
-	Async   *bool              `json:"async"`
-	Message model.InputMessage `json:"message"`
+	Async   *bool                      `json:"async"`
+	Message Def.SharedReqCreateMessage `json:"message"`
 } // @name sendMessageRequestBody
 
 // SendMessage Sends a message to a user, list of users or a topic
@@ -63,17 +64,24 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 		async = *bodyData.Async
 	}
 
-	if len(inputMessage.OrgID) == 0 || len(inputMessage.AppID) == 0 {
+	if len(inputMessage.OrgId) == 0 || len(inputMessage.AppId) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
-	if !claims.AppOrg().CanAccessAppOrg(inputMessage.AppID, inputMessage.OrgID) {
+	if !claims.AppOrg().CanAccessAppOrg(inputMessage.AppId, inputMessage.OrgId) {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusForbidden, false)
 	}
 
+	orgID := claims.OrgID
+	appID := claims.AppID
+
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(inputMessage)
+
 	sender := model.Sender{Type: "system", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
-	message, err := h.app.Services.CreateMessage(inputMessage, sender, async)
+	message, err := h.app.Services.CreateMessage(orgID, appID,
+		sender, time, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
+		recipientsAccountCriteria, topic, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
