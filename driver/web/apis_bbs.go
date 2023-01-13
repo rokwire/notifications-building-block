@@ -72,8 +72,8 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusForbidden, false)
 	}
 
-	orgID := claims.OrgID
-	appID := claims.AppID
+	orgID := inputMessage.OrgId
+	appID := inputMessage.AppId
 
 	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(inputMessage)
 
