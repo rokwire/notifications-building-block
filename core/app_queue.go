@@ -255,7 +255,7 @@ func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.
 		if sendErr != nil {
 			q.logger.Errorf("error send notification to token (%s): %s", token, sendErr)
 		} else {
-			q.logger.Errorf("queue item(%s:%s:%s) has been sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
+			q.logger.Infof("queue item(%s:%s:%s) has been sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
 		}
 	}
 }
