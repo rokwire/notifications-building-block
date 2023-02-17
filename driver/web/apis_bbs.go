@@ -94,6 +94,10 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	return l.HTTPResponseSuccessJSON(data)
 }
 
+func (h BBsAPIsHandler) DeleteMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	return l.HTTPResponseSuccess()
+}
+
 // sendMailRequestBody mail request body
 type bbsSendMailRequestBody struct {
 	ToMail  string `json:"to_mail"`
