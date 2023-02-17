@@ -50,7 +50,17 @@ func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, m
 			return errors.New("not valid service account id for message - " + messageID)
 		}
 
+		//delete the message
 		//TODO
+
+		//delete the message recipients
+		//TODO
+
+		//delete the queue data items
+		err = app.storage.DeleteQueueDataForMessageWithContext(context, messageID)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}

@@ -1191,6 +1191,17 @@ func (sa *Adapter) DeleteQueueData(ids []string) error {
 	return nil
 }
 
+// DeleteQueueDataForMessageWithContext removes queue data items for a message
+func (sa *Adapter) DeleteQueueDataForMessageWithContext(ctx context.Context, messageID string) error {
+	filter := bson.D{primitive.E{Key: "message_id", Value: messageID}}
+
+	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"message_id": messageID}, err)
+	}
+	return nil
+}
+
 func abortTransaction(sessionContext mongo.SessionContext) {
 	err := sessionContext.AbortTransaction(sessionContext)
 	if err != nil {
