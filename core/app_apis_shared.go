@@ -114,6 +114,8 @@ func (app *Application) sharedCreateQueueItems(message model.Message, messageRec
 		appID := messageRecipient.AppID
 		id := uuid.NewString()
 
+		messageID := message.ID
+
 		messageRecipientID := messageRecipient.ID
 		userID := messageRecipient.UserID
 
@@ -125,7 +127,7 @@ func (app *Application) sharedCreateQueueItems(message model.Message, messageRec
 		priority := message.Priority
 
 		queueItem := model.QueueItem{OrgID: orgID, AppID: appID, ID: id,
-			MessageRecipientID: messageRecipientID, UserID: userID,
+			MessageID: messageID, MessageRecipientID: messageRecipientID, UserID: userID,
 			Subject: subject, Body: body, Data: data, Time: time, Priority: priority}
 
 		queueItems = append(queueItems, queueItem)
