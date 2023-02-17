@@ -102,7 +102,7 @@ func (h BBsAPIsHandler) DeleteMessage(l *logs.Log, r *http.Request, claims *toke
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	err := h.app.BBs.BBsDeleteMessage(claims.Subject, id)
+	err := h.app.BBs.BBsDeleteMessage(l, claims.Subject, id)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
 	}

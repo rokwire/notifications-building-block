@@ -19,6 +19,8 @@ import (
 	"notifications/core/model"
 	"notifications/driven/storage"
 	"time"
+
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 // Services exposes APIs for the driver adapters
@@ -161,7 +163,7 @@ type BBs interface {
 		sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
 		inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
 		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
-	BBsDeleteMessage(serviceAccountID string, messageID string) error
+	BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error
 	BBsSendMail(toEmail string, subject string, body string) error
 }
 
@@ -177,8 +179,8 @@ func (s *bbsImpl) BBsCreateMessage(orgID string, appID string,
 		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
 }
 
-func (s *bbsImpl) BBsDeleteMessage(serviceAccountID string, messageID string) error {
-	return s.app.bbsDeleteMessage(serviceAccountID, messageID)
+func (s *bbsImpl) BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
+	return s.app.bbsDeleteMessage(l, serviceAccountID, messageID)
 }
 
 func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {

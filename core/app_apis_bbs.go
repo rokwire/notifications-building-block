@@ -15,8 +15,12 @@
 package core
 
 import (
+	"log"
 	"notifications/core/model"
+	"notifications/driven/storage"
 	"time"
+
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 func (app *Application) bbsCreateMessage(orgID string, appID string,
@@ -28,7 +32,28 @@ func (app *Application) bbsCreateMessage(orgID string, appID string,
 		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
 }
 
-func (app *Application) bbsDeleteMessage(serviceAccountID string, messageID string) error {
+func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
+	//in transaction
+	transaction := func(context storage.TransactionContext) error {
+		//find the message
+		message, err := app.storage.FindMessageWithContext(context, messageID)
+		if err != nil {
+			return err
+		}
+
+		log.Println(message.ID)
+		//TODO
+
+		return nil
+	}
+
+	//perform transactions
+	err := app.storage.PerformTransaction(transaction, 2000)
+	if err != nil {
+		l.Errorf("error on performing delete message transaction - %s", err)
+		return err
+	}
+
 	return nil
 }
 

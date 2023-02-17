@@ -94,7 +94,7 @@ func (app *Application) sharedCreateMessage(orgID string, appID string,
 	//perform transactions
 	err = app.storage.PerformTransaction(transaction, 10000) //10 seconds timeout
 	if err != nil {
-		fmt.Printf("error performing sync data transaction - %s", err)
+		fmt.Printf("error performing create message transaction - %s", err)
 		return nil, err
 	}
 
