@@ -51,7 +51,10 @@ func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, m
 		}
 
 		//delete the message
-		//TODO
+		err = app.storage.DeleteMessageWithContext(context, message.OrgID, message.AppID, messageID)
+		if err != nil {
+			return err
+		}
 
 		//delete the message recipients
 		err = app.storage.DeleteMessagesRecipientsForMessageWithContext(context, messageID)
