@@ -155,6 +155,32 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 	return s.app.sendMail(toEmail, subject, body)
 }
 
+// BBs exposes users related APIs used by the platform building blocks
+type BBs interface {
+	BBsCreateMessage(orgID string, appID string,
+		sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
+		inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
+	BBsSendMail(toEmail string, subject string, body string) error
+}
+
+type bbsImpl struct {
+	app *Application
+}
+
+func (s *bbsImpl) BBsCreateMessage(orgID string, appID string,
+	sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
+	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
+	//TODO
+	return nil, nil
+}
+
+func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {
+	//TODO
+	return nil
+}
+
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	RegisterStorageListener(storageListener storage.Listener)
