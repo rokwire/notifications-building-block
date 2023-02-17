@@ -28,6 +28,10 @@ func (app *Application) bbsCreateMessage(orgID string, appID string,
 		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
 }
 
+func (app *Application) bbsDeleteMessage(serviceAccountID string, messageID string) error {
+	return nil
+}
+
 func (app *Application) bbsSendMail(toEmail string, subject string, body string) error {
 	return app.sharedSendMail(toEmail, subject, body)
 }

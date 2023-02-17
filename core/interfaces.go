@@ -161,6 +161,7 @@ type BBs interface {
 		sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
 		inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
 		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
+	BBsDeleteMessage(serviceAccountID string, messageID string) error
 	BBsSendMail(toEmail string, subject string, body string) error
 }
 
@@ -174,6 +175,10 @@ func (s *bbsImpl) BBsCreateMessage(orgID string, appID string,
 	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
 	return s.app.bbsCreateMessage(orgID, appID, sender, time, priority, subject, body, data,
 		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
+}
+
+func (s *bbsImpl) BBsDeleteMessage(serviceAccountID string, messageID string) error {
+	return s.app.bbsDeleteMessage(serviceAccountID, messageID)
 }
 
 func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {
