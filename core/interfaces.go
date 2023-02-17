@@ -172,13 +172,12 @@ func (s *bbsImpl) BBsCreateMessage(orgID string, appID string,
 	sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
 	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
 	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
-	//TODO
-	return nil, nil
+	return s.app.bbsCreateMessage(orgID, appID, sender, time, priority, subject, body, data,
+		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
 }
 
 func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {
-	//TODO
-	return nil
+	return s.app.bbsSendMail(toEmail, subject, body)
 }
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
