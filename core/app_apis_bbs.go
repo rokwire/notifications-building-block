@@ -54,7 +54,10 @@ func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, m
 		//TODO
 
 		//delete the message recipients
-		//TODO
+		err = app.storage.DeleteMessagesRecipientsForMessageWithContext(context, messageID)
+		if err != nil {
+			return err
+		}
 
 		//delete the queue data items
 		err = app.storage.DeleteQueueDataForMessageWithContext(context, messageID)
