@@ -888,6 +888,24 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 	return nil
 }
 
+// FindMessageWithContext finds a message by id using context
+func (sa Adapter) FindMessageWithContext(ctx context.Context, ID string) (*model.Message, error) {
+	filter := bson.D{}
+
+	var messageArr []model.Message
+	err := sa.db.messages.FindWithContext(ctx, filter, &messageArr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(messageArr) == 0 {
+		return nil, nil
+	}
+
+	res := messageArr[0]
+	return &res, nil
+}
+
 // GetMessage gets a message by id
 func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Message, error) {
 	filter := bson.D{
