@@ -15,7 +15,7 @@
 package core
 
 import (
-	"log"
+	"errors"
 	"notifications/core/model"
 	"notifications/driven/storage"
 	"time"
@@ -40,8 +40,16 @@ func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, m
 		if err != nil {
 			return err
 		}
+		if message == nil {
+			return errors.New("no message for id - " + messageID)
+		}
 
-		log.Println(message.ID)
+		//validate if the service account is the sender of this message
+		valid := app.isSenderValid(serviceAccountID, *message)
+		if !valid {
+			return errors.New("not valid service account id for message - " + messageID)
+		}
+
 		//TODO
 
 		return nil
@@ -55,6 +63,19 @@ func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, m
 	}
 
 	return nil
+}
+
+func (app *Application) isSenderValid(serviceAccountID string, message model.Message) bool {
+	senderAccount := message.Sender.User
+	if senderAccount == nil {
+		return false
+	}
+	senderAccountID := senderAccount.UserID
+	if senderAccountID != senderAccountID {
+		return false
+	}
+
+	return true
 }
 
 func (app *Application) bbsSendMail(toEmail string, subject string, body string) error {
