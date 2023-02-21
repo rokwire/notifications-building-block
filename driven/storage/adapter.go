@@ -888,6 +888,35 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 	return nil
 }
 
+// DeleteMessagesRecipientsForMessageWithContext deletes messages recipients for a message
+func (sa Adapter) DeleteMessagesRecipientsForMessageWithContext(ctx context.Context, messageID string) error {
+	filter := bson.D{primitive.E{Key: "message_id", Value: messageID}}
+
+	_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient", &logutils.FieldArgs{"message_id": messageID}, err)
+	}
+	return nil
+}
+
+// FindMessageWithContext finds a message by id using context
+func (sa Adapter) FindMessageWithContext(ctx context.Context, ID string) (*model.Message, error) {
+	filter := bson.D{primitive.E{Key: "_id", Value: ID}}
+
+	var messageArr []model.Message
+	err := sa.db.messages.FindWithContext(ctx, filter, &messageArr, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(messageArr) == 0 {
+		return nil, nil
+	}
+
+	res := messageArr[0]
+	return &res, nil
+}
+
 // GetMessage gets a message by id
 func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Message, error) {
 	filter := bson.D{
@@ -1169,6 +1198,17 @@ func (sa *Adapter) DeleteQueueData(ids []string) error {
 	_, err := sa.db.queueData.DeleteMany(filter, nil)
 	if err != nil {
 		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"ids": ids}, err)
+	}
+	return nil
+}
+
+// DeleteQueueDataForMessageWithContext removes queue data items for a message
+func (sa *Adapter) DeleteQueueDataForMessageWithContext(ctx context.Context, messageID string) error {
+	filter := bson.D{primitive.E{Key: "message_id", Value: messageID}}
+
+	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"message_id": messageID}, err)
 	}
 	return nil
 }

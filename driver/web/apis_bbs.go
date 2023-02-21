@@ -21,6 +21,7 @@ import (
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
 
+	"github.com/gorilla/mux"
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
@@ -79,7 +80,7 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 
 	sender := model.Sender{Type: "system", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
-	message, err := h.app.Services.CreateMessage(orgID, appID,
+	message, err := h.app.BBs.BBsCreateMessage(orgID, appID,
 		sender, time, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
 		recipientsAccountCriteria, topic, async)
 	if err != nil {
@@ -92,6 +93,22 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	}
 
 	return l.HTTPResponseSuccessJSON(data)
+}
+
+// DeleteMessage deletes a message
+func (h BBsAPIsHandler) DeleteMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+
+	err := h.app.BBs.BBsDeleteMessage(l, claims.Subject, id)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
 }
 
 // sendMailRequestBody mail request body
@@ -117,7 +134,7 @@ func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	err = h.app.Services.SendMail(mailRequest.ToMail, mailRequest.Subject, mailRequest.Body)
+	err = h.app.BBs.BBsSendMail(mailRequest.ToMail, mailRequest.Subject, mailRequest.Body)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "email", nil, err, http.StatusInternalServerError, true)
 	}

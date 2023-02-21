@@ -256,8 +256,14 @@ func (m *database) applyQueueChecks(queue *collectionWrapper) error {
 func (m *database) applyQueueDataChecks(queueData *collectionWrapper) error {
 	log.Println("apply queue data checks.....")
 
+	//add message id index
+	err := queueData.AddIndex(bson.D{primitive.E{Key: "message_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
 	//add time index
-	err := queueData.AddIndex(bson.D{primitive.E{Key: "time", Value: 1}}, false)
+	err = queueData.AddIndex(bson.D{primitive.E{Key: "time", Value: 1}}, false)
 	if err != nil {
 		return err
 	}

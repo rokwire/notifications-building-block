@@ -71,6 +71,8 @@ paths:
   #BBs
   /api/bbs/message:
     $ref: "./resources/bbs/message.yaml"
+  /api/bbs/{id}:
+    $ref: "./resources/bbs/message-id.yaml"
   /api/bbs/mail:
     $ref: "./resources/bbs/mail.yaml"
     

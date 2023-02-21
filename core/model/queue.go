@@ -29,6 +29,9 @@ type QueueItem struct {
 	AppID string `bson:"app_id"`
 	ID    string `bson:"_id"`
 
+	//message
+	MessageID string `bson:"message_id"`
+
 	//who to send
 	MessageRecipientID string `bson:"message_recipient_id"`
 	UserID             string `bson:"user_id"`

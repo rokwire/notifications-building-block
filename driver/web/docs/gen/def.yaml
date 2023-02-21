@@ -991,6 +991,35 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
+  '/api/bbs/{id}':
+    delete:
+      tags:
+        - BBs
+      summary: Removes a message
+      description: |
+        Removes а message
+
+        **Auth:** Requires first-party service token with `cancel_message` permission
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
   /api/bbs/mail:
     post:
       tags:

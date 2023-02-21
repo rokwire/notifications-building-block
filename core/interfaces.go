@@ -19,6 +19,8 @@ import (
 	"notifications/core/model"
 	"notifications/driven/storage"
 	"time"
+
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 // Services exposes APIs for the driver adapters
@@ -155,6 +157,36 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 	return s.app.sendMail(toEmail, subject, body)
 }
 
+// BBs exposes users related APIs used by the platform building blocks
+type BBs interface {
+	BBsCreateMessage(orgID string, appID string,
+		sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
+		inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
+	BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error
+	BBsSendMail(toEmail string, subject string, body string) error
+}
+
+type bbsImpl struct {
+	app *Application
+}
+
+func (s *bbsImpl) BBsCreateMessage(orgID string, appID string,
+	sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
+	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
+	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
+	return s.app.bbsCreateMessage(orgID, appID, sender, time, priority, subject, body, data,
+		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
+}
+
+func (s *bbsImpl) BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
+	return s.app.bbsDeleteMessage(l, serviceAccountID, messageID)
+}
+
+func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {
+	return s.app.bbsSendMail(toEmail, subject, body)
+}
+
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	RegisterStorageListener(storageListener storage.Listener)
@@ -182,7 +214,9 @@ type Storage interface {
 	FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error)
 	FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
+	DeleteMessagesRecipientsForMessageWithContext(ctx context.Context, messageID string) error
 
+	FindMessageWithContext(ctx context.Context, ID string) (*model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)
@@ -201,6 +235,7 @@ type Storage interface {
 
 	FindQueueData(time *time.Time, limit int) ([]model.QueueItem, error)
 	DeleteQueueData(ids []string) error
+	DeleteQueueDataForMessageWithContext(ctx context.Context, messageID string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
