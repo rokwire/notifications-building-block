@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package web
 
 import (
+	"fmt"
 	"net/http"
+	"notifications/core/model"
+	Def "notifications/driver/web/docs/gen"
 	"strconv"
+	"time"
 )
 
 func getStringQueryParam(r *http.Request, paramName string) *string {
@@ -48,4 +52,29 @@ func getBoolQueryParam(r *http.Request, paramName string) *bool {
 		}
 	}
 	return nil
+}
+
+func getMessageData(inputMessage Def.SharedReqCreateMessage) (time.Time, int, string, string,
+	map[string]string, []model.MessageRecipient, []model.RecipientCriteria,
+	map[string]interface{}, *string) {
+
+	mTime := time.Now()
+	if inputMessage.Time != nil {
+		mTime = time.Unix(*inputMessage.Time, 0)
+	}
+
+	priority := inputMessage.Priority
+	subject := inputMessage.Subject
+	body := inputMessage.Body
+	inputData := make(map[string]string, len(inputMessage.Data))
+	for key, value := range inputMessage.Data {
+		inputData[key] = fmt.Sprintf("%v", value)
+	}
+	inputRecipients := messagesRecipientsListFromDef(inputMessage.Recipients)
+	recipientsCriteria := recipientsCriteriaListFromDef(inputMessage.RecipientsCriteriaList)
+	recipientsAccountCriteria := inputMessage.RecipientAccountCriteria
+	topic := inputMessage.Topic
+
+	return mTime, priority, subject, body, inputData, inputRecipients,
+		recipientsCriteria, recipientsAccountCriteria, topic
 }

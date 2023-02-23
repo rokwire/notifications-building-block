@@ -25,29 +25,31 @@ type Message struct {
 	OrgID string `json:"org_id" bson:"org_id"`
 	AppID string `json:"app_id" bson:"app_id"`
 
-	ID                     *string             `json:"id" bson:"_id"`
-	DateCreated            *time.Time          `json:"date_created" bson:"date_created"`
-	DateUpdated            *time.Time          `json:"date_updated" bson:"date_updated"`
-	Priority               int                 `json:"priority" bson:"priority"`
-	Recipients             []Recipient         `json:"recipients" bson:"recipients"`
-	RecipientsCriteriaList []RecipientCriteria `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
-	Topic                  *string             `json:"topic" bson:"topic"`
-	Subject                string              `json:"subject" bson:"subject"`
-	Sender                 *Sender             `json:"sender,omitempty" bson:"sender,omitempty"`
-	Body                   string              `json:"body" bson:"body"`
-	Data                   map[string]string   `json:"data" bson:"data"`
+	ID       string            `json:"id" bson:"_id"`
+	Time     time.Time         `json:"time" bson:"time"`
+	Priority int               `json:"priority" bson:"priority"`
+	Subject  string            `json:"subject" bson:"subject"`
+	Sender   Sender            `json:"sender,omitempty" bson:"sender,omitempty"`
+	Body     string            `json:"body" bson:"body"`
+	Data     map[string]string `json:"data" bson:"data"`
+
+	//recipients related
+	Recipients               []MessageRecipient     `json:"recipients" bson:"recipients"` //keep it for back compatability
+	RecipientsCriteriaList   []RecipientCriteria    `json:"recipients_criteria_list" bson:"recipients_criteria_list"`
+	RecipientAccountCriteria map[string]interface{} `json:"recipient_account_criteria" bson:"recipient_account_criteria"`
+	Topic                    *string                `json:"topic" bson:"topic"`
+
+	//initialy calculated recipients count
+	//if nil then it means that the message was created before the refactoring
+	CalculatedRecipientsCount *int `json:"calculated_recipients_count" bson:"calculated_recipients_count"`
+
+	DateCreated *time.Time `json:"date_created" bson:"date_created"`
+	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
 }
 
-// HasUser checks if the user is the sender or as a recipient for the current message
-// Use better name
-func (m *Message) HasUser(id string) bool {
-	for _, recipient := range m.Recipients {
-		if recipient.UserID == id {
-			return true
-		}
-	}
-
-	if m.Sender != nil && m.Sender.User != nil && id == m.Sender.User.UserID {
+// IsSender checks if the user is a sender
+func (m *Message) IsSender(userID string) bool {
+	if m.Sender.User != nil && userID == m.Sender.User.UserID {
 		return true
 	}
 	return false
@@ -57,8 +59,8 @@ func (m *Message) HasUser(id string) bool {
 // @name Sender
 // @ID Sender
 type Sender struct {
-	Type string       `json:"type" bson:"type"` // user or system
-	User *CoreUserRef `json:"user,omitempty" bson:"user,omitempty"`
+	Type string          `json:"type" bson:"type"` // user or system
+	User *CoreAccountRef `json:"user,omitempty" bson:"user,omitempty"`
 }
 
 // RecipientCriteria defines common search criteria for end users and their FCM tokens
@@ -73,9 +75,12 @@ type RecipientCriteria struct {
 // @name MessagesStats
 // @ID MessagesStats
 type MessagesStats struct {
-	TotalCount *int64 `json:"total_count" bson:"total_count"`
-	Muted      *int64 `json:"muted_count" bson:"muted_count"`
-	Unmuted    *int64 `json:"not_muted_count" bson:"not_muted_count"`
-	Read       *int64 `json:"read_count" bson:"read_count"`
-	Unread     *int64 `json:"not_read_count" bson:"not_read_count"`
+	TotalCount   *int64 `json:"total_count" bson:"total_count"`
+	Muted        *int64 `json:"muted_count" bson:"muted_count"`
+	Unmuted      *int64 `json:"not_muted_count" bson:"not_muted_count"`
+	Read         *int64 `json:"read_count" bson:"read_count"`
+	Unread       *int64 `json:"not_read_count" bson:"not_read_count"`
+	UnreadUnmute *int64 `json:"not_read_not_mute" bson:"not_read_not_mute"`
 }
+
+///

@@ -1,0 +1,39 @@
+required:
+  - org_id
+  - app_id
+  - priority
+  - subject
+  - body
+  - data
+  - recipients
+  - recipients_criteria_list
+  - recipient_account_criteria
+type: object
+properties:
+  org_id:
+    type: string
+  app_id:
+    type: string
+  time:
+    type: integer
+    format: int64
+  priority:
+    type: integer
+  topic:
+    type: string  
+  subject:
+    type: string
+  body:
+    type: string
+  data:
+    type: object
+  recipients:
+    type: array
+    items:
+      $ref: "./InputMessageRecipient.yaml"
+  recipients_criteria_list:
+    type: array
+    items:
+      $ref: "./InputRecipientCriteria.yaml"
+  recipient_account_criteria:
+    type: object

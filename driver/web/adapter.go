@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
-	"notifications/driver/web/rest"
 	"os"
 	"time"
 
@@ -46,9 +45,10 @@ type Adapter struct {
 
 	cachedYamlDoc []byte
 
-	apisHandler         rest.ApisHandler
-	adminApisHandler    rest.AdminApisHandler
-	internalApisHandler rest.InternalApisHandler
+	apisHandler         ApisHandler
+	adminApisHandler    AdminApisHandler
+	internalApisHandler InternalApisHandler
+	bbsApisHandler      BBsAPIsHandler
 
 	app *core.Application
 
@@ -89,13 +89,15 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/user", we.wrapFunc(we.apisHandler.DeleteUser, we.auth.client.Standard)).Methods("DELETE")
 	mainRouter.HandleFunc("/messages", we.wrapFunc(we.apisHandler.GetUserMessages, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/messages", we.wrapFunc(we.apisHandler.DeleteUserMessages, we.auth.client.Standard)).Methods("DELETE")
+	mainRouter.HandleFunc("/messages/read", we.wrapFunc(we.apisHandler.UpdateAllUserMessagesRead, we.auth.client.Standard)).Methods("PUT")
 	mainRouter.HandleFunc("/messages/stats", we.wrapFunc(we.apisHandler.GetUserMessagesStats, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/message", we.wrapFunc(we.apisHandler.CreateMessage, we.auth.client.Permissions)).Methods("POST")
-	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.GetMessage, we.auth.client.Standard)).Methods("GET")
+	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.GetUserMessage, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/message/{id}", we.wrapFunc(we.apisHandler.DeleteUserMessage, we.auth.client.Standard)).Methods("DELETE")
 	mainRouter.HandleFunc("/message/{id}/read", we.wrapFunc(we.apisHandler.UpdateReadMessage, we.auth.client.Standard)).Methods("PUT")
 	mainRouter.HandleFunc("/topics", we.wrapFunc(we.apisHandler.GetTopics, we.auth.client.Standard)).Methods("GET")
-	mainRouter.HandleFunc("/topic/{topic}/messages", we.wrapFunc(we.apisHandler.GetTopicMessages, we.auth.client.Standard)).Methods("GET")
+	//not used and disabled because of the refactoring
+	//mainRouter.HandleFunc("/topic/{topic}/messages", we.wrapFunc(we.apisHandler.GetTopicMessages, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.wrapFunc(we.apisHandler.Subscribe, we.auth.client.Standard)).Methods("POST")
 	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.wrapFunc(we.apisHandler.Unsubscribe, we.auth.client.Standard)).Methods("POST")
 
@@ -105,7 +107,8 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/app-platforms", we.wrapFunc(we.adminApisHandler.GetAllAppPlatforms, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/topics", we.wrapFunc(we.adminApisHandler.GetTopics, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/topic", we.wrapFunc(we.adminApisHandler.UpdateTopic, we.auth.admin.Permissions)).Methods("POST")
-	adminRouter.HandleFunc("/messages", we.wrapFunc(we.adminApisHandler.GetMessages, we.auth.admin.Permissions)).Methods("GET")
+	//not used and disabled because of the refactoring
+	//adminRouter.HandleFunc("/messages", we.wrapFunc(we.adminApisHandler.GetMessages, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.CreateMessage, we.auth.admin.Permissions)).Methods("POST")
 	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.UpdateMessage, we.auth.admin.Permissions)).Methods("PUT")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.GetMessage, we.auth.admin.Permissions)).Methods("GET")
@@ -113,8 +116,9 @@ func (we Adapter) Start() {
 
 	// BB APIs
 	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()
-	bbsRouter.HandleFunc("/message", we.wrapFunc(we.internalApisHandler.SendMessageV2, we.auth.bbs.Permissions)).Methods("POST")
-	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.internalApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/message", we.wrapFunc(we.bbsApisHandler.SendMessage, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/message/{id}", we.wrapFunc(we.bbsApisHandler.DeleteMessage, we.auth.bbs.Permissions)).Methods("DELETE")
+	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -130,7 +134,7 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we Adapter) serveDocUI() http.Handler {
-	url := fmt.Sprintf("%s/api/doc", we.host)
+	url := fmt.Sprintf("%s/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
@@ -178,7 +182,10 @@ func (we Adapter) wrapFunc(handler handlerFunc, authorization tokenauth.Handler)
 				return
 			}
 
-			logObj.SetContext("account_id", claims.Subject)
+			//do not crash the service if the deprecated internal auth type is used
+			if claims != nil {
+				logObj.SetContext("account_id", claims.Subject)
+			}
 			response = handler(logObj, req, claims)
 		} else {
 			response = handler(logObj, req, nil)
@@ -201,11 +208,13 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 		logger.Fatalf("error creating auth - %s", err.Error())
 	}
 
-	apisHandler := rest.NewApisHandler(app)
-	adminApisHandler := rest.NewAdminApisHandler(app)
-	internalApisHandler := rest.NewInternalApisHandler(app)
-	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth,
-		apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, app: app, logger: logger}
+	apisHandler := NewApisHandler(app)
+	adminApisHandler := NewAdminApisHandler(app)
+	internalApisHandler := NewInternalApisHandler(app)
+	bbsApisHandler := NewBBsAPIsHandler(app)
+	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth, apisHandler: apisHandler,
+		adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsApisHandler: bbsApisHandler,
+		app: app, logger: logger}
 }
 
 // AppListener implements core.ApplicationListener interface
