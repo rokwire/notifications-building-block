@@ -5,8 +5,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.13.0] - 2023-02-21
+### Added
+- Expose cancel message building block API [#144](https://github.com/rokwire/notifications-building-block/issues/144)
+
+## [1.12.1] - 2023-01-13
+### Fixed
+- Fix send message BBs API [#141](https://github.com/rokwire/notifications-building-block/issues/141)
+
+## [1.12.0] - 2023-01-12
+### Added
+- Rate limits [#98](https://github.com/rokwire/notifications-building-block/issues/98)
+
+## [1.11.0] - 2023-01-06
+### Changed
+- Mute message if the global settings is set to false instead of ignoring the message [#137](https://github.com/rokwire/notifications-building-block/issues/137)
+
+## [1.10.0] - 2022-12-21
+### Added
+- Add message id in the notification [#135](https://github.com/rokwire/notifications-building-block/issues/135)
+- Improve stats API [#133](https://github.com/rokwire/notifications-building-block/issues/133)
+
+## [1.9.1] - 2022-12-20
+### Fixed
+- Fix GET messages filter [#131](https://github.com/rokwire/notifications-building-block/issues/131)
+
+## [1.9.0] - 2022-12-19
+### Fixed
+- Bug Messages are not ordered [#128](https://github.com/rokwire/notifications-building-block/issues/128)
+
+## [1.8.0] - 2022-12-16
+### Fixed
+- Bug get messages api returns wrong result [#126](https://github.com/rokwire/notifications-building-block/issues/126)
+
+## [1.7.0] - 2022-12-15
+### Fixed
+- Order of All Notifications [#120](https://github.com/rokwire/notifications-building-block/issues/120)
+
+## [1.6.0] - 2022-12-06
+### Added
+- Rate limits - part 1 [#98](https://github.com/rokwire/notifications-building-block/issues/98)
+
+## [1.5.0] - 2022-11-30
+### Added
+- Send notification by account data [#97](https://github.com/rokwire/notifications-building-block/issues/97)
+
+## [1.4.1] - 2022-11-25
 ### Added
 - Set logger [#80](https://github.com/rokwire/notifications-building-block/issues/80)
+- Add support of read/unread all user messages [#112](https://github.com/rokwire/notifications-building-block/issues/112)
 
 ### Changed
 - Use auth library authorization [#75](https://github.com/rokwire/notifications-building-block/issues/75)

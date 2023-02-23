@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package web
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
@@ -23,6 +24,8 @@ import (
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
+
+	Def "notifications/driver/web/docs/gen"
 
 	"github.com/gorilla/mux"
 )
@@ -104,7 +107,9 @@ func (h AdminApisHandler) UpdateTopic(l *logs.Log, r *http.Request, claims *toke
 // @Security AdminUserAuth
 // @Router /admin/messages [get]
 func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	userIDFilter := getStringQueryParam(r, "user")
+	return l.HTTPResponseSuccess()
+
+	/*userIDFilter := getStringQueryParam(r, "user")
 	topicFilter := getStringQueryParam(r, "topic")
 	offsetFilter := getInt64QueryParam(r, "offset")
 	limitFilter := getInt64QueryParam(r, "limit")
@@ -128,7 +133,7 @@ func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *toke
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	return l.HTTPResponseSuccessJSON(data) */
 }
 
 // CreateMessage Creates a message
@@ -141,16 +146,22 @@ func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *toke
 // @Security AdminUserAuth
 // @Router /admin/message [post]
 func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.Message
-	err := json.NewDecoder(r.Body).Decode(&message)
+	var inputMessage Def.SharedReqCreateMessage
+	err := json.NewDecoder(r.Body).Decode(&inputMessage)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	message.OrgID = claims.OrgID
-	message.AppID = claims.AppID
+	orgID := claims.OrgID
+	appID := claims.AppID
 
-	message, err = h.app.Services.CreateMessage(&model.CoreUserRef{UserID: claims.Subject, Name: claims.Name}, message, false)
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(inputMessage)
+
+	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
+
+	message, err := h.app.Services.CreateMessage(orgID, appID,
+		sender, time, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
+		recipientsAccountCriteria, topic, false)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}
@@ -173,7 +184,7 @@ func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *to
 // @Security AdminUserAuth
 // @Router /admin/message [put]
 func (h AdminApisHandler) UpdateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var message *model.Message
+	/*var message *model.Message
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
@@ -196,7 +207,9 @@ func (h AdminApisHandler) UpdateMessage(l *logs.Log, r *http.Request, claims *to
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	return l.HTTPResponseSuccessJSON(data) */
+
+	return l.HTTPResponseError("disabled api", errors.New("disabled api"), 500, true)
 }
 
 // GetMessage Retrieves a message by id

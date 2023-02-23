@@ -3,4 +3,4 @@ properties:
   async:
     type: boolean
   message:
-    $ref: "../../../application/Message.yaml"
+    $ref: "../../../apis/shared/requests/create-message/Request.yaml"

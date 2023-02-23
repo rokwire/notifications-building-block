@@ -15,9 +15,11 @@
 package core
 
 import (
-	"github.com/rokwire/logging-library-go/v2/logs"
 	"log"
+	"notifications/driven/core"
 	"notifications/driven/mailer"
+
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 type storageListener struct {
@@ -46,11 +48,15 @@ type Application struct {
 	build   string
 
 	Services Services // expose to the drivers adapters
+	BBs      BBs      // expose to the drivers adapters
 	logger   *logs.Logger
 
 	storage  Storage
 	firebase Firebase
 	mailer   Mailer
+	core     Core
+
+	queueLogic queueLogic
 }
 
 // Start starts the core part of the application
@@ -58,15 +64,22 @@ func (app *Application) Start() {
 	//set storage listener
 	storageListener := storageListener{app: app}
 	app.storage.RegisterStorageListener(&storageListener)
+
+	app.queueLogic.start()
 }
 
 // NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage, firebase Firebase, mailer *mailer.Adapter, logger *logs.Logger) *Application {
+func NewApplication(version string, build string, storage Storage, firebase Firebase, mailer *mailer.Adapter, logger *logs.Logger, core *core.Adapter) *Application {
 
-	application := Application{version: version, build: build, storage: storage, firebase: firebase, mailer: mailer, logger: logger}
+	timerDone := make(chan bool)
+	queueLogic := queueLogic{logger: logger, storage: storage, firebase: firebase, timerDone: timerDone}
+
+	application := Application{version: version, build: build, storage: storage, firebase: firebase,
+		mailer: mailer, logger: logger, core: core, queueLogic: queueLogic}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
+	application.BBs = &bbsImpl{app: &application}
 
 	return &application
 }

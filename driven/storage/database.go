@@ -16,7 +16,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -38,9 +37,12 @@ type database struct {
 	dbClient *mongo.Client
 	logger   *logs.Logger
 
-	users    *collectionWrapper
-	topics   *collectionWrapper
-	messages *collectionWrapper
+	users              *collectionWrapper
+	topics             *collectionWrapper
+	messages           *collectionWrapper
+	messagesRecipients *collectionWrapper
+	queue              *collectionWrapper
+	queueData          *collectionWrapper
 
 	appVersions  *collectionWrapper
 	appPlatforms *collectionWrapper
@@ -95,6 +97,24 @@ func (m *database) start() error {
 		return err
 	}
 
+	messagesRecipients := &collectionWrapper{database: m, coll: db.Collection("messages_recipients")}
+	err = m.applyMessagesRecipientsChecks(messagesRecipients)
+	if err != nil {
+		return err
+	}
+
+	queue := &collectionWrapper{database: m, coll: db.Collection("queue")}
+	err = m.applyQueueChecks(queue)
+	if err != nil {
+		return err
+	}
+
+	queueData := &collectionWrapper{database: m, coll: db.Collection("queue_data")}
+	err = m.applyQueueDataChecks(queueData)
+	if err != nil {
+		return err
+	}
+
 	appPlatforms := &collectionWrapper{database: m, coll: db.Collection("app_platforms")}
 	err = m.applyPlatformsChecks(appPlatforms)
 	if err != nil {
@@ -120,115 +140,17 @@ func (m *database) start() error {
 	m.users = users
 	m.topics = topics
 	m.messages = messages
+	m.messagesRecipients = messagesRecipients
+	m.queue = queue
+	m.queueData = queueData
 	m.appPlatforms = appPlatforms
 	m.appVersions = appVersions
 	m.firebaseConfigurations = firebaseConfigurations
 
-	//apply multi-tenancy data manipulation
-	err = m.fixMultiTenancyData(client, users, topics, messages, appVersions, appPlatforms)
-	if err != nil {
-		return err
-	}
-
 	go m.firebaseConfigurations.Watch(nil)
+	go m.queueData.Watch(nil)
 
 	return nil
-}
-
-// it adds org id and app id for the current data to match the multi-tenancy requirements
-func (m *database) fixMultiTenancyData(client *mongo.Client, users *collectionWrapper, topics *collectionWrapper,
-	messages *collectionWrapper, appVersions *collectionWrapper, appPlatforms *collectionWrapper) error {
-
-	orgID := m.multiTenancyOrgID
-	appID := m.multiTenancyAppID
-	fn := func(sessionContext mongo.SessionContext) error {
-		//start transaction
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a multi-tenancy data fix transaction - %s", err)
-			return err
-		}
-
-		/// check if the data fix has been applied
-		filter := bson.D{primitive.E{Key: "org_id", Value: orgID}, primitive.E{Key: "app_id", Value: appID}}
-		// check users collection
-		usersCount, err := users.CountDocumentsWithContext(sessionContext, filter)
-		if err != nil {
-			log.Println("error checking users count")
-			return err
-		}
-		// check messages collection
-		messagesCount, err := messages.CountDocumentsWithContext(sessionContext, filter)
-		if err != nil {
-			log.Println("error checking messages count")
-			return err
-		}
-
-		//checking only one collection is enough as all this fixing data happens in a transaction.
-		if usersCount == 0 && messagesCount == 0 {
-			log.Printf("multi-tenancy data has NOT been applied, users:%d messages:%d - applying data fix..", usersCount, messagesCount)
-
-			updatefilter := bson.D{}
-			update := bson.D{
-				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "org_id", Value: orgID},
-					primitive.E{Key: "app_id", Value: appID},
-				}},
-			}
-
-			//users
-			usersTimeout := time.Minute * time.Duration(2)
-			_, err := users.UpdateManyWithContextTimeout(sessionContext, updatefilter, update, nil, usersTimeout) //long timeout
-			if err != nil {
-				log.Printf("error updating users - %s", err)
-				return err
-			}
-
-			//topics
-			_, err = topics.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
-			if err != nil {
-				log.Printf("error updating topics - %s", err)
-				return err
-			}
-
-			//messages
-			messagesTimeout := time.Minute * time.Duration(2)
-			_, err = messages.UpdateManyWithContextTimeout(sessionContext, updatefilter, update, nil, messagesTimeout) //long timeout
-			if err != nil {
-				log.Printf("error updating messages - %s", err)
-				return err
-			}
-
-			//app versions
-			_, err = appVersions.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
-			if err != nil {
-				log.Printf("error updating app versions - %s", err)
-				return err
-			}
-
-			//app platforms
-			_, err = appPlatforms.UpdateManyWithContext(sessionContext, updatefilter, update, nil)
-			if err != nil {
-				log.Printf("error updating app platforms - %s", err)
-				return err
-			}
-		} else {
-			log.Println("multi-tenancy data has been applied, nothing to do")
-			return nil
-		}
-
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			abortTransaction(sessionContext)
-			fmt.Printf("error on commiting multi-tenancy data fix transaction - %s", err)
-			return err
-		}
-		log.Println("multi-tenancy data fix completed")
-		return nil
-	}
-	err := client.UseSession(context.Background(), fn)
-	return err
 }
 
 func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
@@ -290,6 +212,69 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	}
 
 	log.Println("apply messages passed")
+	return nil
+}
+
+func (m *database) applyMessagesRecipientsChecks(messagesRecipients *collectionWrapper) error {
+	log.Println("apply messages recipients checks.....")
+
+	//add org id index
+	err := messagesRecipients.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add app id index
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "app_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add user id index
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add messages id index
+	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "message_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	log.Println("apply messages recipients passed")
+	return nil
+}
+
+func (m *database) applyQueueChecks(queue *collectionWrapper) error {
+	log.Println("apply queue checks.....")
+
+	log.Println("apply queue passed")
+	return nil
+}
+
+func (m *database) applyQueueDataChecks(queueData *collectionWrapper) error {
+	log.Println("apply queue data checks.....")
+
+	//add message id index
+	err := queueData.AddIndex(bson.D{primitive.E{Key: "message_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add time index
+	err = queueData.AddIndex(bson.D{primitive.E{Key: "time", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	//add priority index
+	err = queueData.AddIndex(bson.D{primitive.E{Key: "priority", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	log.Println("apply queue data passed")
 	return nil
 }
 
@@ -472,20 +457,25 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 	if changeDoc == nil {
 		return
 	}
-	log.Printf("onDataChanged: %+v\n", changeDoc)
+	m.logger.Infof("onDataChanged: %+v\n", changeDoc)
 	ns := changeDoc["ns"]
 	if ns == nil {
 		return
 	}
 	nsMap := ns.(map[string]interface{})
 	coll := nsMap["coll"]
+	operationType := changeDoc["operationType"].(string)
 
 	switch coll {
 	case "firebase_configurations":
-		log.Println("firebase_configurations collection changed")
+		m.logger.Info("firebase_configurations collection changed")
 
 		for _, listener := range m.listeners {
 			go listener.OnFirebaseConfigurationsUpdated()
 		}
+	case "queue_data":
+		m.logger.Info("queue_data collection changed")
+		m.logger.Info(operationType)
 	}
+
 }

@@ -277,3 +277,11 @@ func IsVersionLess(v1 string, v2 string) bool {
 	// they are equals
 	return false
 }
+
+// GetInt64Value gets int64 from *int64
+func GetInt64Value(v *int64) int64 {
+	if v == nil {
+		return 0
+	}
+	return *v
+}

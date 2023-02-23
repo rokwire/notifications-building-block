@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package web
 
 import (
 	"encoding/json"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	Def "notifications/driver/web/docs/gen"
 
+	"github.com/gorilla/mux"
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
@@ -30,15 +32,15 @@ type BBsAPIsHandler struct {
 	app *core.Application
 }
 
-// newBBsAPIsHandler creates new rest Handler instance
-func newBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
+// NewBBsAPIsHandler creates new rest Handler instance
+func NewBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
 	return BBsAPIsHandler{app: app}
 }
 
 // sendMessageRequestBody message request body
 type bbsSendMessageRequestBody struct {
-	Async   *bool          `json:"async"`
-	Message *model.Message `json:"message"`
+	Async   *bool                      `json:"async"`
+	Message Def.SharedReqCreateMessage `json:"message"`
 } // @name sendMessageRequestBody
 
 // SendMessage Sends a message to a user, list of users or a topic
@@ -57,20 +59,30 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	message := bodyData.Message
+	inputMessage := bodyData.Message
 	async := false //by default
 	if bodyData.Async != nil {
 		async = *bodyData.Async
 	}
 
-	if message == nil {
-		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypeRequestBody, nil, nil, http.StatusBadRequest, false)
-	}
-	if len(message.OrgID) == 0 || len(message.AppID) == 0 {
+	if len(inputMessage.OrgId) == 0 || len(inputMessage.AppId) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
-	message, err = h.app.Services.CreateMessage(nil, message, async)
+	if !claims.AppOrg().CanAccessAppOrg(inputMessage.AppId, inputMessage.OrgId) {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusForbidden, false)
+	}
+
+	orgID := inputMessage.OrgId
+	appID := inputMessage.AppId
+
+	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(inputMessage)
+
+	sender := model.Sender{Type: "system", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
+
+	message, err := h.app.BBs.BBsCreateMessage(orgID, appID,
+		sender, time, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
+		recipientsAccountCriteria, topic, async)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
@@ -81,6 +93,22 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	}
 
 	return l.HTTPResponseSuccessJSON(data)
+}
+
+// DeleteMessage deletes a message
+func (h BBsAPIsHandler) DeleteMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+
+	err := h.app.BBs.BBsDeleteMessage(l, claims.Subject, id)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
 }
 
 // sendMailRequestBody mail request body
@@ -106,7 +134,7 @@ func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	err = h.app.Services.SendMail(mailRequest.ToMail, mailRequest.Subject, mailRequest.Body)
+	err = h.app.BBs.BBsSendMail(mailRequest.ToMail, mailRequest.Subject, mailRequest.Body)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "email", nil, err, http.StatusInternalServerError, true)
 	}

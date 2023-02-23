@@ -2,6 +2,7 @@ post:
   tags:
   - Internal
   summary: Create message
+  deprecated: true
   description: |
     Create message
   security:

@@ -77,8 +77,25 @@ func (t *User) HasTopic(topic string) bool {
 
 //////////////////////////
 
-// CoreUserRef user reference that contains ExternalID & Name
-type CoreUserRef struct {
+// CoreAccount represents an account in the Core BB
+type CoreAccount struct {
+	ID      string      `json:"id" bson:"id"`
+	Profile CoreProfile `json:"profile" bson:"profile"`
+} //@name CoreAccount
+
+// CoreProfile represents a profile in the Core BB
+type CoreProfile struct {
+	FirstName string `json:"first_name" bson:"first_name"`
+	LastName  string `json:"last_name" bson:"last_name"`
+} //@name CoreProfile
+
+// Name returns the full name from the profile
+func (c CoreProfile) Name() string {
+	return c.FirstName + " " + c.LastName
+}
+
+// CoreAccountRef represents Core BB account entity
+type CoreAccountRef struct {
 	UserID string `json:"user_id" bson:"user_id"`
 	Name   string `json:"name" bson:"name"`
-} //@name CoreUserRef
+}
