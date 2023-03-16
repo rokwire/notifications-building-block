@@ -1,0 +1,33 @@
+put:
+  tags:
+  - BBs
+  summary: Add a recipient
+  description: |
+    Add a recipient
+  security:
+    - bearerAuth: []
+  requestBody:
+    description: message body
+    content:
+      application/json:
+        schema:
+          $ref: "../../schemas/apis/recipients/request/Request.yaml" 
+    required: true    
+  parameters:
+    - name: id
+      in: path
+      description: id
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string      
+  responses:
+    200:
+      description: Success
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error  

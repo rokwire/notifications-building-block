@@ -1,0 +1,8 @@
+required:
+  - _id
+type: object
+properties:
+  recipients:
+    type: array
+    items:
+      $ref: "../../../application/Recipients.yaml"
