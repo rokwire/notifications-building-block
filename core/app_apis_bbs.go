@@ -20,6 +20,7 @@ import (
 	"notifications/driven/storage"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
@@ -96,4 +97,36 @@ func (app *Application) isSenderValid(serviceAccountID string, message model.Mes
 
 func (app *Application) bbsSendMail(toEmail string, subject string, body string) error {
 	return app.sharedSendMail(toEmail, subject, body)
+}
+
+func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool, read *bool) error {
+	//in transaction
+	transaction := func(context storage.TransactionContext) error {
+		//find the message
+		message, err := app.storage.GetMessage(orgID, appID, messageID)
+		if err != nil {
+			return err
+		}
+		if message.Recipients == nil {
+			recipientid := uuid.NewString()
+			var rec []model.MessageRecipient
+			recipient := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: userID,
+				MessageID: messageID, Mute: *mute, Read: *read}
+			rec = append(rec, recipient)
+			err := app.storage.InsertRecipientsToMessage(rec, messageID)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	//perform transactions
+	err := app.storage.PerformTransaction(transaction, 2000)
+	if err != nil {
+		l.Errorf("error on performing delete message transaction - %s", err)
+		return err
+	}
+
+	return nil
 }

@@ -165,6 +165,7 @@ type BBs interface {
 		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
 	BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error
 	BBsSendMail(toEmail string, subject string, body string) error
+	BBsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool, read *bool) error
 }
 
 type bbsImpl struct {
@@ -185,6 +186,10 @@ func (s *bbsImpl) BBsDeleteMessage(l *logs.Log, serviceAccountID string, message
 
 func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {
 	return s.app.bbsSendMail(toEmail, subject, body)
+}
+
+func (s *bbsImpl) BBsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool, read *bool) error {
+	return s.app.bbsAddRecipients(l, messageID, orgID, appID, userID, mute, read)
 }
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
@@ -220,6 +225,7 @@ type Storage interface {
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
 	UpdateMessage(message *model.Message) (*model.Message, error)
+	InsertRecipientsToMessage(recipients []model.MessageRecipient, messageID string) error
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
 	GetMessagesStats(userID string) (*model.MessagesStats, error)
