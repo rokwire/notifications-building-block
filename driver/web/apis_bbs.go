@@ -146,7 +146,6 @@ func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth
 // @Description add recipient
 // @Tags BBs
 // @ID BBsAddRecipients
-// @Param data body addRecipientBody true "body json"
 // @Produce plain
 // @Success 200
 // @Security BBsAuth
@@ -166,4 +165,25 @@ func (h BBsAPIsHandler) AddRecipients(l *logs.Log, r *http.Request, claims *toke
 	}
 	return l.HTTPResponseSuccess()
 
+}
+
+// DeleteRecipients delete recipients from an existing message
+// @Description add recipient
+// @Tags BBs
+// @ID BBsDeleteRecipients
+// @Produce plain
+// @Success 200
+// @Security BBsAuth
+// @Router /bbs/recipients/{id} [delete]
+func (h BBsAPIsHandler) DeleteRecipients(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	params := mux.Vars(r)
+	messageID := params["id"]
+	if len(messageID) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+	err := h.app.BBs.BBsDeleteRecipients(l, claims.OrgID, claims.AppID, messageID)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "recipients", nil, err, http.StatusInternalServerError, true)
+	}
+	return l.HTTPResponseSuccess()
 }

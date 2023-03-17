@@ -1093,6 +1093,38 @@ func (sa Adapter) InsertRecipientsToMessage(recipients []model.MessageRecipient,
 	return nil
 }
 
+// DeleteRecipientsFromMessage delete a recipients to message
+func (sa Adapter) DeleteRecipientsFromMessage(recipients []model.MessageRecipient, messageID string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: messageID}}
+	update := bson.D{
+		primitive.E{Key: "$pull", Value: bson.D{
+			primitive.E{Key: "recipients", Value: bson.M{"$in": recipients}},
+		}},
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+		}},
+	}
+	_, err := sa.db.messages.UpdateOne(filter, update, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*//filter
+filter := bson.D{primitive.E{Key: "_id", Value: accountID}}
+
+//update
+update := bson.D{
+	primitive.E{Key: "$pull", Value: bson.D{
+		primitive.E{Key: "roles", Value: bson.M{"role._id": bson.M{"$in": roleIDs}}},
+	}},
+	primitive.E{Key: "$set", Value: bson.D{
+		primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+	}},
+}*/
+
 // GetAllAppVersions gets all registered versions
 func (sa Adapter) GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
 	filter := bson.D{
