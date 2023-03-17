@@ -761,17 +761,18 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 		RecipientAccountCriteria  map[string]interface{}    `bson:"recipient_account_criteria"`
 		Topic                     *string                   `bson:"topic"`
 		CalculatedRecipientsCount *int                      `bson:"calculated_recipients_count"`
-		DateCreated               *time.Time                `bson:"date_created"`
+		MessageDateCreated        *time.Time                `bson:"message_date_created"`
 		DateUpdated               *time.Time                `bson:"date_updated"`
 
 		//recipient
-		OrgID     string `bson:"org_id"`
-		AppID     string `bson:"app_id"`
-		ID        string `bson:"_id"`
-		UserID    string `bson:"user_id"`
-		MessageID string `bson:"message_id"`
-		Mute      bool   `bson:"mute"`
-		Read      bool   `bson:"read"`
+		OrgID       string     `bson:"org_id"`
+		AppID       string     `bson:"app_id"`
+		ID          string     `bson:"_id"`
+		UserID      string     `bson:"user_id"`
+		MessageID   string     `bson:"message_id"`
+		Mute        bool       `bson:"mute"`
+		Read        bool       `bson:"read"`
+		DateCreated *time.Time `bson:"date_created"`
 	}
 
 	pipeline := []bson.M{
@@ -783,12 +784,12 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 		}},
 		{"$unwind": "$message"},
 		{"$project": bson.M{"org_id": 1, "app_id": 1, "_id": 1,
-			"user_id": 1, "message_id": 1, "mute": 1, "read": 1,
+			"user_id": 1, "message_id": 1, "mute": 1, "read": 1, "date_created": 1,
 			"priority": "$message.priority", "subject": "$message.subject", "sender": "$message.sender",
 			"body": "$message.body", "data": "$message.data", "recipients": "$message.recipients",
 			"recipients_criteria_list": "$message.recipients_criteria_list", "recipient_account_criteria": "$message.recipient_account_criteria",
 			"topic": "$message.topic", "calculated_recipients_count": "$message.calculated_recipients_count",
-			"date_created": "$message.date_created", "date_updated": "$message.date_updated"}},
+			"message_date_created": "$message.date_created", "date_updated": "$message.date_updated"}},
 		{"$match": bson.M{"org_id": orgID}},
 		{"$match": bson.M{"app_id": appID}},
 	}
@@ -853,12 +854,12 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 			Priority: item.Priority, Subject: item.Subject,
 			Sender: item.Sender, Body: item.Body, Data: item.Data, Recipients: item.Recipients,
 			RecipientsCriteriaList: item.RecipientsCriteriaList, RecipientAccountCriteria: item.RecipientAccountCriteria,
-			Topic: item.Topic, CalculatedRecipientsCount: item.CalculatedRecipientsCount, DateCreated: item.DateCreated,
+			Topic: item.Topic, CalculatedRecipientsCount: item.CalculatedRecipientsCount, DateCreated: item.MessageDateCreated,
 			DateUpdated: item.DateUpdated}
 
 		recipient := model.MessageRecipient{OrgID: item.OrgID, AppID: item.AppID,
 			ID: item.ID, UserID: item.UserID, MessageID: item.MessageID, Mute: item.Mute,
-			Read: item.Read, Message: message}
+			Read: item.Read, Message: message, DateCreated: item.DateCreated}
 		result[i] = recipient
 	}
 

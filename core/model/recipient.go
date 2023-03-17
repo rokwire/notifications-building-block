@@ -29,5 +29,5 @@ type MessageRecipient struct {
 
 	Message Message `json:"-" bson:"-"`
 
-	DateCreated time.Time `json:"date_created" bson:"date_created"`
+	DateCreated *time.Time `json:"date_created" bson:"date_created"`
 }

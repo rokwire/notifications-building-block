@@ -155,7 +155,7 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 			item.ID = uuid.NewString()
 			item.MessageID = messageID
 			item.Read = false
-			item.DateCreated = now
+			item.DateCreated = &now
 
 			list[i] = item
 		}
@@ -177,7 +177,7 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 		for i, item := range topicUsers {
 			topicRecipients[i] = model.MessageRecipient{
 				OrgID: orgID, AppID: appID, ID: uuid.NewString(), UserID: item.UserID,
-				MessageID: messageID, DateCreated: now,
+				MessageID: messageID, DateCreated: &now,
 			}
 		}
 
@@ -209,7 +209,7 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 		for i, item := range criteriaUsers {
 			criteriaRecipients[i] = model.MessageRecipient{
 				OrgID: orgID, AppID: appID, ID: uuid.NewString(), UserID: item.UserID,
-				MessageID: messageID, DateCreated: now,
+				MessageID: messageID, DateCreated: &now,
 			}
 		}
 
@@ -237,7 +237,7 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 		for _, account := range accounts {
 			messageRecipient := model.MessageRecipient{
 				OrgID: orgID, AppID: appID, ID: uuid.NewString(), UserID: account.ID,
-				MessageID: messageID, DateCreated: now,
+				MessageID: messageID, DateCreated: &now,
 			}
 
 			messageRecipients = append(messageRecipients, messageRecipient)
