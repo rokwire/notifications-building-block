@@ -1051,43 +1051,37 @@ paths:
     put:
       tags:
         - BBs
-      summary: Add a recipient
+      summary: Add a recipient to certian message
       description: |
-        Add a recipient
+        Add a recipient to certian message
       security:
         - bearerAuth: []
-      requestBody:
-        description: message body
-        content:
-          application/json:
-            schema:
-              required:
-                - _id
-              type: object
-              properties:
-                recipients:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/Recipient'
-        required: true
       parameters:
         - name: id
-          in: path
+          in: query
           description: id
           required: true
           style: simple
           explode: false
           schema:
             type: string
+        - name: read
+          in: query
+          description: read
+          style: simple
+          explode: false
+          schema:
+            type: boolean
+        - name: mute
+          in: query
+          description: mute
+          style: simple
+          explode: false
+          schema:
+            type: boolean
       responses:
         '200':
           description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Message'
         '400':
           description: Bad request
         '401':
