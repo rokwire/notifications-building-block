@@ -1112,19 +1112,6 @@ func (sa Adapter) DeleteRecipientsFromMessage(recipients []model.MessageRecipien
 	return nil
 }
 
-/*//filter
-filter := bson.D{primitive.E{Key: "_id", Value: accountID}}
-
-//update
-update := bson.D{
-	primitive.E{Key: "$pull", Value: bson.D{
-		primitive.E{Key: "roles", Value: bson.M{"role._id": bson.M{"$in": roleIDs}}},
-	}},
-	primitive.E{Key: "$set", Value: bson.D{
-		primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-	}},
-}*/
-
 // GetAllAppVersions gets all registered versions
 func (sa Adapter) GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
 	filter := bson.D{
