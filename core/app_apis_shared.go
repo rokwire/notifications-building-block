@@ -144,6 +144,7 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 
 	messageRecipients := []model.MessageRecipient{}
 	checkCriteria := true
+	now := time.Now()
 
 	// recipients from message
 	if len(recipients) > 0 {
@@ -154,6 +155,7 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 			item.ID = uuid.NewString()
 			item.MessageID = messageID
 			item.Read = false
+			item.DateCreated = now
 
 			list[i] = item
 		}
@@ -174,8 +176,8 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 		topicRecipients := make([]model.MessageRecipient, len(topicUsers))
 		for i, item := range topicUsers {
 			topicRecipients[i] = model.MessageRecipient{
-				OrgID: orgID, AppID: appID,
-				ID: uuid.NewString(), UserID: item.UserID, MessageID: messageID,
+				OrgID: orgID, AppID: appID, ID: uuid.NewString(), UserID: item.UserID,
+				MessageID: messageID, DateCreated: now,
 			}
 		}
 
@@ -206,8 +208,8 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 		criteriaRecipients := make([]model.MessageRecipient, len(criteriaUsers))
 		for i, item := range criteriaUsers {
 			criteriaRecipients[i] = model.MessageRecipient{
-				OrgID: orgID, AppID: appID,
-				ID: uuid.NewString(), UserID: item.UserID, MessageID: messageID,
+				OrgID: orgID, AppID: appID, ID: uuid.NewString(), UserID: item.UserID,
+				MessageID: messageID, DateCreated: now,
 			}
 		}
 
@@ -234,8 +236,8 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 
 		for _, account := range accounts {
 			messageRecipient := model.MessageRecipient{
-				OrgID: orgID, AppID: appID,
-				ID: uuid.NewString(), UserID: account.ID, MessageID: messageID,
+				OrgID: orgID, AppID: appID, ID: uuid.NewString(), UserID: account.ID,
+				MessageID: messageID, DateCreated: now,
 			}
 
 			messageRecipients = append(messageRecipients, messageRecipient)
