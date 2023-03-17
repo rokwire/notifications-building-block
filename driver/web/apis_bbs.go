@@ -59,30 +59,26 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	inputMessage := bodyData.Message
-	async := false //by default
-	if bodyData.Async != nil {
-		async = *bodyData.Async
-	}
+	inputData := bodyData.Message
 
-	if len(inputMessage.OrgId) == 0 || len(inputMessage.AppId) == 0 {
+	if len(inputData.OrgId) == 0 || len(inputData.AppId) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
 	}
 
-	if !claims.AppOrg().CanAccessAppOrg(inputMessage.AppId, inputMessage.OrgId) {
+	if !claims.AppOrg().CanAccessAppOrg(inputData.AppId, inputData.OrgId) {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusForbidden, false)
 	}
 
-	orgID := inputMessage.OrgId
-	appID := inputMessage.AppId
-
-	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(inputMessage)
-
+	orgID := inputData.OrgId
+	appID := inputData.AppId
 	sender := model.Sender{Type: "system", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
-	message, err := h.app.BBs.BBsCreateMessage(orgID, appID,
-		sender, time, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
-		recipientsAccountCriteria, topic, async)
+	inputMessage := getMessageData(inputData)
+	inputMessage.OrgID = orgID
+	inputMessage.AppID = appID
+	inputMessage.Sender = sender
+
+	message, err := h.app.BBs.BBsCreateMessage(inputMessage)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
