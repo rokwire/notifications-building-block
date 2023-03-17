@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"notifications/core/model"
-	"time"
 )
 
 func (app *Application) getVersion() string {
@@ -69,13 +68,8 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(orgID string, appID string,
-	sender model.Sender, mTime time.Time, priority int, subject string, body string, data map[string]string,
-	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
-
-	return app.sharedCreateMessage(orgID, appID, sender, mTime, priority, subject, body, data,
-		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
+func (app *Application) createMessage(inputMessage model.InputMessage) (*model.Message, error) {
+	return app.sharedCreateMessage(inputMessage)
 }
 
 func (app *Application) getMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {

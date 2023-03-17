@@ -24,10 +24,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (app *Application) sharedCreateMessage(orgID string, appID string,
-	sender model.Sender, mTime time.Time, priority int, subject string, body string, data map[string]string,
-	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
+func (app *Application) sharedCreateMessage(im model.InputMessage) (*model.Message, error) {
 
 	var err error
 	var persistedMessage *model.Message
@@ -38,27 +35,28 @@ func (app *Application) sharedCreateMessage(orgID string, appID string,
 	transaction := func(context storage.TransactionContext) error {
 
 		//generate message id
+		//TODO - use form input if available
 		messageID := uuid.NewString()
 
 		//calculate the recipients
-		recipients, err = app.sharedCalculateRecipients(context, orgID, appID,
-			subject, body, inputRecipients, recipientsCriteriaList,
-			recipientAccountCriteria, topic, messageID)
+		recipients, err = app.sharedCalculateRecipients(context, im.OrgID, im.AppID,
+			im.Subject, im.Body, im.InputRecipients, im.RecipientsCriteriaList,
+			im.RecipientAccountCriteria, im.Topic, messageID)
 		if err != nil {
 			fmt.Printf("error on calculating recipients for a message: %s", err)
 			return err
 		}
 
 		//create message object
-		if data == nil { //we add message id to the data
-			data = map[string]string{}
+		if im.Data == nil { //we add message id to the data
+			im.Data = map[string]string{}
 		}
-		data["message_id"] = messageID
+		im.Data["message_id"] = messageID
 		calculatedRecipients := len(recipients)
 		dateCreated := time.Now()
-		message := model.Message{OrgID: orgID, AppID: appID, ID: messageID, Priority: priority, Time: mTime,
-			Subject: subject, Sender: sender, Body: body, Data: data, RecipientsCriteriaList: recipientsCriteriaList,
-			Topic: topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
+		message := model.Message{OrgID: im.OrgID, AppID: im.AppID, ID: messageID, Priority: im.Priority, Time: im.Time,
+			Subject: im.Subject, Sender: im.Sender, Body: im.Body, Data: im.Data, RecipientsCriteriaList: im.RecipientsCriteriaList,
+			Topic: im.Topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
 
 		//store the message object
 		persistedMessage, err = app.storage.CreateMessageWithContext(context, message)

@@ -41,10 +41,7 @@ type Services interface {
 	GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	GetUserMessage(orgID string, appID string, ID string, accountID string) (*model.Message, error)
-	CreateMessage(orgID string, appID string,
-		sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
-		inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
+	CreateMessage(inputMessage model.InputMessage) (*model.Message, error)
 	UpdateMessage(userID *string, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(orgID string, appID string, userID string, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
@@ -105,12 +102,8 @@ func (s *servicesImpl) GetUserMessage(orgID string, appID string, ID string, acc
 	return s.app.getUserMessage(orgID, appID, ID, accountID)
 }
 
-func (s *servicesImpl) CreateMessage(orgID string, appID string,
-	sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
-	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
-	return s.app.createMessage(orgID, appID, sender, time, priority, subject, body, data,
-		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
+func (s *servicesImpl) CreateMessage(inputMessage model.InputMessage) (*model.Message, error) {
+	return s.app.createMessage(inputMessage)
 }
 
 func (s *servicesImpl) UpdateMessage(userID *string, message *model.Message) (*model.Message, error) {
@@ -159,10 +152,7 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 
 // BBs exposes users related APIs used by the platform building blocks
 type BBs interface {
-	BBsCreateMessage(orgID string, appID string,
-		sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
-		inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-		recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error)
+	BBsCreateMessage(inputMessage model.InputMessage) (*model.Message, error)
 	BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error
 	BBsSendMail(toEmail string, subject string, body string) error
 }
@@ -171,12 +161,8 @@ type bbsImpl struct {
 	app *Application
 }
 
-func (s *bbsImpl) BBsCreateMessage(orgID string, appID string,
-	sender model.Sender, time time.Time, priority int, subject string, body string, data map[string]string,
-	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
-	return s.app.bbsCreateMessage(orgID, appID, sender, time, priority, subject, body, data,
-		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
+func (s *bbsImpl) BBsCreateMessage(inputMessage model.InputMessage) (*model.Message, error) {
+	return s.app.bbsCreateMessage(inputMessage)
 }
 
 func (s *bbsImpl) BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
