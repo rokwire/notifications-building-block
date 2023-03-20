@@ -24,12 +24,15 @@ import (
 	"github.com/google/uuid"
 )
 
-func (app *Application) sharedCreateMessage(im model.InputMessage) (*model.Message, error) {
+func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) (*model.Message, error) {
 
 	var err error
 	var persistedMessage *model.Message
 	var recipients []model.MessageRecipient
 	notifyQueue := false
+
+	//TODO
+	im := imMessages[0] //for now
 
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {

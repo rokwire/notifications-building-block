@@ -69,7 +69,8 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 }
 
 func (app *Application) createMessage(inputMessage model.InputMessage) (*model.Message, error) {
-	return app.sharedCreateMessage(inputMessage)
+	messages := []model.InputMessage{inputMessage}
+	return app.sharedCreateMessages(messages)
 }
 
 func (app *Application) getMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {

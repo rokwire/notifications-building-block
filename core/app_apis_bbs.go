@@ -22,9 +22,9 @@ import (
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
-func (app *Application) bbsCreateMessage(inputMessage model.InputMessage) (*model.Message, error) {
+func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage) (*model.Message, error) {
 
-	return app.sharedCreateMessage(inputMessage)
+	return app.sharedCreateMessages(inputMessages)
 }
 
 func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {

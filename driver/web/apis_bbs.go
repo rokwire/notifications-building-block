@@ -78,7 +78,9 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	inputMessage.AppID = appID
 	inputMessage.Sender = sender
 
-	message, err := h.app.BBs.BBsCreateMessage(inputMessage)
+	messages := []model.InputMessage{inputMessage} //only one message
+
+	message, err := h.app.BBs.BBsCreateMessages(messages)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
