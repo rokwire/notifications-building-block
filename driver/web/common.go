@@ -54,10 +54,7 @@ func getBoolQueryParam(r *http.Request, paramName string) *bool {
 	return nil
 }
 
-func getMessageData(inputMessage Def.SharedReqCreateMessage) (time.Time, int, string, string,
-	map[string]string, []model.MessageRecipient, []model.RecipientCriteria,
-	map[string]interface{}, *string) {
-
+func getMessageData(inputMessage Def.SharedReqCreateMessage) model.InputMessage {
 	mTime := time.Now()
 	if inputMessage.Time != nil {
 		mTime = time.Unix(*inputMessage.Time, 0)
@@ -75,6 +72,7 @@ func getMessageData(inputMessage Def.SharedReqCreateMessage) (time.Time, int, st
 	recipientsAccountCriteria := inputMessage.RecipientAccountCriteria
 	topic := inputMessage.Topic
 
-	return mTime, priority, subject, body, inputData, inputRecipients,
-		recipientsCriteria, recipientsAccountCriteria, topic
+	return model.InputMessage{Time: mTime, Priority: priority, Subject: subject,
+		Body: body, Data: inputData, Topic: topic, InputRecipients: inputRecipients,
+		RecipientsCriteriaList: recipientsCriteria, RecipientAccountCriteria: recipientsAccountCriteria}
 }

@@ -18,19 +18,14 @@ import (
 	"errors"
 	"notifications/core/model"
 	"notifications/driven/storage"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
-func (app *Application) bbsCreateMessage(orgID string, appID string,
-	sender model.Sender, mTime time.Time, priority int, subject string, body string, data map[string]string,
-	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
+func (app *Application) bbsCreateMessage(inputMessage model.InputMessage) (*model.Message, error) {
 
-	return app.sharedCreateMessage(orgID, appID, sender, mTime, priority, subject, body, data,
-		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
+	return app.sharedCreateMessage(inputMessage)
 }
 
 func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
