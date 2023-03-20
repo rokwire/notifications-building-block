@@ -118,8 +118,9 @@ func (we Adapter) Start() {
 	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()
 	bbsRouter.HandleFunc("/message", we.wrapFunc(we.bbsApisHandler.SendMessage, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/message/{id}", we.wrapFunc(we.bbsApisHandler.DeleteMessage, we.auth.bbs.Permissions)).Methods("DELETE")
+	bbsRouter.HandleFunc("/message/{message-id}/recipients", we.wrapFunc(we.bbsApisHandler.AddRecipients, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
-	bbsRouter.HandleFunc("/recipients/{id}", we.wrapFunc(we.bbsApisHandler.AddRecipients, we.auth.bbs.Permissions)).Methods("PUT")
+
 	bbsRouter.HandleFunc("/recipients/{id}", we.wrapFunc(we.bbsApisHandler.DeleteRecipients, we.auth.bbs.Permissions)).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))

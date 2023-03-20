@@ -73,12 +73,13 @@ paths:
     $ref: "./resources/bbs/messages.yaml"
   /api/bbs/message:
     $ref: "./resources/bbs/message.yaml"
+  /api/bbs/message/{message-id}/recipients:
+    $ref: "./resources/bbs/recipients-id.yaml"
   /api/bbs/{id}:
     $ref: "./resources/bbs/message-id.yaml"
   /api/bbs/mail:
     $ref: "./resources/bbs/mail.yaml"
-  /api/bbs/recipients/{id}:
-    $ref: "./resources/bbs/recipients-id.yaml"
+
     
 components:
   securitySchemes:

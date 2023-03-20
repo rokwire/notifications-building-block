@@ -139,27 +139,26 @@ func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth
 }
 
 // AddRecipients add recipients to an existing message
-// @Description add recipient
-// @Tags BBs
-// @ID BBsAddRecipients
-// @Produce plain
-// @Success 200
-// @Security BBsAuth
-// @Router /bbs/recipients/{id} [put]
 func (h BBsAPIsHandler) AddRecipients(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
-	messageID := params["id"]
+	messageID := params["message-id"]
 	if len(messageID) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
+
 	read := getBoolQueryParam(r, "read")
 	mute := getBoolQueryParam(r, "mute")
 
-	err := h.app.BBs.BBsAddRecipients(l, messageID, claims.OrgID, claims.AppID, claims.Subject, mute, read)
+	recipient, err := h.app.BBs.BBsAddRecipients(l, messageID, claims.OrgID, claims.AppID, claims.Subject, mute, read)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "recipients", nil, err, http.StatusInternalServerError, true)
 	}
-	return l.HTTPResponseSuccess()
+	data, err := json.Marshal(recipient)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
 
 }
 

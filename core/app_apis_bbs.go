@@ -18,6 +18,7 @@ import (
 	"errors"
 	"notifications/core/model"
 	"notifications/driven/storage"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -94,7 +95,8 @@ func (app *Application) bbsSendMail(toEmail string, subject string, body string)
 	return app.sharedSendMail(toEmail, subject, body)
 }
 
-func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool, read *bool) error {
+func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool, read *bool) ([]model.MessageRecipient, error) {
+	var createRecipient []model.MessageRecipient
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
 		//find the message
@@ -102,28 +104,27 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 		if err != nil {
 			return err
 		}
-		if len(message.Recipients) == 0 {
-			recipientid := uuid.NewString()
-			var rec []model.MessageRecipient
-			recipient := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: userID,
-				MessageID: messageID, Mute: *mute, Read: *read}
-			rec = append(rec, recipient)
-			err := app.storage.InsertRecipientsToMessage(rec, messageID)
-			if err != nil {
-				return err
-			}
+		now := time.Now()
+		recipientid := uuid.NewString()
+		var recipient []model.MessageRecipient
+		rec := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: userID,
+			MessageID: messageID, Mute: *mute, Read: *read, Message: *message, DateCreated: &now}
+		recipient = append(recipient, rec)
+		createRecipient, err = app.storage.InsertMessagesRecipients(recipient)
+		if err != nil {
+			return err
 		}
-		return nil
+		return err
 	}
 
 	//perform transactions
 	err := app.storage.PerformTransaction(transaction, 2000)
 	if err != nil {
 		l.Errorf("error on performing delete message transaction - %s", err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return createRecipient, nil
 }
 
 func (app *Application) bbsDeleteRecipients(l *logs.Log, orgID string, appID string, messageID string) error {

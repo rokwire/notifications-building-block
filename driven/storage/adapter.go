@@ -1075,22 +1075,19 @@ func (sa Adapter) UpdateAllUserMessagesRead(ctx context.Context, orgID string, a
 	return nil
 }
 
-// InsertRecipientsToMessage inserts a recipients to message
-func (sa Adapter) InsertRecipientsToMessage(recipients []model.MessageRecipient, messageID string) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: messageID}}
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "recipients", Value: recipients},
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-		}},
-	}
+// InsertMessagesRecipients inserts a recipients to message
+func (sa Adapter) InsertMessagesRecipients(recipients []model.MessageRecipient) ([]model.MessageRecipient, error) {
 
-	_, err := sa.db.messages.UpdateOne(filter, update, nil)
+	data := make([]interface{}, len(recipients))
+	for i, p := range recipients {
+		data[i] = p
+	}
+	_, err := sa.db.messagesRecipients.InsertMany(data, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return recipients, nil
 }
 
 // DeleteRecipientsFromMessage delete a recipients to message
