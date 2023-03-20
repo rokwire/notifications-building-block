@@ -963,6 +963,7 @@ paths:
       tags:
         - BBs
       summary: Create message
+      deprecated: true
       description: |
         Create message
 
