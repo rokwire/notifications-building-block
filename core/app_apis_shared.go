@@ -31,7 +31,7 @@ func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) (*
 	var recipients []model.MessageRecipient
 	notifyQueue := false
 
-	//TODO
+	//TODO - TODO
 	im := imMessages[0] //for now
 
 	//in transaction

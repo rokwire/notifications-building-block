@@ -72,7 +72,7 @@ func getMessageData(inputMessage Def.SharedReqCreateMessage) model.InputMessage 
 	recipientsAccountCriteria := inputMessage.RecipientAccountCriteria
 	topic := inputMessage.Topic
 
-	return model.InputMessage{Time: mTime, Priority: priority, Subject: subject,
+	return model.InputMessage{ID: inputMessage.Id, Time: mTime, Priority: priority, Subject: subject,
 		Body: body, Data: inputData, Topic: topic, InputRecipients: inputRecipients,
 		RecipientsCriteriaList: recipientsCriteria, RecipientAccountCriteria: recipientsAccountCriteria}
 }
