@@ -152,7 +152,7 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 
 // BBs exposes users related APIs used by the platform building blocks
 type BBs interface {
-	BBsCreateMessages(inputMessages []model.InputMessage) (*model.Message, error)
+	BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error)
 	BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error
 	BBsSendMail(toEmail string, subject string, body string) error
 }
@@ -161,7 +161,7 @@ type bbsImpl struct {
 	app *Application
 }
 
-func (s *bbsImpl) BBsCreateMessages(inputMessages []model.InputMessage) (*model.Message, error) {
+func (s *bbsImpl) BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error) {
 	return s.app.bbsCreateMessages(inputMessages)
 }
 
@@ -205,6 +205,7 @@ type Storage interface {
 	FindMessageWithContext(ctx context.Context, ID string) (*model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
+	InsertMessagesWithContext(ctx context.Context, messages []model.Message) error
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error

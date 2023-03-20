@@ -78,14 +78,17 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	inputMessage.AppID = appID
 	inputMessage.Sender = sender
 
-	messages := []model.InputMessage{inputMessage} //only one message
+	inputMessages := []model.InputMessage{inputMessage} //only one message
 
-	message, err := h.app.BBs.BBsCreateMessages(messages)
+	messages, err := h.app.BBs.BBsCreateMessages(inputMessages)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
+	if len(messages) == 0 {
+		return l.HTTPResponseErrorData(logutils.MessageDataStatus(logutils.StatusError), "message", nil, nil, http.StatusInternalServerError, false)
+	}
 
-	data, err := json.Marshal(message)
+	data, err := json.Marshal(messages[0])
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
 	}

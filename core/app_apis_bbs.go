@@ -22,7 +22,7 @@ import (
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
-func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage) (*model.Message, error) {
+func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error) {
 
 	return app.sharedCreateMessages(inputMessages)
 }

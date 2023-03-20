@@ -16,6 +16,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"notifications/core/model"
 )
@@ -69,8 +70,16 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 }
 
 func (app *Application) createMessage(inputMessage model.InputMessage) (*model.Message, error) {
-	messages := []model.InputMessage{inputMessage}
-	return app.sharedCreateMessages(messages)
+	inputMessages := []model.InputMessage{inputMessage} //only one
+	messages, err := app.sharedCreateMessages(inputMessages)
+	if err != nil {
+		return nil, err
+	}
+	if len(messages) == 0 {
+		return nil, errors.New("error on creating message")
+	}
+
+	return &messages[0], nil //return only one
 }
 
 func (app *Application) getMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {

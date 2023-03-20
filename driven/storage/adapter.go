@@ -953,6 +953,25 @@ func (sa Adapter) CreateMessageWithContext(ctx context.Context, message model.Me
 	return &message, nil
 }
 
+// InsertMessagesWithContext inserts messages.
+func (sa Adapter) InsertMessagesWithContext(ctx context.Context, messages []model.Message) error {
+	data := make([]interface{}, len(messages))
+	for i, p := range messages {
+		data[i] = p
+	}
+
+	res, err := sa.db.messages.InsertManyWithContext(ctx, data, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, "messagess", nil, err)
+	}
+
+	if len(res.InsertedIDs) != len(messages) {
+		return errors.ErrorAction(logutils.ActionInsert, "messages", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(messages)})
+	}
+
+	return nil
+}
+
 // UpdateMessage updates a message
 func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) {
 	if message != nil {
