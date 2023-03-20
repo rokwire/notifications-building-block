@@ -37,14 +37,17 @@ func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) (*
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
 
-		//generate message id
-		//TODO - use form input if available
-		messageID := uuid.NewString()
+		//use from input if available
+		messageID := im.ID
+		if messageID == nil {
+			genMessageID := uuid.NewString()
+			messageID = &genMessageID
+		}
 
 		//calculate the recipients
 		recipients, err = app.sharedCalculateRecipients(context, im.OrgID, im.AppID,
 			im.Subject, im.Body, im.InputRecipients, im.RecipientsCriteriaList,
-			im.RecipientAccountCriteria, im.Topic, messageID)
+			im.RecipientAccountCriteria, im.Topic, *messageID)
 		if err != nil {
 			fmt.Printf("error on calculating recipients for a message: %s", err)
 			return err
@@ -54,10 +57,10 @@ func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) (*
 		if im.Data == nil { //we add message id to the data
 			im.Data = map[string]string{}
 		}
-		im.Data["message_id"] = messageID
+		im.Data["message_id"] = *messageID
 		calculatedRecipients := len(recipients)
 		dateCreated := time.Now()
-		message := model.Message{OrgID: im.OrgID, AppID: im.AppID, ID: messageID, Priority: im.Priority, Time: im.Time,
+		message := model.Message{OrgID: im.OrgID, AppID: im.AppID, ID: *messageID, Priority: im.Priority, Time: im.Time,
 			Subject: im.Subject, Sender: im.Sender, Body: im.Body, Data: im.Data, RecipientsCriteriaList: im.RecipientsCriteriaList,
 			Topic: im.Topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
 
