@@ -91,6 +91,48 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	return l.HTTPResponseSuccessJSON(data)
 }
 
+// SendMessages sends messages
+func (h BBsAPIsHandler) SendMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	/*var bodyData bbsSendMessageRequestBody
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+
+	inputData := bodyData.Message
+
+	if len(inputData.OrgId) == 0 || len(inputData.AppId) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
+	}
+
+	if !claims.AppOrg().CanAccessAppOrg(inputData.AppId, inputData.OrgId) {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusForbidden, false)
+	}
+
+	orgID := inputData.OrgId
+	appID := inputData.AppId
+	sender := model.Sender{Type: "system", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
+
+	inputMessage := getMessageData(inputData)
+	inputMessage.OrgID = orgID
+	inputMessage.AppID = appID
+	inputMessage.Sender = sender
+
+	message, err := h.app.BBs.BBsCreateMessage(inputMessage)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data) */
+
+	return l.HTTPResponseSuccess()
+}
+
 // DeleteMessage deletes a message
 func (h BBsAPIsHandler) DeleteMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
