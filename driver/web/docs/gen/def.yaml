@@ -974,9 +974,7 @@ paths:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/_shared_req_CreateMessage'
+              $ref: '#/components/schemas/_shared_req_CreateMessages'
         required: true
       responses:
         '200':
@@ -1303,6 +1301,10 @@ components:
       properties:
         notifications_disabled:
           type: boolean
+    _shared_req_CreateMessages:
+      type: array
+      items:
+        $ref: '#/components/schemas/_shared_req_CreateMessage'
     _shared_req_CreateMessage:
       required:
         - org_id

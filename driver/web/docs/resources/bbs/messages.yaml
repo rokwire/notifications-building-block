@@ -13,9 +13,7 @@ post:
     content:
       application/json:
         schema:
-          type: array
-          items:
-            $ref: "../../schemas/apis/shared/requests/create-message/Request.yaml" 
+          $ref: "../../schemas/apis/shared/requests/create-messages/Request.yaml" 
     required: true    
   responses:
     200:
