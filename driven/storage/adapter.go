@@ -1090,23 +1090,19 @@ func (sa Adapter) InsertMessagesRecipients(recipients []model.MessageRecipient) 
 	return recipients, nil
 }
 
-// DeleteRecipientsFromMessage delete a recipients to message
-func (sa Adapter) DeleteRecipientsFromMessage(recipients []model.MessageRecipient, messageID string) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: messageID}}
-	update := bson.D{
-		primitive.E{Key: "$pull", Value: bson.D{
-			primitive.E{Key: "recipients", Value: bson.M{"$in": recipients}},
-		}},
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-		}},
+// DeleteMessagesRecipients delete a recipients to message
+func (sa Adapter) DeleteMessagesRecipients(id string, appID string, orgID string) error {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "message_id", Value: id},
 	}
-	_, err := sa.db.messages.UpdateOne(filter, update, nil)
+	_, err := sa.db.messagesRecipients.DeleteOne(filter, nil)
 	if err != nil {
-		return err
+		return errors.WrapErrorAction(logutils.ActionDelete, "delete recipient", &logutils.FieldArgs{"id": id}, err)
 	}
-
 	return nil
+
 }
 
 // GetAllAppVersions gets all registered versions

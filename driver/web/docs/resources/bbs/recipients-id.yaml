@@ -49,15 +49,15 @@ post:
 delete:
   tags:
   - BBs
-  summary: Remove a recipient to certian message
+  summary: Delete message recipient
   description: |
-    Remove a recipient to certian message
+    Delete message recipient
   security:
     - bearerAuth: []
   parameters:
-    - name: id
+    - name: message-id
       in: path
-      description: id
+      description: message-id
       required: true
       style: simple
       explode: false

@@ -127,21 +127,15 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 	return createRecipient, nil
 }
 
-func (app *Application) bbsDeleteRecipients(l *logs.Log, orgID string, appID string, messageID string) error {
+func (app *Application) bbsDeleteRecipients(l *logs.Log, id string, appID string, orgID string) error {
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
-		//find the message
-		message, err := app.storage.GetMessage(orgID, appID, messageID)
+
+		err := app.storage.DeleteMessagesRecipients(id, appID, orgID)
 		if err != nil {
 			return err
 		}
 
-		if message.Recipients != nil {
-			err := app.storage.DeleteRecipientsFromMessage(message.Recipients, messageID)
-			if err != nil {
-				return err
-			}
-		}
 		return nil
 	}
 

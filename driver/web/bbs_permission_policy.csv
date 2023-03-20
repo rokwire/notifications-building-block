@@ -1,4 +1,5 @@
 p, send_message, /notifications/api/bbs/message, (POST), Send message
 p, send_message, /notifications/api/bbs/message/*/recipients, (POST), Create recipients
-p, cancel_message, /notifications/api/bbs/message/*, (DELETE), Delete message
+p, cancel_message, /notifications/api/bbs/message/*, (DELETE), Delete 
+p, cancel_message, /notifications/api/bbs/message/*/recipients, (DELETE), Delete recipient
 p, send_email, /notifications/api/bbs/mail, (POST), Send email
