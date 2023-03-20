@@ -82,6 +82,8 @@ func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) ([
 			notifyQueue = true
 		}
 
+		resultMessages = allMessages
+
 		return nil
 	}
 
