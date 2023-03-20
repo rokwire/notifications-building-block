@@ -115,9 +115,12 @@ type ClientReqUser struct {
 
 // SharedReqCreateMessage defines model for _shared_req_CreateMessage.
 type SharedReqCreateMessage struct {
-	AppId                    string                                         `json:"app_id"`
-	Body                     string                                         `json:"body"`
-	Data                     map[string]interface{}                         `json:"data"`
+	AppId string                 `json:"app_id"`
+	Body  string                 `json:"body"`
+	Data  map[string]interface{} `json:"data"`
+
+	// optional
+	Id                       *string                                        `json:"id,omitempty"`
 	OrgId                    string                                         `json:"org_id"`
 	Priority                 int                                            `json:"priority"`
 	RecipientAccountCriteria map[string]interface{}                         `json:"recipient_account_criteria"`
@@ -139,6 +142,9 @@ type SharedReqCreateMessageInputRecipientCriteria struct {
 	AppPlatform *string `json:"app_platform,omitempty"`
 	AppVersion  *string `json:"app_version,omitempty"`
 }
+
+// SharedReqCreateMessages defines model for _shared_req_CreateMessages.
+type SharedReqCreateMessages = []SharedReqCreateMessage
 
 // PostApiAdminMessageJSONBody defines parameters for PostApiAdminMessage.
 type PostApiAdminMessageJSONBody = SharedReqCreateMessage
@@ -175,6 +181,9 @@ type PostApiBbsMailJSONBody = ClientReqMail
 
 // PostApiBbsMessageJSONBody defines parameters for PostApiBbsMessage.
 type PostApiBbsMessageJSONBody = ClientReqMessageV2
+
+// PostApiBbsMessagesJSONBody defines parameters for PostApiBbsMessages.
+type PostApiBbsMessagesJSONBody = SharedReqCreateMessages
 
 // PostApiIntMailJSONBody defines parameters for PostApiIntMail.
 type PostApiIntMailJSONBody = ClientReqToken
@@ -268,6 +277,9 @@ type PostApiBbsMailJSONRequestBody = PostApiBbsMailJSONBody
 
 // PostApiBbsMessageJSONRequestBody defines body for PostApiBbsMessage for application/json ContentType.
 type PostApiBbsMessageJSONRequestBody = PostApiBbsMessageJSONBody
+
+// PostApiBbsMessagesJSONRequestBody defines body for PostApiBbsMessages for application/json ContentType.
+type PostApiBbsMessagesJSONRequestBody = PostApiBbsMessagesJSONBody
 
 // PostApiIntMailJSONRequestBody defines body for PostApiIntMail for application/json ContentType.
 type PostApiIntMailJSONRequestBody = PostApiIntMailJSONBody
