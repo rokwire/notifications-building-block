@@ -2,6 +2,7 @@ delete:
   tags:
   - BBs
   summary: Removes a message
+  deprecated: true
   description: |
     Removes а message
 

@@ -20,6 +20,7 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
@@ -78,12 +79,61 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 	inputMessage.AppID = appID
 	inputMessage.Sender = sender
 
-	message, err := h.app.BBs.BBsCreateMessage(inputMessage)
+	inputMessages := []model.InputMessage{inputMessage} //only one message
+
+	messages, err := h.app.BBs.BBsCreateMessages(inputMessages)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
+	}
+	if len(messages) == 0 {
+		return l.HTTPResponseErrorData(logutils.MessageDataStatus(logutils.StatusError), "message", nil, nil, http.StatusInternalServerError, false)
+	}
+
+	data, err := json.Marshal(messages[0])
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
+}
+
+// SendMessages sends messages
+func (h BBsAPIsHandler) SendMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var bodyData Def.SharedReqCreateMessages
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+
+	if len(bodyData) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "no data", nil, nil, http.StatusBadRequest, false)
+	}
+
+	inputMessages := []model.InputMessage{}
+	//loop through the messages, validate each message and prepare InputMessage obj for every message
+	for _, m := range bodyData {
+		if len(m.OrgId) == 0 || len(m.AppId) == 0 {
+			return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
+		}
+
+		if !claims.AppOrg().CanAccessAppOrg(m.AppId, m.OrgId) {
+			return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusForbidden, false)
+		}
+
+		inputMessage := getMessageData(m)
+		inputMessage.OrgID = m.OrgId
+		inputMessage.AppID = m.AppId
+		inputMessage.Sender = model.Sender{Type: "system", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
+
+		inputMessages = append(inputMessages, inputMessage)
+	}
+
+	createdMessages, err := h.app.BBs.BBsCreateMessages(inputMessages)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
 
-	data, err := json.Marshal(message)
+	data, err := json.Marshal(createdMessages)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
 	}
@@ -99,7 +149,27 @@ func (h BBsAPIsHandler) DeleteMessage(l *logs.Log, r *http.Request, claims *toke
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	err := h.app.BBs.BBsDeleteMessage(l, claims.Subject, id)
+	messagesIDs := []string{id} // only one
+	err := h.app.BBs.BBsDeleteMessages(l, claims.Subject, messagesIDs)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
+}
+
+// DeleteMessages deletes messages
+func (h BBsAPIsHandler) DeleteMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	idsParam := getStringQueryParam(r, "ids")
+	if idsParam == nil {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("ids"), nil, http.StatusBadRequest, false)
+	}
+	ids := strings.Split(*idsParam, ",")
+	if len(ids) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypePathParam, logutils.StringArgs("ids"), nil, http.StatusBadRequest, false)
+	}
+
+	err := h.app.BBs.BBsDeleteMessages(l, claims.Subject, ids)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
 	}

@@ -152,8 +152,8 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 
 // BBs exposes users related APIs used by the platform building blocks
 type BBs interface {
-	BBsCreateMessage(inputMessage model.InputMessage) (*model.Message, error)
-	BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error
+	BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error)
+	BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error
 	BBsSendMail(toEmail string, subject string, body string) error
 	BBsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool, read *bool) ([]model.MessageRecipient, error)
 	BBsDeleteRecipients(l *logs.Log, id string, appID string, orgID string) error
@@ -163,12 +163,12 @@ type bbsImpl struct {
 	app *Application
 }
 
-func (s *bbsImpl) BBsCreateMessage(inputMessage model.InputMessage) (*model.Message, error) {
-	return s.app.bbsCreateMessage(inputMessage)
+func (s *bbsImpl) BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error) {
+	return s.app.bbsCreateMessages(inputMessages)
 }
 
-func (s *bbsImpl) BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
-	return s.app.bbsDeleteMessage(l, serviceAccountID, messageID)
+func (s *bbsImpl) BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error {
+	return s.app.bbsDeleteMessages(l, serviceAccountID, messagesIDs)
 }
 
 func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {
@@ -212,9 +212,10 @@ type Storage interface {
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
 	DeleteMessagesRecipientsForMessageWithContext(ctx context.Context, messageID string) error
 
-	FindMessageWithContext(ctx context.Context, ID string) (*model.Message, error)
+	FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
+	InsertMessagesWithContext(ctx context.Context, messages []model.Message) error
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	InsertMessagesRecipients(recipients []model.MessageRecipient) ([]model.MessageRecipient, error)
 	DeleteMessagesRecipients(appID string, orgID string, id string) error

@@ -22,61 +22,57 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rokwire/logging-library-go/v2/errors"
 )
 
-func (app *Application) sharedCreateMessage(im model.InputMessage) (*model.Message, error) {
+func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) ([]model.Message, error) {
+
+	if len(imMessages) == 0 {
+		return nil, errors.New("no data")
+	}
 
 	var err error
-	var persistedMessage *model.Message
-	var recipients []model.MessageRecipient
+	resultMessages := []model.Message{}
 	notifyQueue := false
 
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
 
-		//generate message id
-		//TODO - use form input if available
-		messageID := uuid.NewString()
+		allMessages := []model.Message{}
+		allRecipients := []model.MessageRecipient{}
+		allQueueItems := []model.QueueItem{}
 
-		//calculate the recipients
-		recipients, err = app.sharedCalculateRecipients(context, im.OrgID, im.AppID,
-			im.Subject, im.Body, im.InputRecipients, im.RecipientsCriteriaList,
-			im.RecipientAccountCriteria, im.Topic, messageID)
-		if err != nil {
-			fmt.Printf("error on calculating recipients for a message: %s", err)
-			return err
+		//process every message
+		for _, im := range imMessages {
+			message, recipients, err := app.sharedHandleInputMessage(context, im)
+			if err != nil {
+				fmt.Printf("error on handling a message: %s", err)
+				return err
+			}
+			queueItems := app.sharedCreateQueueItems(*message, recipients)
+
+			allMessages = append(allMessages, *message)
+			allRecipients = append(allRecipients, recipients...)
+			allQueueItems = append(allQueueItems, queueItems...)
 		}
 
-		//create message object
-		if im.Data == nil { //we add message id to the data
-			im.Data = map[string]string{}
-		}
-		im.Data["message_id"] = messageID
-		calculatedRecipients := len(recipients)
-		dateCreated := time.Now()
-		message := model.Message{OrgID: im.OrgID, AppID: im.AppID, ID: messageID, Priority: im.Priority, Time: im.Time,
-			Subject: im.Subject, Sender: im.Sender, Body: im.Body, Data: im.Data, RecipientsCriteriaList: im.RecipientsCriteriaList,
-			Topic: im.Topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
-
-		//store the message object
-		persistedMessage, err = app.storage.CreateMessageWithContext(context, message)
+		//store the messages object
+		err = app.storage.InsertMessagesWithContext(context, allMessages)
 		if err != nil {
 			fmt.Printf("error on creating a message: %s", err)
 			return err
 		}
-		log.Printf("message %s has been created", persistedMessage.ID)
 
 		//store recipients
-		err = app.storage.InsertMessagesRecipientsWithContext(context, recipients)
+		err = app.storage.InsertMessagesRecipientsWithContext(context, allRecipients)
 		if err != nil {
 			fmt.Printf("error on inserting recipients: %s", err)
 			return err
 		}
 
-		//create the notifications queue items and store them in the queue
-		queueItems := app.sharedCreateQueueItems(*persistedMessage, recipients)
-		if len(queueItems) > 0 {
-			err = app.storage.InsertQueueDataItemsWithContext(context, queueItems)
+		//store the notifications queue items in the queue
+		if len(allQueueItems) > 0 {
+			err = app.storage.InsertQueueDataItemsWithContext(context, allQueueItems)
 			if err != nil {
 				fmt.Printf("error on inserting queue data items: %s", err)
 				return err
@@ -85,6 +81,8 @@ func (app *Application) sharedCreateMessage(im model.InputMessage) (*model.Messa
 			//notify the queue that new items are added
 			notifyQueue = true
 		}
+
+		resultMessages = allMessages
 
 		return nil
 	}
@@ -101,7 +99,38 @@ func (app *Application) sharedCreateMessage(im model.InputMessage) (*model.Messa
 		go app.queueLogic.onQueuePush()
 	}
 
-	return persistedMessage, nil
+	return resultMessages, nil
+}
+
+func (app *Application) sharedHandleInputMessage(context storage.TransactionContext, im model.InputMessage) (*model.Message, []model.MessageRecipient, error) {
+	//use from input if available
+	messageID := im.ID
+	if messageID == nil {
+		genMessageID := uuid.NewString()
+		messageID = &genMessageID
+	}
+
+	//calculate the recipients
+	recipients, err := app.sharedCalculateRecipients(context, im.OrgID, im.AppID,
+		im.Subject, im.Body, im.InputRecipients, im.RecipientsCriteriaList,
+		im.RecipientAccountCriteria, im.Topic, *messageID)
+	if err != nil {
+		fmt.Printf("error on calculating recipients for a message: %s", err)
+		return nil, nil, err
+	}
+
+	//create message object
+	if im.Data == nil { //we add message id to the data
+		im.Data = map[string]string{}
+	}
+	im.Data["message_id"] = *messageID
+	calculatedRecipients := len(recipients)
+	dateCreated := time.Now()
+	message := model.Message{OrgID: im.OrgID, AppID: im.AppID, ID: *messageID, Priority: im.Priority, Time: im.Time,
+		Subject: im.Subject, Sender: im.Sender, Body: im.Body, Data: im.Data, RecipientsCriteriaList: im.RecipientsCriteriaList,
+		Topic: im.Topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
+
+	return &message, recipients, nil
 }
 
 func (app *Application) sharedCreateQueueItems(message model.Message, messageRecipients []model.MessageRecipient) []model.QueueItem {

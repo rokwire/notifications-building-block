@@ -899,9 +899,9 @@ func (sa Adapter) DeleteMessagesRecipientsForMessageWithContext(ctx context.Cont
 	return nil
 }
 
-// FindMessageWithContext finds a message by id using context
-func (sa Adapter) FindMessageWithContext(ctx context.Context, ID string) (*model.Message, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: ID}}
+// FindMessagesWithContext finds messages by ids using context
+func (sa Adapter) FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error) {
+	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
 
 	var messageArr []model.Message
 	err := sa.db.messages.FindWithContext(ctx, filter, &messageArr, nil)
@@ -909,12 +909,7 @@ func (sa Adapter) FindMessageWithContext(ctx context.Context, ID string) (*model
 		return nil, err
 	}
 
-	if len(messageArr) == 0 {
-		return nil, nil
-	}
-
-	res := messageArr[0]
-	return &res, nil
+	return messageArr, nil
 }
 
 // GetMessage gets a message by id
@@ -951,6 +946,25 @@ func (sa Adapter) CreateMessageWithContext(ctx context.Context, message model.Me
 	}
 
 	return &message, nil
+}
+
+// InsertMessagesWithContext inserts messages.
+func (sa Adapter) InsertMessagesWithContext(ctx context.Context, messages []model.Message) error {
+	data := make([]interface{}, len(messages))
+	for i, p := range messages {
+		data[i] = p
+	}
+
+	res, err := sa.db.messages.InsertManyWithContext(ctx, data, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, "messagess", nil, err)
+	}
+
+	if len(res.InsertedIDs) != len(messages) {
+		return errors.ErrorAction(logutils.ActionInsert, "messages", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(messages)})
+	}
+
+	return nil
 }
 
 // UpdateMessage updates a message
