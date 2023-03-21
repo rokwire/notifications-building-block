@@ -120,7 +120,7 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 	//perform transactions
 	err := app.storage.PerformTransaction(transaction, 2000)
 	if err != nil {
-		l.Errorf("error on performing delete message transaction - %s", err)
+		l.Errorf("error on performing add message recipient transaction - %s", err)
 		return nil, err
 	}
 
@@ -142,7 +142,7 @@ func (app *Application) bbsDeleteRecipients(l *logs.Log, id string, appID string
 	//perform transactions
 	err := app.storage.PerformTransaction(transaction, 2000)
 	if err != nil {
-		l.Errorf("error on performing delete message transaction - %s", err)
+		l.Errorf("error on performing delete message recipient transaction - %s", err)
 		return err
 	}
 
