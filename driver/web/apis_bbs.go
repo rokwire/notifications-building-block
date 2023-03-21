@@ -156,6 +156,22 @@ func (h BBsAPIsHandler) DeleteMessage(l *logs.Log, r *http.Request, claims *toke
 	return l.HTTPResponseSuccess()
 }
 
+// DeleteMessages deletes messages
+func (h BBsAPIsHandler) DeleteMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	/*params := mux.Vars(r)
+	id := params["id"]
+	if len(id) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+
+	err := h.app.BBs.BBsDeleteMessage(l, claims.Subject, id)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
+	} */
+
+	return l.HTTPResponseSuccess()
+}
+
 // sendMailRequestBody mail request body
 type bbsSendMailRequestBody struct {
 	ToMail  string `json:"to_mail"`
