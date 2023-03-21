@@ -27,7 +27,10 @@ func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage) ([
 	return app.sharedCreateMessages(inputMessages)
 }
 
-func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
+func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error {
+	// TODO for now
+	messageID := messagesIDs[0]
+
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
 		//find the message

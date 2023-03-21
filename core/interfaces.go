@@ -153,7 +153,7 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 // BBs exposes users related APIs used by the platform building blocks
 type BBs interface {
 	BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error)
-	BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error
+	BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error
 	BBsSendMail(toEmail string, subject string, body string) error
 }
 
@@ -165,8 +165,8 @@ func (s *bbsImpl) BBsCreateMessages(inputMessages []model.InputMessage) ([]model
 	return s.app.bbsCreateMessages(inputMessages)
 }
 
-func (s *bbsImpl) BBsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
-	return s.app.bbsDeleteMessage(l, serviceAccountID, messageID)
+func (s *bbsImpl) BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error {
+	return s.app.bbsDeleteMessages(l, serviceAccountID, messagesIDs)
 }
 
 func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {
