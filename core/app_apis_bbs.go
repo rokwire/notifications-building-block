@@ -156,6 +156,12 @@ func (app *Application) bbsDeleteRecipients(l *logs.Log, id string, appID string
 			return err
 		}
 
+		//delete the queue data items
+		err = app.storage.DeleteQueueDataForMessageRecipeint(id)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	}
 
