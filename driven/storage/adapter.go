@@ -888,13 +888,13 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 	return nil
 }
 
-// DeleteMessagesRecipientsForMessageWithContext deletes messages recipients for a message
-func (sa Adapter) DeleteMessagesRecipientsForMessageWithContext(ctx context.Context, messageID string) error {
-	filter := bson.D{primitive.E{Key: "message_id", Value: messageID}}
+// DeleteMessagesRecipientsForMessagesWithContext deletes messages recipients for messages
+func (sa Adapter) DeleteMessagesRecipientsForMessagesWithContext(ctx context.Context, messagesIDs []string) error {
+	filter := bson.D{primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}}}
 
 	_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
-		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient", &logutils.FieldArgs{"message_id": messageID}, err)
+		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient", nil, err)
 	}
 	return nil
 }
@@ -1213,13 +1213,13 @@ func (sa *Adapter) DeleteQueueData(ids []string) error {
 	return nil
 }
 
-// DeleteQueueDataForMessageWithContext removes queue data items for a message
-func (sa *Adapter) DeleteQueueDataForMessageWithContext(ctx context.Context, messageID string) error {
-	filter := bson.D{primitive.E{Key: "message_id", Value: messageID}}
+// DeleteQueueDataForMessagesWithContext removes queue data items for messages
+func (sa *Adapter) DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error {
+	filter := bson.D{primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}}}
 
 	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
-		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"message_id": messageID}, err)
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
 	}
 	return nil
 }
