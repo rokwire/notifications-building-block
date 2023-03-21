@@ -28,43 +28,40 @@ func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage) ([
 }
 
 func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error {
-	// TODO for now
-	messageID := messagesIDs[0]
-
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
-		//find the message
-		message, err := app.storage.FindMessageWithContext(context, messageID)
+		//find the messages
+		messages, err := app.storage.FindMessagesWithContext(context, messagesIDs)
 		if err != nil {
 			return err
 		}
-		if message == nil {
-			return errors.New("no message for id - " + messageID)
+		if len(messagesIDs) != len(messages) {
+			return errors.New("not found message's")
 		}
+		/*
+			//validate if the service account is the sender of this message
+			valid := app.isSenderValid(serviceAccountID, *message)
+			if !valid {
+				return errors.New("not valid service account id for message - " + messageID)
+			}
 
-		//validate if the service account is the sender of this message
-		valid := app.isSenderValid(serviceAccountID, *message)
-		if !valid {
-			return errors.New("not valid service account id for message - " + messageID)
-		}
+			//delete the message
+			err = app.storage.DeleteMessageWithContext(context, message.OrgID, message.AppID, messageID)
+			if err != nil {
+				return err
+			}
 
-		//delete the message
-		err = app.storage.DeleteMessageWithContext(context, message.OrgID, message.AppID, messageID)
-		if err != nil {
-			return err
-		}
+			//delete the message recipients
+			err = app.storage.DeleteMessagesRecipientsForMessageWithContext(context, messageID)
+			if err != nil {
+				return err
+			}
 
-		//delete the message recipients
-		err = app.storage.DeleteMessagesRecipientsForMessageWithContext(context, messageID)
-		if err != nil {
-			return err
-		}
-
-		//delete the queue data items
-		err = app.storage.DeleteQueueDataForMessageWithContext(context, messageID)
-		if err != nil {
-			return err
-		}
+			//delete the queue data items
+			err = app.storage.DeleteQueueDataForMessageWithContext(context, messageID)
+			if err != nil {
+				return err
+			} */
 
 		return nil
 	}

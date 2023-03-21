@@ -202,7 +202,7 @@ type Storage interface {
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
 	DeleteMessagesRecipientsForMessageWithContext(ctx context.Context, messageID string) error
 
-	FindMessageWithContext(ctx context.Context, ID string) (*model.Message, error)
+	FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
 	InsertMessagesWithContext(ctx context.Context, messages []model.Message) error
