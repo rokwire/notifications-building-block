@@ -47,13 +47,16 @@ func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, 
 			}
 		}
 
+		//delete the message
+		messagesIDs := make([]string, len(messages))
+		for i, m := range messages {
+			messagesIDs[i] = m.ID
+		}
+		err = app.storage.DeleteMessagesWithContext(context, messagesIDs)
+		if err != nil {
+			return err
+		}
 		/*
-			//delete the message
-			err = app.storage.DeleteMessageWithContext(context, message.OrgID, message.AppID, messageID)
-			if err != nil {
-				return err
-			}
-
 			//delete the message recipients
 			err = app.storage.DeleteMessagesRecipientsForMessageWithContext(context, messageID)
 			if err != nil {

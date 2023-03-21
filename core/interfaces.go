@@ -208,7 +208,7 @@ type Storage interface {
 	InsertMessagesWithContext(ctx context.Context, messages []model.Message) error
 	UpdateMessage(message *model.Message) (*model.Message, error)
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
-	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
+	DeleteMessagesWithContext(ctx context.Context, ids []string) error
 	GetMessagesStats(userID string) (*model.MessagesStats, error)
 	UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID string) (*model.Message, error)
 	UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error

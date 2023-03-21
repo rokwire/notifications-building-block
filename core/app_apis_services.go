@@ -153,7 +153,7 @@ func (app *Application) deleteUserMessage(orgID string, appID string, userID str
 }
 
 func (app *Application) deleteMessage(orgID string, appID string, ID string) error {
-	return app.storage.DeleteMessageWithContext(context.Background(), orgID, appID, ID)
+	return app.storage.DeleteMessagesWithContext(context.Background(), []string{ID})
 }
 
 func (app *Application) getAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
