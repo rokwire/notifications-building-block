@@ -16,6 +16,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"notifications/core/model"
 	"notifications/driven/storage"
 	"time"
@@ -97,6 +98,7 @@ func (app *Application) bbsSendMail(toEmail string, subject string, body string)
 
 func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool, read *bool) ([]model.MessageRecipient, error) {
 	var createRecipient []model.MessageRecipient
+	notifyQueue := false
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
 		//find the message
@@ -105,6 +107,7 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 			return err
 		}
 		now := time.Now()
+		//	now = "2023-03-21T08:01:15.294+00:00"
 		recipientid := uuid.NewString()
 		var recipient []model.MessageRecipient
 		rec := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: userID,
@@ -114,16 +117,33 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 		if err != nil {
 			return err
 		}
-		return err
-	}
 
+		//create the notifications queue items and store them in the queue
+		queueItems := app.sharedCreateRecipientsQueueItems(message, recipient)
+		if len(queueItems) > 0 {
+			err = app.storage.InsertQueueDataRecipientsItems(queueItems)
+			if err != nil {
+				fmt.Printf("error on inserting queue data items: %s", err)
+				return err
+			}
+
+			//notify the queue that new items are added
+			notifyQueue = true
+			return err
+		}
+
+		return nil
+	}
 	//perform transactions
 	err := app.storage.PerformTransaction(transaction, 2000)
 	if err != nil {
 		l.Errorf("error on performing add message recipient transaction - %s", err)
 		return nil, err
 	}
-
+	//notify the queue that new items are added
+	if notifyQueue {
+		go app.queueLogic.onQueuePush()
+	}
 	return createRecipient, nil
 }
 

@@ -270,3 +270,28 @@ func sharedGetCommonRecipients(messageRecipients, topicRecipients []model.Messag
 func (app *Application) sharedSendMail(toEmail string, subject string, body string) error {
 	return app.mailer.SendMail(toEmail, subject, body)
 }
+
+func (app *Application) sharedCreateRecipientsQueueItems(message *model.Message, messageRecipients []model.MessageRecipient) []model.QueueItem {
+	queueItems := []model.QueueItem{}
+
+	for _, messageRecipient := range messageRecipients {
+		orgID := messageRecipient.OrgID
+		appID := messageRecipient.AppID
+		id := messageRecipient.ID
+		userID := messageRecipient.UserID
+		messageID := messageRecipient.MessageID
+		subject := message.Subject
+		body := message.Body
+		data := message.Data
+		time := message.Time
+		priority := message.Priority
+
+		queueItem := model.QueueItem{OrgID: orgID, AppID: appID, ID: id,
+			MessageID: messageID, MessageRecipientID: id, UserID: userID, Subject: subject, Body: body,
+			Data: data, Time: time, Priority: priority}
+
+		queueItems = append(queueItems, queueItem)
+	}
+
+	return queueItems
+}

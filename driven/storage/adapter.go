@@ -1160,6 +1160,20 @@ func (sa Adapter) InsertQueueDataItemsWithContext(ctx context.Context, items []m
 	return nil
 }
 
+// InsertQueueDataRecipientsItems inserts queue data items
+func (sa Adapter) InsertQueueDataRecipientsItems(items []model.QueueItem) error {
+	data := make([]interface{}, len(items))
+	for i, p := range items {
+		data[i] = p
+	}
+	_, err := sa.db.queueData.InsertMany(data, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // LoadQueueWithContext loads the queue object
 func (sa Adapter) LoadQueueWithContext(ctx context.Context) (*model.Queue, error) {
 	filter := bson.D{}
