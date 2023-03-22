@@ -210,7 +210,7 @@ type Storage interface {
 	FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error)
 	FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
-	DeleteMessagesRecipientsForMessageWithContext(ctx context.Context, messageID string) error
+	DeleteMessagesRecipientsForMessagesWithContext(ctx context.Context, messagesIDs []string) error
 
 	FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
@@ -220,7 +220,7 @@ type Storage interface {
 	InsertMessagesRecipients(recipients []model.MessageRecipient) ([]model.MessageRecipient, error)
 	DeleteMessagesRecipients(appID string, orgID string, id string) error
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
-	DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error
+	DeleteMessagesWithContext(ctx context.Context, ids []string) error
 	GetMessagesStats(userID string) (*model.MessagesStats, error)
 	UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID string) (*model.Message, error)
 	UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error
@@ -237,6 +237,7 @@ type Storage interface {
 	DeleteQueueData(ids []string) error
 	DeleteQueueDataForMessageWithContext(ctx context.Context, messageID string) error
 	DeleteQueueDataForMessageRecipeint(messageID string) error
+	DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions

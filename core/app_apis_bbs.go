@@ -46,25 +46,37 @@ func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, 
 			valid := app.isSenderValid(serviceAccountID, *message)
 			if !valid {
 				return errors.New("not valid service account id for message - " + messageID)
-			}
+			}*/
 
-			//delete the message
-			err = app.storage.DeleteMessageWithContext(context, message.OrgID, message.AppID, messageID)
-			if err != nil {
-				return err
+		//validate if the service account is the sender of the messages
+		for _, m := range messages {
+			valid := app.isSenderValid(serviceAccountID, m)
+			if !valid {
+				return errors.New("not valid service account id for message - " + m.ID)
 			}
+		}
 
-			//delete the message recipients
-			err = app.storage.DeleteMessagesRecipientsForMessageWithContext(context, messageID)
-			if err != nil {
-				return err
-			}
+		//delete the message
+		messagesIDs := make([]string, len(messages))
+		for i, m := range messages {
+			messagesIDs[i] = m.ID
+		}
+		err = app.storage.DeleteMessagesWithContext(context, messagesIDs)
+		if err != nil {
+			return err
+		}
 
-			//delete the queue data items
-			err = app.storage.DeleteQueueDataForMessageWithContext(context, messageID)
-			if err != nil {
-				return err
-			} */
+		//delete the messages recipients
+		err = app.storage.DeleteMessagesRecipientsForMessagesWithContext(context, messagesIDs)
+		if err != nil {
+			return err
+		}
+
+		//delete the queue data items
+		err = app.storage.DeleteQueueDataForMessagesWithContext(context, messagesIDs)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	}
