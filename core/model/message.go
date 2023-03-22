@@ -18,6 +18,25 @@ import (
 	"time"
 )
 
+// InputMessage represents the data structure needed for creating a message. It is the input data for the core module.
+type InputMessage struct {
+	OrgID string
+	AppID string
+
+	ID *string //use ID if given
+
+	Sender                   Sender
+	Time                     time.Time
+	Priority                 int
+	Subject                  string
+	Body                     string
+	Data                     map[string]string
+	InputRecipients          []MessageRecipient
+	RecipientsCriteriaList   []RecipientCriteria
+	RecipientAccountCriteria map[string]interface{}
+	Topic                    *string
+}
+
 // Message wraps all needed information for the notification. Use either recipients, recipients_criteria or topic in order to address end users
 // @Description wraps all needed information for the notification
 // @ID Message

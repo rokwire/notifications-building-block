@@ -10,6 +10,9 @@ required:
   - recipient_account_criteria
 type: object
 properties:
+  id:
+    type: string
+    description: optional
   org_id:
     type: string
   app_id:

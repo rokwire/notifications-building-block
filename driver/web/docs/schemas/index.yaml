@@ -43,6 +43,8 @@ _client_req_user:
 ## SHARED requests and responses
 
 ### requests
+_shared_req_CreateMessages:
+  $ref: "./apis/shared/requests/create-messages/Request.yaml"
 _shared_req_CreateMessage:
   $ref: "./apis/shared/requests/create-message/Request.yaml"
 _shared_req_CreateMessage_InputMessageRecipient:

@@ -500,7 +500,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 
 					if *message.Message.CalculatedRecipientsCount == 1 {
 						//the message has had only one recipient, so we need to remove the message entity too
-						err = sa.DeleteMessageWithContext(sessionContext, orgID, appID, message.ID)
+						err = sa.DeleteMessagesWithContext(sessionContext, []string{message.ID})
 						if err != nil {
 							fmt.Printf("warning: unable to delete message(%s): %s\n", message.ID, err)
 						}
@@ -888,20 +888,20 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 	return nil
 }
 
-// DeleteMessagesRecipientsForMessageWithContext deletes messages recipients for a message
-func (sa Adapter) DeleteMessagesRecipientsForMessageWithContext(ctx context.Context, messageID string) error {
-	filter := bson.D{primitive.E{Key: "message_id", Value: messageID}}
+// DeleteMessagesRecipientsForMessagesWithContext deletes messages recipients for messages
+func (sa Adapter) DeleteMessagesRecipientsForMessagesWithContext(ctx context.Context, messagesIDs []string) error {
+	filter := bson.D{primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}}}
 
 	_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
-		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient", &logutils.FieldArgs{"message_id": messageID}, err)
+		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient", nil, err)
 	}
 	return nil
 }
 
-// FindMessageWithContext finds a message by id using context
-func (sa Adapter) FindMessageWithContext(ctx context.Context, ID string) (*model.Message, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: ID}}
+// FindMessagesWithContext finds messages by ids using context
+func (sa Adapter) FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error) {
+	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
 
 	var messageArr []model.Message
 	err := sa.db.messages.FindWithContext(ctx, filter, &messageArr, nil)
@@ -909,12 +909,7 @@ func (sa Adapter) FindMessageWithContext(ctx context.Context, ID string) (*model
 		return nil, err
 	}
 
-	if len(messageArr) == 0 {
-		return nil, nil
-	}
-
-	res := messageArr[0]
-	return &res, nil
+	return messageArr, nil
 }
 
 // GetMessage gets a message by id
@@ -951,6 +946,25 @@ func (sa Adapter) CreateMessageWithContext(ctx context.Context, message model.Me
 	}
 
 	return &message, nil
+}
+
+// InsertMessagesWithContext inserts messages.
+func (sa Adapter) InsertMessagesWithContext(ctx context.Context, messages []model.Message) error {
+	data := make([]interface{}, len(messages))
+	for i, p := range messages {
+		data[i] = p
+	}
+
+	res, err := sa.db.messages.InsertManyWithContext(ctx, data, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, "messagess", nil, err)
+	}
+
+	if len(res.InsertedIDs) != len(messages) {
+		return errors.ErrorAction(logutils.ActionInsert, "messages", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(messages)})
+	}
+
+	return nil
 }
 
 // UpdateMessage updates a message
@@ -1012,24 +1026,21 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string
 	return nil
 }
 
-// DeleteMessageWithContext deletes a message by id
-func (sa Adapter) DeleteMessageWithContext(ctx context.Context, orgID string, appID string, ID string) error {
+// DeleteMessagesWithContext deletes messages by ids
+func (sa Adapter) DeleteMessagesWithContext(ctx context.Context, ids []string) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	/* why is it here?
 	persistedMessage, err := sa.GetMessage(orgID, appID, ID)
 	if err != nil || persistedMessage == nil {
 		return fmt.Errorf("message with id (%s) not found: %s", ID, err)
-	}
+	} */
 
-	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "_id", Value: ID},
-	}
-	_, err = sa.db.messages.DeleteOneWithContext(ctx, filter, nil)
+	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
+	_, err := sa.db.messages.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
-		fmt.Printf("warning: error while delete message (%s) - %s", ID, err)
+		fmt.Printf("warning: error while delete messages - %s", err)
 		return err
 	}
 
@@ -1202,13 +1213,13 @@ func (sa *Adapter) DeleteQueueData(ids []string) error {
 	return nil
 }
 
-// DeleteQueueDataForMessageWithContext removes queue data items for a message
-func (sa *Adapter) DeleteQueueDataForMessageWithContext(ctx context.Context, messageID string) error {
-	filter := bson.D{primitive.E{Key: "message_id", Value: messageID}}
+// DeleteQueueDataForMessagesWithContext removes queue data items for messages
+func (sa *Adapter) DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error {
+	filter := bson.D{primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}}}
 
 	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
-		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"message_id": messageID}, err)
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
 	}
 	return nil
 }

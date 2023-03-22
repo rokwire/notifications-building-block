@@ -18,52 +18,53 @@ import (
 	"errors"
 	"notifications/core/model"
 	"notifications/driven/storage"
-	"time"
 
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
-func (app *Application) bbsCreateMessage(orgID string, appID string,
-	sender model.Sender, mTime time.Time, priority int, subject string, body string, data map[string]string,
-	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
+func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error) {
 
-	return app.sharedCreateMessage(orgID, appID, sender, mTime, priority, subject, body, data,
-		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
+	return app.sharedCreateMessages(inputMessages)
 }
 
-func (app *Application) bbsDeleteMessage(l *logs.Log, serviceAccountID string, messageID string) error {
+func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error {
 	//in transaction
 	transaction := func(context storage.TransactionContext) error {
-		//find the message
-		message, err := app.storage.FindMessageWithContext(context, messageID)
+		//find the messages
+		messages, err := app.storage.FindMessagesWithContext(context, messagesIDs)
 		if err != nil {
 			return err
 		}
-		if message == nil {
-			return errors.New("no message for id - " + messageID)
+		if len(messagesIDs) != len(messages) {
+			return errors.New("not found message's")
 		}
 
-		//validate if the service account is the sender of this message
-		valid := app.isSenderValid(serviceAccountID, *message)
-		if !valid {
-			return errors.New("not valid service account id for message - " + messageID)
+		//validate if the service account is the sender of the messages
+		for _, m := range messages {
+			valid := app.isSenderValid(serviceAccountID, m)
+			if !valid {
+				return errors.New("not valid service account id for message - " + m.ID)
+			}
 		}
 
 		//delete the message
-		err = app.storage.DeleteMessageWithContext(context, message.OrgID, message.AppID, messageID)
+		messagesIDs := make([]string, len(messages))
+		for i, m := range messages {
+			messagesIDs[i] = m.ID
+		}
+		err = app.storage.DeleteMessagesWithContext(context, messagesIDs)
 		if err != nil {
 			return err
 		}
 
-		//delete the message recipients
-		err = app.storage.DeleteMessagesRecipientsForMessageWithContext(context, messageID)
+		//delete the messages recipients
+		err = app.storage.DeleteMessagesRecipientsForMessagesWithContext(context, messagesIDs)
 		if err != nil {
 			return err
 		}
 
 		//delete the queue data items
-		err = app.storage.DeleteQueueDataForMessageWithContext(context, messageID)
+		err = app.storage.DeleteQueueDataForMessagesWithContext(context, messagesIDs)
 		if err != nil {
 			return err
 		}
