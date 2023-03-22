@@ -113,7 +113,6 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 			return err
 		}
 		now := time.Now()
-		//	now = "2023-03-21T08:01:15.294+00:00"
 		recipientid := uuid.NewString()
 		var recipient []model.MessageRecipient
 		rec := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: userID,
