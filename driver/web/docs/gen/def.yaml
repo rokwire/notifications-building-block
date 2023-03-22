@@ -1043,7 +1043,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  '/api/bbs/message/{message-id}/recipients':
+  '/api/bbs/messages/{message-id}/recipients':
     post:
       tags:
         - BBs
