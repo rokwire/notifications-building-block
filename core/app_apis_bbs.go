@@ -41,12 +41,6 @@ func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, 
 		if len(messagesIDs) != len(messages) {
 			return errors.New("not found message's")
 		}
-		/*
-			//validate if the service account is the sender of this message
-			valid := app.isSenderValid(serviceAccountID, *message)
-			if !valid {
-				return errors.New("not valid service account id for message - " + messageID)
-			}*/
 
 		//validate if the service account is the sender of the messages
 		for _, m := range messages {
