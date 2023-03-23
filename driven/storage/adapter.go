@@ -1086,21 +1086,6 @@ func (sa Adapter) UpdateAllUserMessagesRead(ctx context.Context, orgID string, a
 	return nil
 }
 
-// InsertMessagesRecipients inserts a recipients to message
-func (sa Adapter) InsertMessagesRecipients(recipients []model.MessageRecipient) ([]model.MessageRecipient, error) {
-
-	data := make([]interface{}, len(recipients))
-	for i, p := range recipients {
-		data[i] = p
-	}
-	_, err := sa.db.messagesRecipients.InsertMany(data, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return recipients, nil
-}
-
 // DeleteMessagesRecipients delete a recipients to message
 func (sa Adapter) DeleteMessagesRecipients(id string, appID string, orgID string) error {
 	filter := bson.D{

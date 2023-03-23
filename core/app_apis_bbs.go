@@ -102,7 +102,8 @@ func (app *Application) bbsSendMail(toEmail string, subject string, body string)
 	return app.sharedSendMail(toEmail, subject, body)
 }
 
-func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool, read *bool) ([]model.MessageRecipient, error) {
+func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool) ([]model.MessageRecipient, error) {
+	var err error
 	var createRecipient []model.MessageRecipient
 	notifyQueue := false
 	//in transaction
@@ -112,14 +113,26 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 		if err != nil {
 			return err
 		}
+		serviceAccountID := message.Sender.User.UserID
+		if userID == serviceAccountID {
+			valid := app.isSenderValid(serviceAccountID, *message)
+			if !valid {
+				return errors.New("not valid service account id for message - " + message.ID)
+			}
+		} else {
+			return err
+		}
+
 		now := time.Now()
 		recipientid := uuid.NewString()
 		var recipient []model.MessageRecipient
 		rec := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: userID,
-			MessageID: messageID, Mute: *mute, Read: *read, Message: *message, DateCreated: &now}
+			MessageID: messageID, Mute: *mute, Message: *message, DateCreated: &now}
 		recipient = append(recipient, rec)
-		createRecipient, err = app.storage.InsertMessagesRecipients(recipient)
+
+		err = app.storage.InsertMessagesRecipientsWithContext(context, recipient)
 		if err != nil {
+			fmt.Printf("error on inserting a recipient: %s", err)
 			return err
 		}
 
@@ -131,7 +144,7 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 				fmt.Printf("error on inserting queue data items: %s", err)
 				return err
 			}
-
+			createRecipient = recipient
 			//notify the queue that new items are added
 			notifyQueue = true
 			return err
@@ -140,9 +153,9 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 		return nil
 	}
 	//perform transactions
-	err := app.storage.PerformTransaction(transaction, 2000)
+	err = app.storage.PerformTransaction(transaction, 10000) //10 seconds timeout
 	if err != nil {
-		l.Errorf("error on performing add message recipient transaction - %s", err)
+		fmt.Printf("error performing create recipients transaction - %s", err)
 		return nil, err
 	}
 	//notify the queue that new items are added
@@ -150,11 +163,12 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 		go app.queueLogic.onQueuePush()
 	}
 	return createRecipient, nil
+
 }
 
 func (app *Application) bbsDeleteRecipients(l *logs.Log, id string, appID string, orgID string) error {
 	//in transaction
-	transaction := func(context storage.TransactionContext) error {
+	/*transaction := func(context storage.TransactionContext) error {
 
 		err := app.storage.DeleteMessagesRecipients(id, appID, orgID)
 		if err != nil {
@@ -175,7 +189,7 @@ func (app *Application) bbsDeleteRecipients(l *logs.Log, id string, appID string
 	if err != nil {
 		l.Errorf("error on performing delete message recipient transaction - %s", err)
 		return err
-	}
+	}*/
 
 	return nil
 }

@@ -1061,14 +1061,6 @@ paths:
           explode: false
           schema:
             type: string
-        - name: read
-          in: query
-          description: read
-          required: true
-          style: simple
-          explode: false
-          schema:
-            type: boolean
         - name: mute
           in: query
           description: mute
