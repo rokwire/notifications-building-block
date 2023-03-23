@@ -1,9 +1,3 @@
-required:
-  - user_id
-  - mute
-type: object
-properties:
-  body:
-    type: array
-    items:
-      $ref: "./AddRecipients.yaml"
+type: array
+items:
+  $ref: "AddRecipients.yaml"

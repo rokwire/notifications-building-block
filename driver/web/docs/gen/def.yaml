@@ -1401,23 +1401,17 @@ components:
         notifications_disabled:
           type: boolean
     _recipients_req_AddRecipients:
-      required:
-        - user_id
-        - mute
-      type: object
-      properties:
-        body:
-          type: array
-          items:
-            required:
-              - user_id
-              - mute
-            type: object
-            properties:
-              user_id:
-                type: string
-              mute:
-                type: boolean
+      type: array
+      items:
+        required:
+          - user_id
+          - mute
+        type: object
+        properties:
+          user_id:
+            type: string
+          mute:
+            type: boolean
     _shared_req_CreateMessages:
       type: array
       items:

@@ -114,11 +114,9 @@ type ClientReqUser struct {
 }
 
 // RecipientsReqAddRecipients defines model for _recipients_req_AddRecipients.
-type RecipientsReqAddRecipients struct {
-	Body *[]struct {
-		Mute   bool   `json:"mute"`
-		UserId string `json:"user_id"`
-	} `json:"body,omitempty"`
+type RecipientsReqAddRecipients = []struct {
+	Mute   bool   `json:"mute"`
+	UserId string `json:"user_id"`
 }
 
 // SharedReqCreateMessage defines model for _shared_req_CreateMessage.
@@ -176,12 +174,6 @@ type GetApiAdminMessagesParams struct {
 type DeleteApiBbsMessagesParams struct {
 	// Ids ids of the messages for deletion separated with comma
 	Ids string `json:"ids"`
-}
-
-// PostApiBbsMessagesMessageIdRecipientsParams defines parameters for PostApiBbsMessagesMessageIdRecipients.
-type PostApiBbsMessagesMessageIdRecipientsParams struct {
-	// Mute mute
-	Mute bool `json:"mute"`
 }
 
 // GetApiMessagesParams defines parameters for GetApiMessages.
