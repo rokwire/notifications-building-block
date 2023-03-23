@@ -76,9 +76,9 @@ func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, 
 	}
 
 	//perform transactions
-	err := app.storage.PerformTransaction(transaction, 2000)
+	err := app.storage.PerformTransaction(transaction, 10000)
 	if err != nil {
-		l.Errorf("error on performing delete message transaction - %s", err)
+		l.Errorf("error on performing delete message_recipients transaction - %s", err)
 		return err
 	}
 
@@ -113,6 +113,8 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 		if err != nil {
 			return err
 		}
+
+		//validate if the service account is the sender of the messages
 		serviceAccountID := message.Sender.User.UserID
 		if userID == serviceAccountID {
 			valid := app.isSenderValid(serviceAccountID, *message)
@@ -123,6 +125,7 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 			return err
 		}
 
+		//create recepient
 		now := time.Now()
 		recipientid := uuid.NewString()
 		var recipient []model.MessageRecipient
@@ -130,6 +133,7 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 			MessageID: messageID, Mute: *mute, Message: *message, DateCreated: &now}
 		recipient = append(recipient, rec)
 
+		//insert reipients
 		err = app.storage.InsertMessagesRecipientsWithContext(context, recipient)
 		if err != nil {
 			fmt.Printf("error on inserting a recipient: %s", err)
@@ -166,21 +170,59 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 
 }
 
-func (app *Application) bbsDeleteRecipients(l *logs.Log, id string, appID string, orgID string) error {
+func (app *Application) bbsDeleteRecipients(l *logs.Log, messagesIDs []string, appID string, orgID string, userID string) error {
 	//in transaction
-	/*transaction := func(context storage.TransactionContext) error {
-
-		err := app.storage.DeleteMessagesRecipients(id, appID, orgID)
+	transaction := func(context storage.TransactionContext) error {
+		//find the messages
+		messages, err := app.storage.FindMessagesWithContext(context, messagesIDs)
 		if err != nil {
 			return err
 		}
-
-		//delete the queue data items
-		err = app.storage.DeleteQueueDataForMessageRecipeint(id)
-		if err != nil {
-			return err
+		if len(messagesIDs) != len(messages) {
+			return errors.New("not found message's")
 		}
 
+		//validate if the service account is the sender of the messages
+		if messages != nil {
+			for _, mes := range messages {
+				serviceAccountID := mes.Sender.User.UserID
+				if serviceAccountID == userID {
+					valid := app.isSenderValid(serviceAccountID, mes)
+					if !valid {
+						return errors.New("not valid service account id for message - " + mes.ID)
+					}
+				}
+
+			}
+		}
+
+		//find recepients and recepientsIDs
+		var recipients []model.MessageRecipient
+		var recipientsIDs []string
+		for _, m := range messages {
+			if m.Recipients != nil {
+				//delete message_recipients
+				err = app.storage.DeleteMessagesRecipientsForMessagesWithContext(context, messagesIDs)
+				if err != nil {
+					return err
+				}
+				recipients = append(recipients, m.Recipients...)
+				for _, r := range recipients {
+					recipientsIDs = append(recipientsIDs, r.ID)
+					//delete queue data by recepietnsIDs
+					err = app.storage.DeleteQueueDataForMessagesWithContext(context, recipientsIDs)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		// намиране на съобщенията по месидц ид-с, които са подадени
+		// от намерените съобщения се взимат реципиентите
+		// взимане на ид-тата на реципиентите
+		// изтриване на реципиентите
+		// изтриване на опашката на реципиентите
 		return nil
 	}
 
@@ -189,7 +231,7 @@ func (app *Application) bbsDeleteRecipients(l *logs.Log, id string, appID string
 	if err != nil {
 		l.Errorf("error on performing delete message recipient transaction - %s", err)
 		return err
-	}*/
+	}
 
 	return nil
 }

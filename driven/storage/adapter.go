@@ -1031,11 +1031,6 @@ func (sa Adapter) DeleteMessagesWithContext(ctx context.Context, ids []string) e
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	/* why is it here?
-	persistedMessage, err := sa.GetMessage(orgID, appID, ID)
-	if err != nil || persistedMessage == nil {
-		return fmt.Errorf("message with id (%s) not found: %s", ID, err)
-	} */
 
 	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
 	_, err := sa.db.messages.DeleteManyWithContext(ctx, filter, nil)
@@ -1084,21 +1079,6 @@ func (sa Adapter) UpdateAllUserMessagesRead(ctx context.Context, orgID string, a
 		return err
 	}
 	return nil
-}
-
-// DeleteMessagesRecipients delete a recipients to message
-func (sa Adapter) DeleteMessagesRecipients(id string, appID string, orgID string) error {
-	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "message_id", Value: id},
-	}
-	_, err := sa.db.messagesRecipients.DeleteOne(filter, nil)
-	if err != nil {
-		return errors.WrapErrorAction(logutils.ActionDelete, "delete recipient", &logutils.FieldArgs{"id": id}, err)
-	}
-	return nil
-
 }
 
 // GetAllAppVersions gets all registered versions
@@ -1253,13 +1233,13 @@ func (sa *Adapter) DeleteQueueDataForMessagesWithContext(ctx context.Context, me
 	return nil
 }
 
-// DeleteQueueDataForMessageRecipeint removes queue data items for a message
-func (sa *Adapter) DeleteQueueDataForMessageRecipeint(messageID string) error {
-	filter := bson.D{primitive.E{Key: "message_id", Value: messageID}}
+// DeleteQueueDataForRecipientsWithContext removes queue data items for messages
+func (sa *Adapter) DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": recipientsIDs}}}
 
-	_, err := sa.db.queueData.DeleteMany(filter, nil)
+	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
-		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"message_id": messageID}, err)
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
 	}
 	return nil
 }
