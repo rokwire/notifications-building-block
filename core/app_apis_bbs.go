@@ -102,7 +102,7 @@ func (app *Application) bbsSendMail(toEmail string, subject string, body string)
 	return app.sharedSendMail(toEmail, subject, body)
 }
 
-func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID string, mute *bool) ([]model.MessageRecipient, error) {
+func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID []string, mute []bool) ([]model.MessageRecipient, error) {
 	var err error
 	var createRecipient []model.MessageRecipient
 	notifyQueue := false
@@ -116,42 +116,51 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 
 		//validate if the service account is the sender of the messages
 		serviceAccountID := message.Sender.User.UserID
-		if userID == serviceAccountID {
-			valid := app.isSenderValid(serviceAccountID, *message)
-			if !valid {
-				return errors.New("not valid service account id for message - " + message.ID)
+		for _, s := range userID {
+			if s == serviceAccountID {
+				valid := app.isSenderValid(serviceAccountID, *message)
+				if !valid {
+					return errors.New("not valid service account id for message - " + message.ID)
+				}
+			} else {
+				return err
 			}
-		} else {
-			return err
 		}
 
 		//create recepient
-		now := time.Now()
-		recipientid := uuid.NewString()
-		var recipient []model.MessageRecipient
-		rec := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: userID,
-			MessageID: messageID, Mute: *mute, Message: *message, DateCreated: &now}
-		recipient = append(recipient, rec)
+		if userID != nil {
+			for _, r := range userID {
+				for _, m := range mute {
+					now := time.Now()
+					recipientid := uuid.NewString()
+					var recipient []model.MessageRecipient
+					rec := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: r,
+						MessageID: messageID, Mute: m, Message: *message, DateCreated: &now}
+					recipient = append(recipient, rec)
 
-		//insert reipients
-		err = app.storage.InsertMessagesRecipientsWithContext(context, recipient)
-		if err != nil {
-			fmt.Printf("error on inserting a recipient: %s", err)
-			return err
-		}
+					//insert reipients
+					err = app.storage.InsertMessagesRecipientsWithContext(context, recipient)
+					if err != nil {
+						fmt.Printf("error on inserting a recipient: %s", err)
+						return err
+					}
 
-		//create the notifications queue items and store them in the queue
-		queueItems := app.sharedCreateRecipientsQueueItems(message, recipient)
-		if len(queueItems) > 0 {
-			err = app.storage.InsertQueueDataRecipientsItems(queueItems)
-			if err != nil {
-				fmt.Printf("error on inserting queue data items: %s", err)
-				return err
+					//create the notifications queue items and store them in the queue
+					queueItems := app.sharedCreateRecipientsQueueItems(message, recipient)
+					if len(queueItems) > 0 {
+						err = app.storage.InsertQueueDataRecipientsItems(queueItems)
+						if err != nil {
+							fmt.Printf("error on inserting queue data items: %s", err)
+							return err
+						}
+						createRecipient = recipient
+						//notify the queue that new items are added
+						notifyQueue = true
+						return err
+					}
+				}
+
 			}
-			createRecipient = recipient
-			//notify the queue that new items are added
-			notifyQueue = true
-			return err
 		}
 
 		return nil

@@ -210,15 +210,33 @@ func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth
 
 // AddRecipients add recipients to an existing message
 func (h BBsAPIsHandler) AddRecipients(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var bodyData Def.RecipientsReqAddRecipients
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+	var userID []string
+	var mute []bool
+	for _, body := range bodyData {
+		if body.UserId != "" {
+			userID = append(userID, body.UserId)
+		}
+		if body.Mute != false {
+			mute = append(mute, body.Mute)
+		}
+	}
+
+	if len(bodyData) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "no data", nil, nil, http.StatusBadRequest, false)
+	}
+
 	params := mux.Vars(r)
 	messageID := params["message-id"]
 	if len(messageID) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	mute := getBoolQueryParam(r, "mute")
-
-	recipient, err := h.app.BBs.BBsAddRecipients(l, messageID, claims.OrgID, claims.AppID, claims.Subject, mute)
+	recipient, err := h.app.BBs.BBsAddRecipients(l, messageID, claims.OrgID, claims.AppID, userID, mute)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "recipients", nil, err, http.StatusInternalServerError, true)
 	}
