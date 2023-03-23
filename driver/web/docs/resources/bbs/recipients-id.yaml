@@ -6,23 +6,21 @@ post:
     Create a recipient
   security:
     - bearerAuth: []
+  requestBody:
+    description: message body
+    content:
+      application/json:
+        schema:
+          $ref: "../../schemas/apis/recipients/request/Request.yaml" 
   parameters:
     - name: message-id
       in: path
-      description: message-id
+      description: ids of the messages for recipients deletion separated with comma
       required: true
       style: simple
       explode: false
       schema:
-        type: string
-    - name: mute
-      in: query
-      description: mute
-      required: true
-      style: simple
-      explode: false
-      schema:
-        type: boolean      
+        type: string 
   responses:
     200:
       description: Success

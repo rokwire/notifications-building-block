@@ -40,6 +40,11 @@ _client_req_user:
 
 ##### APIs requests and responses - they are at bottom
 
+##BBS requests 
+### requests
+_recipients_req_AddRecipients:
+  $ref: "./apis/recipients/request/Request.yaml"
+
 ## SHARED requests and responses
 
 ### requests

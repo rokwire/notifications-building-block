@@ -1052,23 +1052,21 @@ paths:
         Create a recipient
       security:
         - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_recipients_req_AddRecipients'
       parameters:
         - name: message-id
           in: path
-          description: message-id
+          description: ids of the messages for recipients deletion separated with comma
           required: true
           style: simple
           explode: false
           schema:
             type: string
-        - name: mute
-          in: query
-          description: mute
-          required: true
-          style: simple
-          explode: false
-          schema:
-            type: boolean
       responses:
         '200':
           description: Success
@@ -1402,6 +1400,24 @@ components:
       properties:
         notifications_disabled:
           type: boolean
+    _recipients_req_AddRecipients:
+      required:
+        - user_id
+        - mute
+      type: object
+      properties:
+        body:
+          type: array
+          items:
+            required:
+              - user_id
+              - mute
+            type: object
+            properties:
+              user_id:
+                type: string
+              mute:
+                type: boolean
     _shared_req_CreateMessages:
       type: array
       items:
