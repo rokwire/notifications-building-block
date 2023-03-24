@@ -192,16 +192,13 @@ func (app *Application) bbsDeleteRecipients(l *logs.Log, messagesIDs []string, a
 		}
 
 		//validate if the service account is the sender of the messages
-		if messages != nil {
-			for _, mes := range messages {
-				serviceAccountID := mes.Sender.User.UserID
-				if serviceAccountID == userID {
-					valid := app.isSenderValid(serviceAccountID, mes)
-					if !valid {
-						return errors.New("not valid service account id for message - " + mes.ID)
-					}
+		for _, mes := range messages {
+			serviceAccountID := mes.Sender.User.UserID
+			if serviceAccountID == userID {
+				valid := app.isSenderValid(serviceAccountID, mes)
+				if !valid {
+					return errors.New("not valid service account id for message - " + mes.ID)
 				}
-
 			}
 		}
 
