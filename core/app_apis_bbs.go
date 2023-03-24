@@ -76,9 +76,9 @@ func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, 
 	}
 
 	//perform transactions
-	err := app.storage.PerformTransaction(transaction, 10000)
+	err := app.storage.PerformTransaction(transaction, 2000)
 	if err != nil {
-		l.Errorf("error on performing delete message_recipients transaction - %s", err)
+		l.Errorf("error on performing delete message transaction - %s", err)
 		return err
 	}
 
