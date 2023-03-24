@@ -128,39 +128,37 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 		}
 
 		//create recepient
-		if userID != nil {
-			for _, r := range userID {
-				for _, m := range mute {
-					now := time.Now()
-					recipientid := uuid.NewString()
-					var recipient []model.MessageRecipient
-					rec := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: r,
-						MessageID: messageID, Mute: m, Message: *message, DateCreated: &now}
-					recipient = append(recipient, rec)
+		for _, r := range userID {
+			for _, m := range mute {
+				now := time.Now()
+				recipientid := uuid.NewString()
+				var recipient []model.MessageRecipient
+				rec := model.MessageRecipient{OrgID: orgID, AppID: appID, ID: recipientid, UserID: r,
+					MessageID: messageID, Mute: m, Message: *message, DateCreated: &now}
+				recipient = append(recipient, rec)
 
-					//insert reipients
-					err = app.storage.InsertMessagesRecipientsWithContext(context, recipient)
-					if err != nil {
-						fmt.Printf("error on inserting a recipient: %s", err)
-						return err
-					}
-
-					//create the notifications queue items and store them in the queue
-					queueItems := app.sharedCreateRecipientsQueueItems(message, recipient)
-					if len(queueItems) > 0 {
-						err = app.storage.InsertQueueDataRecipientsItems(queueItems)
-						if err != nil {
-							fmt.Printf("error on inserting queue data items: %s", err)
-							return err
-						}
-						createRecipient = recipient
-						//notify the queue that new items are added
-						notifyQueue = true
-						return err
-					}
+				//insert reipients
+				err = app.storage.InsertMessagesRecipientsWithContext(context, recipient)
+				if err != nil {
+					fmt.Printf("error on inserting a recipient: %s", err)
+					return err
 				}
 
+				//create the notifications queue items and store them in the queue
+				queueItems := app.sharedCreateRecipientsQueueItems(message, recipient)
+				if len(queueItems) > 0 {
+					err = app.storage.InsertQueueDataRecipientsItems(queueItems)
+					if err != nil {
+						fmt.Printf("error on inserting queue data items: %s", err)
+						return err
+					}
+					createRecipient = recipient
+					//notify the queue that new items are added
+					notifyQueue = true
+					return err
+				}
 			}
+
 		}
 
 		return nil
