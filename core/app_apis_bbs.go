@@ -147,7 +147,7 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 				//create the notifications queue items and store them in the queue
 				queueItems := app.sharedCreateRecipientsQueueItems(message, recipient)
 				if len(queueItems) > 0 {
-					err = app.storage.InsertQueueDataRecipientsItems(queueItems)
+					err = app.storage.InsertQueueDataItemsWithContext(context, queueItems)
 					if err != nil {
 						fmt.Printf("error on inserting queue data items: %s", err)
 						return err

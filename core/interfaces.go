@@ -226,7 +226,6 @@ type Storage interface {
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
 
 	InsertQueueDataItemsWithContext(ctx context.Context, items []model.QueueItem) error
-	InsertQueueDataRecipientsItems(items []model.QueueItem) error
 	LoadQueueWithContext(ctx context.Context) (*model.Queue, error)
 	SaveQueueWithContext(ctx context.Context, queue model.Queue) error
 	SaveQueue(queue model.Queue) error
