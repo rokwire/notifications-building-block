@@ -1219,7 +1219,7 @@ func (sa *Adapter) DeleteQueueDataForMessagesWithContext(ctx context.Context, me
 	return nil
 }
 
-// DeleteQueueDataForRecipientsWithContext removes queue data items for messages
+// DeleteQueueDataForRecipientsWithContext removes queue data items for recepients
 func (sa *Adapter) DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error {
 	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": recipientsIDs}}}
 
