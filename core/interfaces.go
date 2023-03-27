@@ -155,7 +155,7 @@ type BBs interface {
 	BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error)
 	BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error
 	BBsSendMail(toEmail string, subject string, body string) error
-	BBsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID []string, mute []bool) ([]model.MessageRecipient, error)
+	BBsAddRecipients(l *logs.Log, serviceAccountID string, messageID string, recipients []model.InputMessageRecipient) ([]model.MessageRecipient, error)
 	BBsDeleteRecipients(l *logs.Log, messageIDs []string, appID string, orgID string, userID string) error
 }
 
@@ -175,8 +175,8 @@ func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error
 	return s.app.bbsSendMail(toEmail, subject, body)
 }
 
-func (s *bbsImpl) BBsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID []string, mute []bool) ([]model.MessageRecipient, error) {
-	return s.app.bbsAddRecipients(l, messageID, orgID, appID, userID, mute)
+func (s *bbsImpl) BBsAddRecipients(l *logs.Log, serviceAccountID string, messageID string, recipients []model.InputMessageRecipient) ([]model.MessageRecipient, error) {
+	return s.app.bbsAddRecipients(l, serviceAccountID, messageID, recipients)
 }
 
 func (s *bbsImpl) BBsDeleteRecipients(l *logs.Log, messageIDs []string, appID string, orgID string, userID string) error {

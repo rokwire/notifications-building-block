@@ -16,12 +16,9 @@ package core
 
 import (
 	"errors"
-	"fmt"
 	"notifications/core/model"
 	"notifications/driven/storage"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
@@ -102,8 +99,9 @@ func (app *Application) bbsSendMail(toEmail string, subject string, body string)
 	return app.sharedSendMail(toEmail, subject, body)
 }
 
-func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID string, appID string, userID []string, mute []bool) ([]model.MessageRecipient, error) {
-	var err error
+func (app *Application) bbsAddRecipients(l *logs.Log, serviceAccountID string, messageID string, recipients []model.InputMessageRecipient) ([]model.MessageRecipient, error) {
+	return nil, nil
+	/*var err error
 	var createRecipient []model.MessageRecipient
 	notifyQueue := false
 	//in transaction
@@ -174,7 +172,7 @@ func (app *Application) bbsAddRecipients(l *logs.Log, messageID string, orgID st
 		go app.queueLogic.onQueuePush()
 	}
 	return createRecipient, nil
-
+	*/
 }
 
 func (app *Application) bbsDeleteRecipients(l *logs.Log, messagesIDs []string, appID string, orgID string, userID string) error {
