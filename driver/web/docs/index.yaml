@@ -72,7 +72,7 @@ paths:
   /api/bbs/messages:
     $ref: "./resources/bbs/messages.yaml"
   /api/bbs/messages/{message-id}/recipients:
-    $ref: "./resources/bbs/recipients-id.yaml"
+    $ref: "./resources/bbs/message-id/recipients.yaml"
   /api/bbs/message:
     $ref: "./resources/bbs/message.yaml"
   /api/bbs/{id}:

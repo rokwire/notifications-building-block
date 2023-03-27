@@ -11,7 +11,7 @@ post:
     content:
       application/json:
         schema:
-          $ref: "../../schemas/apis/recipients/request/Request.yaml" 
+          $ref: "../../../schemas/apis/recipients/request/Request.yaml" 
   parameters:
     - name: message-id
       in: path
@@ -29,7 +29,7 @@ post:
           schema:
             type: array
             items:
-              $ref: "../../schemas/application/MessageRecipients.yaml"
+              $ref: "../../../schemas/application/MessageRecipients.yaml"
     400:
       description: Bad request
     401:
