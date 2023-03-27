@@ -1015,9 +1015,9 @@ paths:
     post:
       tags:
         - BBs
-      summary: Create a recipient
+      summary: Adds recipients to a message
       description: |
-        Create a recipient
+        Adds recipients to a message
       security:
         - bearerAuth: []
       requestBody:
@@ -1029,7 +1029,7 @@ paths:
       parameters:
         - name: message-id
           in: path
-          description: ids of the messages for recipients deletion separated with comma
+          description: id of the message for recipients creation separated with comma
           required: true
           style: simple
           explode: false
@@ -1068,9 +1068,9 @@ paths:
     delete:
       tags:
         - BBs
-      summary: Delete message recipient
+      summary: Delete recipients from a message
       description: |
-        Delete message recipient
+        Delete recipients from a message
       security:
         - bearerAuth: []
       parameters:
