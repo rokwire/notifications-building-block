@@ -1057,7 +1057,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/_recipients_req_AddRecipients'
+              $ref: '#/components/schemas/_bbs_req_AddRecipients'
       parameters:
         - name: message-id
           in: path
@@ -1355,63 +1355,6 @@ components:
           type: string
         date_updated:
           type: string
-    _client_req_mail:
-      type: object
-      properties:
-        to_mail:
-          type: string
-        subject:
-          type: string
-        body:
-          type: string
-    _client_req_message:
-      required:
-        - _ids
-      type: object
-      properties:
-        _ids:
-          type: array
-          items:
-            type: string
-    _client_req_messageV2:
-      type: object
-      properties:
-        async:
-          type: boolean
-        message:
-          $ref: '#/components/schemas/_shared_req_CreateMessage'
-    _client_req_token:
-      required:
-        - token
-      type: object
-      properties:
-        token:
-          type: string
-        previous_token:
-          type: string
-        app_version:
-          type: string
-        app_platform:
-          type: string
-    _client_req_user:
-      required:
-        - notifications_disabled
-      type: object
-      properties:
-        notifications_disabled:
-          type: boolean
-    _recipients_req_AddRecipients:
-      type: array
-      items:
-        required:
-          - user_id
-          - mute
-        type: object
-        properties:
-          user_id:
-            type: string
-          mute:
-            type: boolean
     _shared_req_CreateMessages:
       type: array
       items:
@@ -1476,3 +1419,60 @@ components:
           type: string
         app_platform:
           type: string
+    _client_req_mail:
+      type: object
+      properties:
+        to_mail:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+    _client_req_message:
+      required:
+        - _ids
+      type: object
+      properties:
+        _ids:
+          type: array
+          items:
+            type: string
+    _client_req_messageV2:
+      type: object
+      properties:
+        async:
+          type: boolean
+        message:
+          $ref: '#/components/schemas/_shared_req_CreateMessage'
+    _client_req_token:
+      required:
+        - token
+      type: object
+      properties:
+        token:
+          type: string
+        previous_token:
+          type: string
+        app_version:
+          type: string
+        app_platform:
+          type: string
+    _client_req_user:
+      required:
+        - notifications_disabled
+      type: object
+      properties:
+        notifications_disabled:
+          type: boolean
+    _bbs_req_AddRecipients:
+      type: array
+      items:
+        required:
+          - user_id
+          - mute
+        type: object
+        properties:
+          user_id:
+            type: string
+          mute:
+            type: boolean

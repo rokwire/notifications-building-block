@@ -210,7 +210,7 @@ func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth
 
 // AddRecipients add recipients to an existing message
 func (h BBsAPIsHandler) AddRecipients(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var bodyData Def.RecipientsReqAddRecipients
+	var bodyData Def.BbsReqAddRecipients
 	err := json.NewDecoder(r.Body).Decode(&bodyData)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)

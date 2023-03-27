@@ -1,4 +1,4 @@
-# application
+# items
 AppPlatform:
   $ref: "./application/AppPlatform.yaml"
 AppVersion:
@@ -26,24 +26,7 @@ Topic:
 User:
   $ref: "./application/User.yaml"
 
-_client_req_mail:
-  $ref: "./apis/mail/request/Request.yaml"
-_client_req_message:
-  $ref: "./apis/message/request/Request.yaml"
-_client_req_messageV2:
-  $ref: "./apis/messageV2/request/Request.yaml"
-_client_req_token:
-  $ref: "./apis/token/request/Request.yaml"
-_client_req_user:
-  $ref: "./apis/user/request/Request.yaml"
-
-
 ##### APIs requests and responses - they are at bottom
-
-##BBS requests 
-### requests
-_recipients_req_AddRecipients:
-  $ref: "./apis/recipients/request/Request.yaml"
 
 ## SHARED requests and responses
 
@@ -58,3 +41,28 @@ _shared_req_CreateMessage_InputRecipientCriteria:
   $ref: "./apis/shared/requests/create-message/InputRecipientCriteria.yaml"
 
 ### responses
+
+## end SHARED requests and responses
+
+## SERVICES section
+
+_client_req_mail:
+  $ref: "./apis/mail/request/Request.yaml"
+_client_req_message:
+  $ref: "./apis/message/request/Request.yaml"
+_client_req_messageV2:
+  $ref: "./apis/messageV2/request/Request.yaml"
+_client_req_token:
+  $ref: "./apis/token/request/Request.yaml"
+_client_req_user:
+  $ref: "./apis/user/request/Request.yaml"
+
+## end SERVICES section
+
+## BBs section
+
+### requests
+_bbs_req_AddRecipients:
+  $ref: "./apis/recipients/request/Request.yaml"
+
+## end BBs section
