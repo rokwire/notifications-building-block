@@ -13,6 +13,8 @@ FirebaseToken:
   $ref: "./application/FirebaseToken.yaml"
 Message:
   $ref: "./application/Message.yaml"
+MessageRecipient:
+  $ref: "./application/MessageRecipient.yaml"
 Recipient:
   $ref: "./application/Recipients.yaml"
 RecipientCriteria:

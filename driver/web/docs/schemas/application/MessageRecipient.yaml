@@ -1,6 +1,6 @@
 type: object
 properties:
-  _id:
+  id:
     type: string
   org_id:
     type: string  

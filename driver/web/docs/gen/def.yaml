@@ -1043,22 +1043,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    _id:
-                      type: string
-                    org_id:
-                      type: string
-                    app_id:
-                      type: string
-                    user_id:
-                      type: string
-                    message_id:
-                      type: string
-                    mute:
-                      type: boolean
-                    read:
-                      type: boolean
+                  $ref: '#/components/schemas/MessageRecipient'
         '400':
           description: Bad request
         '401':
@@ -1284,6 +1269,23 @@ components:
           type: array
           items:
             type: string
+    MessageRecipient:
+      type: object
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        app_id:
+          type: string
+        user_id:
+          type: string
+        message_id:
+          type: string
+        mute:
+          type: boolean
+        read:
+          type: boolean
     Recipient:
       type: object
       properties:

@@ -40,6 +40,17 @@ type Message struct {
 	Topic                    *string                 `json:"topic,omitempty"`
 }
 
+// MessageRecipient defines model for MessageRecipient.
+type MessageRecipient struct {
+	AppId     *string `json:"app_id,omitempty"`
+	Id        *string `json:"id,omitempty"`
+	MessageId *string `json:"message_id,omitempty"`
+	Mute      *bool   `json:"mute,omitempty"`
+	OrgId     *string `json:"org_id,omitempty"`
+	Read      *bool   `json:"read,omitempty"`
+	UserId    *string `json:"user_id,omitempty"`
+}
+
 // Recipient defines model for Recipient.
 type Recipient struct {
 	Mute                 *bool   `json:"mute,omitempty"`

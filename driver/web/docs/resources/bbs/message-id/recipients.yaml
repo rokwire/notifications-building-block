@@ -29,7 +29,7 @@ post:
           schema:
             type: array
             items:
-              $ref: "../../../schemas/application/MessageRecipients.yaml"
+              $ref: "../../../schemas/application/MessageRecipient.yaml"
     400:
       description: Bad request
     401:
