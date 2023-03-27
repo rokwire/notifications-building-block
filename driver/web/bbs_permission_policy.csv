@@ -1,8 +1,8 @@
 p, send_message, /notifications/api/bbs/messages, (POST), Send messages
-p, send_message, /notifications/api/bbs/messages/*/recipients, (POST), Create recipients
+p, send_message, /notifications/api/bbs/messages/*/recipients, (POST), Add recipients to a message
 
 p, cancel_message, /notifications/api/bbs/messages, (DELETE), Delete messages
-p, cancel_message, /notifications/api/bbs/messages/*/recipients, (DELETE), Delete recipient
+p, cancel_message, /notifications/api/bbs/messages/*/recipients, (DELETE), Delete recipients from a message
 
 p, send_message, /notifications/api/bbs/message, (POST), Send message - deprecated
 p, cancel_message, /notifications/api/bbs/message/*, (DELETE), Delete message - deprecated
