@@ -1011,38 +1011,6 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
-  /api/bbs/message:
-    post:
-      tags:
-        - BBs
-      summary: Create message
-      deprecated: true
-      description: |
-        Create message
-
-        **Auth:** Requires first-party service token with `send_message` permission
-      security:
-        - bearerAuth: []
-      requestBody:
-        description: message body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/_client_req_messageV2'
-        required: true
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-        '400':
-          description: Bad request
-        '401':
-          description: Unauthorized
-        '500':
-          description: Internal error
   '/api/bbs/messages/{message-id}/recipients':
     post:
       tags:
@@ -1117,6 +1085,38 @@ paths:
       responses:
         '200':
           description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+  /api/bbs/message:
+    post:
+      tags:
+        - BBs
+      summary: Create message
+      deprecated: true
+      description: |
+        Create message
+
+        **Auth:** Requires first-party service token with `send_message` permission
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_client_req_messageV2'
+        required: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
         '400':
           description: Bad request
         '401':
