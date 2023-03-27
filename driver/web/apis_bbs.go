@@ -227,6 +227,9 @@ func (h BBsAPIsHandler) AddRecipients(l *logs.Log, r *http.Request, claims *toke
 
 	recipients := make([]model.InputMessageRecipient, len(bodyData))
 	for i, item := range bodyData {
+		if len(item.UserId) == 0 {
+			return l.HTTPResponseErrorData(logutils.StatusInvalid, "no user id data", nil, nil, http.StatusBadRequest, false)
+		}
 		recipients[i] = model.InputMessageRecipient{UserID: item.UserId, Mute: item.Mute}
 	}
 
