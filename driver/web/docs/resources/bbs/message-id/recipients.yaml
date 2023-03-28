@@ -45,6 +45,14 @@ delete:
   security:
     - bearerAuth: []
   parameters:
+    - name: users-ids
+      in: query
+      description: users ids for deletion separated with comma
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
     - name: message-id
       in: path
       description: message-id
