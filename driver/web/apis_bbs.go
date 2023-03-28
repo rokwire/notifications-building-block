@@ -248,8 +248,8 @@ func (h BBsAPIsHandler) AddRecipients(l *logs.Log, r *http.Request, claims *toke
 // DeleteRecipients delete recipients from an existing message
 func (h BBsAPIsHandler) DeleteRecipients(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
-	messageIDs := params["message-id"]
-	if len(messageIDs) == 0 {
+	messageID := params["message-id"]
+	if len(messageID) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
@@ -262,7 +262,7 @@ func (h BBsAPIsHandler) DeleteRecipients(l *logs.Log, r *http.Request, claims *t
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypePathParam, logutils.StringArgs("users ids"), nil, http.StatusBadRequest, false)
 	}
 
-	err := h.app.BBs.BBsDeleteRecipients(l, usersIDs, claims.AppID, claims.OrgID, claims.Subject)
+	err := h.app.BBs.BBsDeleteRecipients(l, claims.Subject, messageID, usersIDs)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "recipients", nil, err, http.StatusInternalServerError, true)
 	}

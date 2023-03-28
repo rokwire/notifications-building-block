@@ -171,59 +171,59 @@ func (app *Application) bbsAddRecipients(l *logs.Log, serviceAccountID string, m
 	return recipientsResult, nil
 }
 
-func (app *Application) bbsDeleteRecipients(l *logs.Log, messagesIDs []string, appID string, orgID string, userID string) error {
-	//in transaction
-	transaction := func(context storage.TransactionContext) error {
-		//find the messages
-		messages, err := app.storage.FindMessagesWithContext(context, messagesIDs)
-		if err != nil {
-			return err
-		}
-		if len(messagesIDs) != len(messages) {
-			return errors.New("not found message's")
-		}
-
-		//validate if the service account is the sender of the messages
-		for _, mes := range messages {
-			serviceAccountID := mes.Sender.User.UserID
-			if serviceAccountID == userID {
-				valid := app.isSenderValid(serviceAccountID, mes)
-				if !valid {
-					return errors.New("not valid service account id for message - " + mes.ID)
-				}
+func (app *Application) bbsDeleteRecipients(l *logs.Log, serviceAccountID string, messageID string, usersIDs []string) error {
+	/*	//in transaction
+		transaction := func(context storage.TransactionContext) error {
+			//find the messages
+			messages, err := app.storage.FindMessagesWithContext(context, messagesIDs)
+			if err != nil {
+				return err
 			}
-		}
+			if len(messagesIDs) != len(messages) {
+				return errors.New("not found message's")
+			}
 
-		//find recepients and recepientsIDs
-		var recipients []model.MessageRecipient
-		var recipientsIDs []string
-		for _, m := range messages {
-			if m.Recipients != nil {
-				//delete message_recipients
-				err = app.storage.DeleteMessagesRecipientsForMessagesWithContext(context, messagesIDs)
-				if err != nil {
-					return err
-				}
-				recipients = append(recipients, m.Recipients...)
-				for _, r := range recipients {
-					recipientsIDs = append(recipientsIDs, r.ID)
-					//delete queue data by recepietnsIDs
-					err = app.storage.DeleteQueueDataForMessagesWithContext(context, recipientsIDs)
-					if err != nil {
-						return err
+			//validate if the service account is the sender of the messages
+			for _, mes := range messages {
+				serviceAccountID := mes.Sender.User.UserID
+				if serviceAccountID == userID {
+					valid := app.isSenderValid(serviceAccountID, mes)
+					if !valid {
+						return errors.New("not valid service account id for message - " + mes.ID)
 					}
 				}
 			}
-		}
-		return nil
-	}
 
-	//perform transactions
-	err := app.storage.PerformTransaction(transaction, 2000)
-	if err != nil {
-		l.Errorf("error on performing delete message recipient transaction - %s", err)
-		return err
-	}
+			//find recepients and recepientsIDs
+			var recipients []model.MessageRecipient
+			var recipientsIDs []string
+			for _, m := range messages {
+				if m.Recipients != nil {
+					//delete message_recipients
+					err = app.storage.DeleteMessagesRecipientsForMessagesWithContext(context, messagesIDs)
+					if err != nil {
+						return err
+					}
+					recipients = append(recipients, m.Recipients...)
+					for _, r := range recipients {
+						recipientsIDs = append(recipientsIDs, r.ID)
+						//delete queue data by recepietnsIDs
+						err = app.storage.DeleteQueueDataForMessagesWithContext(context, recipientsIDs)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+			return nil
+		}
+
+		//perform transactions
+		err := app.storage.PerformTransaction(transaction, 2000)
+		if err != nil {
+			l.Errorf("error on performing delete message recipient transaction - %s", err)
+			return err
+		} */
 
 	return nil
 }

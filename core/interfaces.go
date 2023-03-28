@@ -156,7 +156,7 @@ type BBs interface {
 	BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error
 	BBsSendMail(toEmail string, subject string, body string) error
 	BBsAddRecipients(l *logs.Log, serviceAccountID string, messageID string, recipients []model.InputMessageRecipient) ([]model.MessageRecipient, error)
-	BBsDeleteRecipients(l *logs.Log, messageIDs []string, appID string, orgID string, userID string) error
+	BBsDeleteRecipients(l *logs.Log, serviceAccountID string, messageID string, usersIDs []string) error
 }
 
 type bbsImpl struct {
@@ -179,8 +179,8 @@ func (s *bbsImpl) BBsAddRecipients(l *logs.Log, serviceAccountID string, message
 	return s.app.bbsAddRecipients(l, serviceAccountID, messageID, recipients)
 }
 
-func (s *bbsImpl) BBsDeleteRecipients(l *logs.Log, messageIDs []string, appID string, orgID string, userID string) error {
-	return s.app.bbsDeleteRecipients(l, messageIDs, appID, orgID, userID)
+func (s *bbsImpl) BBsDeleteRecipients(l *logs.Log, serviceAccountID string, messageID string, usersIDs []string) error {
+	return s.app.bbsDeleteRecipients(l, serviceAccountID, messageID, usersIDs)
 }
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
