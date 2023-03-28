@@ -187,52 +187,42 @@ func (app *Application) bbsDeleteRecipients(l *logs.Log, serviceAccountID string
 		if !valid {
 			return errors.New("not valid service account id for message - " + message.ID)
 		}
-		/*//find the messages
-		messages, err := app.storage.FindMessagesWithContext(context, messagesIDs)
+
+		//find the message recipients for deletion
+		recipients, err := app.storage.FindMessagesRecipientsByMessageAndUsers(message.ID, usersIDs)
 		if err != nil {
 			return err
 		}
-		if len(messagesIDs) != len(messages) {
-			return errors.New("not found message's")
+		if len(recipients) != len(usersIDs) {
+			return errors.New("not found recipient/s")
 		}
 
-		//validate if the service account is the sender of the messages
-		for _, mes := range messages {
-			serviceAccountID := mes.Sender.User.UserID
-			if serviceAccountID == userID {
-				valid := app.isSenderValid(serviceAccountID, mes)
-				if !valid {
-					return errors.New("not valid service account id for message - " + mes.ID)
-				}
-			}
+		//prepare the messages recipients ids
+		messagesRecipeintsIDs := make([]string, len(recipients))
+		for i, item := range recipients {
+			messagesRecipeintsIDs[i] = item.ID
 		}
 
-		//find recepients and recepientsIDs
-		var recipients []model.MessageRecipient
-		var recipientsIDs []string
-		for _, m := range messages {
-			if m.Recipients != nil {
-				//delete message_recipients
-				err = app.storage.DeleteMessagesRecipientsForMessagesWithContext(context, messagesIDs)
-				if err != nil {
-					return err
-				}
-				recipients = append(recipients, m.Recipients...)
-				for _, r := range recipients {
-					recipientsIDs = append(recipientsIDs, r.ID)
-					//delete queue data by recepietnsIDs
-					err = app.storage.DeleteQueueDataForMessagesWithContext(context, recipientsIDs)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		} */
+		//delete the messages recipients
+		err = app.storage.DeleteMessagesRecipientsForIDsWithContext(context, messagesRecipeintsIDs)
+		if err != nil {
+			return err
+		}
+
+		//delete the queue data items
+		err = app.storage.DeleteQueueDataForRecipientsWithContext(context, messagesRecipeintsIDs)
+		if err != nil {
+			return err
+		}
+
+		//notify the queue
+		go app.queueLogic.onQueuePush()
+
 		return nil
 	}
 
 	//perform transactions
-	err := app.storage.PerformTransaction(transaction, 2000)
+	err := app.storage.PerformTransaction(transaction, 3000)
 	if err != nil {
 		l.Errorf("error on performing delete message recipient transaction - %s", err)
 		return err

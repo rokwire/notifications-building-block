@@ -744,6 +744,22 @@ func (sa Adapter) FindMessagesRecipients(orgID string, appID string, messageID s
 	return data, nil
 }
 
+// FindMessagesRecipientsByMessageAndUsers finds messages recipients by message and users
+func (sa Adapter) FindMessagesRecipientsByMessageAndUsers(messageID string, usersIDs []string) ([]model.MessageRecipient, error) {
+	filter := bson.D{
+		primitive.E{Key: "message_id", Value: messageID},
+		primitive.E{Key: "user_id", Value: bson.M{"$in": usersIDs}},
+	}
+
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // FindMessagesRecipientsDeep finds messages recipients join with messages
 func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool,
 	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
@@ -885,6 +901,17 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 		return errors.ErrorAction(logutils.ActionInsert, "messages recipients", &logutils.FieldArgs{"inserted": len(res.InsertedIDs), "expected": len(items)})
 	}
 
+	return nil
+}
+
+// DeleteMessagesRecipientsForIDsWithContext deletes messages recipients for ids
+func (sa Adapter) DeleteMessagesRecipientsForIDsWithContext(ctx context.Context, ids []string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
+
+	_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient", nil, err)
+	}
 	return nil
 }
 
@@ -1221,7 +1248,7 @@ func (sa *Adapter) DeleteQueueDataForMessagesWithContext(ctx context.Context, me
 
 // DeleteQueueDataForRecipientsWithContext removes queue data items for recepients
 func (sa *Adapter) DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": recipientsIDs}}}
+	filter := bson.D{primitive.E{Key: "message_recipient_id", Value: bson.M{"$in": recipientsIDs}}}
 
 	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
