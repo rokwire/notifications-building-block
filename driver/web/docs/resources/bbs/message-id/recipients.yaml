@@ -44,15 +44,13 @@ delete:
     Delete recipients from a message
   security:
     - bearerAuth: []
+  requestBody:
+    description: message body
+    content:
+      application/json:
+        schema:
+          $ref: "../../../schemas/apis/bbs/remove-recipients-from-message/request/Request.yaml"
   parameters:
-    - name: users-ids
-      in: query
-      description: users ids for deletion separated with comma
-      required: true
-      style: simple
-      explode: false
-      schema:
-        type: string
     - name: message-id
       in: path
       description: message-id

@@ -66,5 +66,7 @@ _client_req_user:
 ### requests
 _bbs_req_AddRecipients:
   $ref: "./apis/bbs/add-recipients-to-message/request/Request.yaml"
+_bbs_req_RemoveRecipients:
+  $ref: "./apis/bbs/remove-recipients-from-message/request/Request.yaml"
 
 ## end BBs section

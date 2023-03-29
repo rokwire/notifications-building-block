@@ -253,16 +253,17 @@ func (h BBsAPIsHandler) DeleteRecipients(l *logs.Log, r *http.Request, claims *t
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
 	}
 
-	usersIDsParam := getStringQueryParam(r, "users-ids")
-	if usersIDsParam == nil {
-		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("users ids"), nil, http.StatusBadRequest, false)
+	var bodyData Def.BbsReqRemoveRecipients
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
-	usersIDs := strings.Split(*usersIDsParam, ",")
-	if len(usersIDs) == 0 {
-		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypePathParam, logutils.StringArgs("users ids"), nil, http.StatusBadRequest, false)
+	if len(bodyData.UsersIds) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "no data", nil, nil, http.StatusBadRequest, false)
 	}
+	usersIDs := bodyData.UsersIds
 
-	err := h.app.BBs.BBsDeleteRecipients(l, claims.Subject, messageID, usersIDs)
+	err = h.app.BBs.BBsDeleteRecipients(l, claims.Subject, messageID, usersIDs)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "recipients", nil, err, http.StatusInternalServerError, true)
 	}

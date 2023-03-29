@@ -1058,15 +1058,13 @@ paths:
         Delete recipients from a message
       security:
         - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_bbs_req_RemoveRecipients'
       parameters:
-        - name: users-ids
-          in: query
-          description: users ids for deletion separated with comma
-          required: true
-          style: simple
-          explode: false
-          schema:
-            type: string
         - name: message-id
           in: path
           description: message-id
@@ -1486,3 +1484,12 @@ components:
             type: string
           mute:
             type: boolean
+    _bbs_req_RemoveRecipients:
+      required:
+        - users_ids
+      type: object
+      properties:
+        users_ids:
+          type: array
+          items:
+            type: string
