@@ -118,6 +118,8 @@ func (we Adapter) Start() {
 	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()
 	bbsRouter.HandleFunc("/messages", we.wrapFunc(we.bbsApisHandler.SendMessages, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/messages", we.wrapFunc(we.bbsApisHandler.DeleteMessages, we.auth.bbs.Permissions)).Methods("DELETE")
+	bbsRouter.HandleFunc("/messages/{message-id}/recipients", we.wrapFunc(we.bbsApisHandler.AddRecipients, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/messages/{message-id}/recipients", we.wrapFunc(we.bbsApisHandler.DeleteRecipients, we.auth.bbs.Permissions)).Methods("DELETE")
 
 	//deprecated
 	bbsRouter.HandleFunc("/message", we.wrapFunc(we.bbsApisHandler.SendMessage, we.auth.bbs.Permissions)).Methods("POST")
@@ -126,7 +128,7 @@ func (we Adapter) Start() {
 
 	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
-	log.Fatal(http.ListenAndServe(":"+we.port, router))
+	log.Fatal(http.ListenAndServe(":5051", router))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {

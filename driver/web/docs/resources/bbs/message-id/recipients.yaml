@@ -1,0 +1,71 @@
+post:
+  tags:
+  - BBs
+  summary: Adds recipients to a message
+  description: |
+    Adds recipients to a message
+  security:
+    - bearerAuth: []
+  requestBody:
+    description: message body
+    content:
+      application/json:
+        schema:
+          $ref: "../../../schemas/apis/bbs/add-recipients-to-message/request/Request.yaml" 
+  parameters:
+    - name: message-id
+      in: path
+      description: id of the message for recipients creation separated with comma
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string 
+  responses:
+    200:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "../../../schemas/application/MessageRecipient.yaml"
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error
+delete:
+  tags:
+  - BBs
+  summary: Delete recipients from a message
+  description: |
+    Delete recipients from a message
+  security:
+    - bearerAuth: []
+  requestBody:
+    description: message body
+    content:
+      application/json:
+        schema:
+          $ref: "../../../schemas/apis/bbs/remove-recipients-from-message/request/Request.yaml"
+  parameters:
+    - name: message-id
+      in: path
+      description: message-id
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+  responses:
+    200:
+      description: Success
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error
+            

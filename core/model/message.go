@@ -37,6 +37,12 @@ type InputMessage struct {
 	Topic                    *string
 }
 
+// InputMessageRecipient represents the data structure needed for creating a message recipient. It is the input data for the core module.
+type InputMessageRecipient struct {
+	UserID string
+	Mute   bool
+}
+
 // Message wraps all needed information for the notification. Use either recipients, recipients_criteria or topic in order to address end users
 // @Description wraps all needed information for the notification
 // @ID Message

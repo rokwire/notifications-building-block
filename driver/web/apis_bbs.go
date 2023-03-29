@@ -207,3 +207,65 @@ func (h BBsAPIsHandler) SendMail(l *logs.Log, r *http.Request, claims *tokenauth
 
 	return l.HTTPResponseSuccess()
 }
+
+// AddRecipients add recipients to an existing message
+func (h BBsAPIsHandler) AddRecipients(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	params := mux.Vars(r)
+	messageID := params["message-id"]
+	if len(messageID) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+
+	var bodyData Def.BbsReqAddRecipients
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+	if len(bodyData) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "no data", nil, nil, http.StatusBadRequest, false)
+	}
+
+	recipients := make([]model.InputMessageRecipient, len(bodyData))
+	for i, item := range bodyData {
+		if len(item.UserId) == 0 {
+			return l.HTTPResponseErrorData(logutils.StatusInvalid, "no user id data", nil, nil, http.StatusBadRequest, false)
+		}
+		recipients[i] = model.InputMessageRecipient{UserID: item.UserId, Mute: item.Mute}
+	}
+
+	recipientResult, err := h.app.BBs.BBsAddRecipients(l, claims.Subject, messageID, recipients)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "recipients", nil, err, http.StatusInternalServerError, true)
+	}
+	data, err := json.Marshal(recipientResult)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
+}
+
+// DeleteRecipients delete recipients from an existing message
+func (h BBsAPIsHandler) DeleteRecipients(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	params := mux.Vars(r)
+	messageID := params["message-id"]
+	if len(messageID) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+
+	var bodyData Def.BbsReqRemoveRecipients
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+	if len(bodyData.UsersIds) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "no data", nil, nil, http.StatusBadRequest, false)
+	}
+	usersIDs := bodyData.UsersIds
+
+	err = h.app.BBs.BBsDeleteRecipients(l, claims.Subject, messageID, usersIDs)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "recipients", nil, err, http.StatusInternalServerError, true)
+	}
+	return l.HTTPResponseSuccess()
+}

@@ -1011,6 +1011,77 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
+  '/api/bbs/messages/{message-id}/recipients':
+    post:
+      tags:
+        - BBs
+      summary: Adds recipients to a message
+      description: |
+        Adds recipients to a message
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_bbs_req_AddRecipients'
+      parameters:
+        - name: message-id
+          in: path
+          description: id of the message for recipients creation separated with comma
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageRecipient'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
+    delete:
+      tags:
+        - BBs
+      summary: Delete recipients from a message
+      description: |
+        Delete recipients from a message
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: message body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/_bbs_req_RemoveRecipients'
+      parameters:
+        - name: message-id
+          in: path
+          description: message-id
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
   /api/bbs/message:
     post:
       tags:
@@ -1204,6 +1275,23 @@ components:
           type: array
           items:
             type: string
+    MessageRecipient:
+      type: object
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        app_id:
+          type: string
+        user_id:
+          type: string
+        message_id:
+          type: string
+        mute:
+          type: boolean
+        read:
+          type: boolean
     Recipient:
       type: object
       properties:
@@ -1275,51 +1363,6 @@ components:
           type: string
         date_updated:
           type: string
-    _client_req_mail:
-      type: object
-      properties:
-        to_mail:
-          type: string
-        subject:
-          type: string
-        body:
-          type: string
-    _client_req_message:
-      required:
-        - _ids
-      type: object
-      properties:
-        _ids:
-          type: array
-          items:
-            type: string
-    _client_req_messageV2:
-      type: object
-      properties:
-        async:
-          type: boolean
-        message:
-          $ref: '#/components/schemas/_shared_req_CreateMessage'
-    _client_req_token:
-      required:
-        - token
-      type: object
-      properties:
-        token:
-          type: string
-        previous_token:
-          type: string
-        app_version:
-          type: string
-        app_platform:
-          type: string
-    _client_req_user:
-      required:
-        - notifications_disabled
-      type: object
-      properties:
-        notifications_disabled:
-          type: boolean
     _shared_req_CreateMessages:
       type: array
       items:
@@ -1384,3 +1427,69 @@ components:
           type: string
         app_platform:
           type: string
+    _client_req_mail:
+      type: object
+      properties:
+        to_mail:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+    _client_req_message:
+      required:
+        - _ids
+      type: object
+      properties:
+        _ids:
+          type: array
+          items:
+            type: string
+    _client_req_messageV2:
+      type: object
+      properties:
+        async:
+          type: boolean
+        message:
+          $ref: '#/components/schemas/_shared_req_CreateMessage'
+    _client_req_token:
+      required:
+        - token
+      type: object
+      properties:
+        token:
+          type: string
+        previous_token:
+          type: string
+        app_version:
+          type: string
+        app_platform:
+          type: string
+    _client_req_user:
+      required:
+        - notifications_disabled
+      type: object
+      properties:
+        notifications_disabled:
+          type: boolean
+    _bbs_req_AddRecipients:
+      type: array
+      items:
+        required:
+          - user_id
+          - mute
+        type: object
+        properties:
+          user_id:
+            type: string
+          mute:
+            type: boolean
+    _bbs_req_RemoveRecipients:
+      required:
+        - users_ids
+      type: object
+      properties:
+        users_ids:
+          type: array
+          items:
+            type: string

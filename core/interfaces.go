@@ -155,6 +155,8 @@ type BBs interface {
 	BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error)
 	BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error
 	BBsSendMail(toEmail string, subject string, body string) error
+	BBsAddRecipients(l *logs.Log, serviceAccountID string, messageID string, recipients []model.InputMessageRecipient) ([]model.MessageRecipient, error)
+	BBsDeleteRecipients(l *logs.Log, serviceAccountID string, messageID string, usersIDs []string) error
 }
 
 type bbsImpl struct {
@@ -171,6 +173,14 @@ func (s *bbsImpl) BBsDeleteMessages(l *logs.Log, serviceAccountID string, messag
 
 func (s *bbsImpl) BBsSendMail(toEmail string, subject string, body string) error {
 	return s.app.bbsSendMail(toEmail, subject, body)
+}
+
+func (s *bbsImpl) BBsAddRecipients(l *logs.Log, serviceAccountID string, messageID string, recipients []model.InputMessageRecipient) ([]model.MessageRecipient, error) {
+	return s.app.bbsAddRecipients(l, serviceAccountID, messageID, recipients)
+}
+
+func (s *bbsImpl) BBsDeleteRecipients(l *logs.Log, serviceAccountID string, messageID string, usersIDs []string) error {
+	return s.app.bbsDeleteRecipients(l, serviceAccountID, messageID, usersIDs)
 }
 
 // Storage is used by core to storage data - DB storage adapter, file storage adapter etc
@@ -198,8 +208,10 @@ type Storage interface {
 	UpdateTopic(*model.Topic) (*model.Topic, error)
 
 	FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error)
+	FindMessagesRecipientsByMessageAndUsers(messageID string, usersIDs []string) ([]model.MessageRecipient, error)
 	FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
+	DeleteMessagesRecipientsForIDsWithContext(ctx context.Context, ids []string) error
 	DeleteMessagesRecipientsForMessagesWithContext(ctx context.Context, messagesIDs []string) error
 
 	FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error)
@@ -223,6 +235,7 @@ type Storage interface {
 	FindQueueData(time *time.Time, limit int) ([]model.QueueItem, error)
 	DeleteQueueData(ids []string) error
 	DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error
+	DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
