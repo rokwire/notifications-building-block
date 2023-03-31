@@ -1,0 +1,16 @@
+type: object
+properties:
+  id:
+    type: string
+  org_id:
+    type: string  
+  app_id:
+    type: string 
+  user_id:
+    type: string
+  message_id:
+    type: string
+  mute:
+    type: boolean
+  read:
+    type: boolean

@@ -16,9 +16,9 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"notifications/core/model"
-	"time"
 )
 
 func (app *Application) getVersion() string {
@@ -69,13 +69,17 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 	return app.storage.UpdateTopic(topic)
 }
 
-func (app *Application) createMessage(orgID string, appID string,
-	sender model.Sender, mTime time.Time, priority int, subject string, body string, data map[string]string,
-	inputRecipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-	recipientAccountCriteria map[string]interface{}, topic *string, async bool) (*model.Message, error) {
+func (app *Application) createMessage(inputMessage model.InputMessage) (*model.Message, error) {
+	inputMessages := []model.InputMessage{inputMessage} //only one
+	messages, err := app.sharedCreateMessages(inputMessages)
+	if err != nil {
+		return nil, err
+	}
+	if len(messages) == 0 {
+		return nil, errors.New("error on creating message")
+	}
 
-	return app.sharedCreateMessage(orgID, appID, sender, mTime, priority, subject, body, data,
-		inputRecipients, recipientsCriteriaList, recipientAccountCriteria, topic, async)
+	return &messages[0], nil //return only one
 }
 
 func (app *Application) getMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {
@@ -149,7 +153,7 @@ func (app *Application) deleteUserMessage(orgID string, appID string, userID str
 }
 
 func (app *Application) deleteMessage(orgID string, appID string, ID string) error {
-	return app.storage.DeleteMessageWithContext(context.Background(), orgID, appID, ID)
+	return app.storage.DeleteMessagesWithContext(context.Background(), []string{ID})
 }
 
 func (app *Application) getAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {

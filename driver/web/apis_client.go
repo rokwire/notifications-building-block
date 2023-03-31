@@ -246,7 +246,7 @@ func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth
 	return l.HTTPResponseSuccess()
 }
 
-//TODO - for now all fields but almost all of them will be removed!
+// TODO - for now all fields but almost all of them will be removed!
 type getUserMessageResponse struct {
 	OrgID                     string                    `json:"org_id"`
 	AppID                     string                    `json:"app_id"`
@@ -471,8 +471,8 @@ func (h ApisHandler) DeleteUserMessages(l *logs.Log, r *http.Request, claims *to
 // @Security UserAuth
 // @Router /message [post]
 func (h ApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var inputMessage Def.SharedReqCreateMessage
-	err := json.NewDecoder(r.Body).Decode(&inputMessage)
+	var inputData Def.SharedReqCreateMessage
+	err := json.NewDecoder(r.Body).Decode(&inputData)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
@@ -480,13 +480,14 @@ func (h ApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenau
 	orgID := claims.OrgID
 	appID := claims.AppID
 
-	time, priority, subject, body, inputData, inputRecipients, recipientsCriteria, recipientsAccountCriteria, topic := getMessageData(inputMessage)
-
 	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
-	message, err := h.app.Services.CreateMessage(orgID, appID,
-		sender, time, priority, subject, body, inputData, inputRecipients, recipientsCriteria,
-		recipientsAccountCriteria, topic, false)
+	inputMessage := getMessageData(inputData)
+	inputMessage.OrgID = orgID
+	inputMessage.AppID = appID
+	inputMessage.Sender = sender
+
+	message, err := h.app.Services.CreateMessage(inputMessage)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionCreate, "message", nil, err, http.StatusInternalServerError, true)
 	}

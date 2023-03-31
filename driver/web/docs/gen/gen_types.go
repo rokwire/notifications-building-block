@@ -40,6 +40,17 @@ type Message struct {
 	Topic                    *string                 `json:"topic,omitempty"`
 }
 
+// MessageRecipient defines model for MessageRecipient.
+type MessageRecipient struct {
+	AppId     *string `json:"app_id,omitempty"`
+	Id        *string `json:"id,omitempty"`
+	MessageId *string `json:"message_id,omitempty"`
+	Mute      *bool   `json:"mute,omitempty"`
+	OrgId     *string `json:"org_id,omitempty"`
+	Read      *bool   `json:"read,omitempty"`
+	UserId    *string `json:"user_id,omitempty"`
+}
+
 // Recipient defines model for Recipient.
 type Recipient struct {
 	Mute                 *bool   `json:"mute,omitempty"`
@@ -82,6 +93,17 @@ type User struct {
 	UserId                *string        `json:"user_id,omitempty"`
 }
 
+// BbsReqAddRecipients defines model for _bbs_req_AddRecipients.
+type BbsReqAddRecipients = []struct {
+	Mute   bool   `json:"mute"`
+	UserId string `json:"user_id"`
+}
+
+// BbsReqRemoveRecipients defines model for _bbs_req_RemoveRecipients.
+type BbsReqRemoveRecipients struct {
+	UsersIds []string `json:"users_ids"`
+}
+
 // ClientReqMail defines model for _client_req_mail.
 type ClientReqMail struct {
 	Body    *string `json:"body,omitempty"`
@@ -115,9 +137,12 @@ type ClientReqUser struct {
 
 // SharedReqCreateMessage defines model for _shared_req_CreateMessage.
 type SharedReqCreateMessage struct {
-	AppId                    string                                         `json:"app_id"`
-	Body                     string                                         `json:"body"`
-	Data                     map[string]interface{}                         `json:"data"`
+	AppId string                 `json:"app_id"`
+	Body  string                 `json:"body"`
+	Data  map[string]interface{} `json:"data"`
+
+	// optional
+	Id                       *string                                        `json:"id,omitempty"`
 	OrgId                    string                                         `json:"org_id"`
 	Priority                 int                                            `json:"priority"`
 	RecipientAccountCriteria map[string]interface{}                         `json:"recipient_account_criteria"`
@@ -139,6 +164,9 @@ type SharedReqCreateMessageInputRecipientCriteria struct {
 	AppPlatform *string `json:"app_platform,omitempty"`
 	AppVersion  *string `json:"app_version,omitempty"`
 }
+
+// SharedReqCreateMessages defines model for _shared_req_CreateMessages.
+type SharedReqCreateMessages = []SharedReqCreateMessage
 
 // PostApiAdminMessageJSONBody defines parameters for PostApiAdminMessage.
 type PostApiAdminMessageJSONBody = SharedReqCreateMessage
@@ -175,6 +203,21 @@ type PostApiBbsMailJSONBody = ClientReqMail
 
 // PostApiBbsMessageJSONBody defines parameters for PostApiBbsMessage.
 type PostApiBbsMessageJSONBody = ClientReqMessageV2
+
+// DeleteApiBbsMessagesParams defines parameters for DeleteApiBbsMessages.
+type DeleteApiBbsMessagesParams struct {
+	// ids of the messages for deletion separated with comma
+	Ids string `json:"ids"`
+}
+
+// PostApiBbsMessagesJSONBody defines parameters for PostApiBbsMessages.
+type PostApiBbsMessagesJSONBody = SharedReqCreateMessages
+
+// DeleteApiBbsMessagesMessageIdRecipientsJSONBody defines parameters for DeleteApiBbsMessagesMessageIdRecipients.
+type DeleteApiBbsMessagesMessageIdRecipientsJSONBody = BbsReqRemoveRecipients
+
+// PostApiBbsMessagesMessageIdRecipientsJSONBody defines parameters for PostApiBbsMessagesMessageIdRecipients.
+type PostApiBbsMessagesMessageIdRecipientsJSONBody = BbsReqAddRecipients
 
 // PostApiIntMailJSONBody defines parameters for PostApiIntMail.
 type PostApiIntMailJSONBody = ClientReqToken
@@ -268,6 +311,15 @@ type PostApiBbsMailJSONRequestBody = PostApiBbsMailJSONBody
 
 // PostApiBbsMessageJSONRequestBody defines body for PostApiBbsMessage for application/json ContentType.
 type PostApiBbsMessageJSONRequestBody = PostApiBbsMessageJSONBody
+
+// PostApiBbsMessagesJSONRequestBody defines body for PostApiBbsMessages for application/json ContentType.
+type PostApiBbsMessagesJSONRequestBody = PostApiBbsMessagesJSONBody
+
+// DeleteApiBbsMessagesMessageIdRecipientsJSONRequestBody defines body for DeleteApiBbsMessagesMessageIdRecipients for application/json ContentType.
+type DeleteApiBbsMessagesMessageIdRecipientsJSONRequestBody = DeleteApiBbsMessagesMessageIdRecipientsJSONBody
+
+// PostApiBbsMessagesMessageIdRecipientsJSONRequestBody defines body for PostApiBbsMessagesMessageIdRecipients for application/json ContentType.
+type PostApiBbsMessagesMessageIdRecipientsJSONRequestBody = PostApiBbsMessagesMessageIdRecipientsJSONBody
 
 // PostApiIntMailJSONRequestBody defines body for PostApiIntMail for application/json ContentType.
 type PostApiIntMailJSONRequestBody = PostApiIntMailJSONBody

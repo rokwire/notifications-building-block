@@ -14,6 +14,8 @@
 
 package model
 
+import "time"
+
 // MessageRecipient represent recipient of a message
 type MessageRecipient struct {
 	OrgID string `json:"org_id" bson:"org_id"`
@@ -26,4 +28,6 @@ type MessageRecipient struct {
 	Read      bool   `json:"read" bson:"read"`
 
 	Message Message `json:"-" bson:"-"`
+
+	DateCreated *time.Time `json:"date_created" bson:"date_created"`
 }

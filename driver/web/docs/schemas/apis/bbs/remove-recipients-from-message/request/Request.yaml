@@ -1,0 +1,8 @@
+required:
+  - users_ids
+type: object
+properties:
+  users_ids:
+    type: array
+    items:
+      type: string
