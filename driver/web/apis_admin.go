@@ -137,19 +137,14 @@ func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *toke
 }
 
 // CreateMessage Creates a message
-// @Description Creates a message
-// @Tags Admin
-// @ID CreateMessage
-// @Accept  json
-// @Param data body model.Message true "body json"
-// @Success 200 {object} model.Message
-// @Security AdminUserAuth
-// @Router /admin/message [post]
 func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var inputData Def.SharedReqCreateMessage
 	err := json.NewDecoder(r.Body).Decode(&inputData)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+	if len(inputData.Body) == 0 {
+		return l.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
 	orgID := claims.OrgID
