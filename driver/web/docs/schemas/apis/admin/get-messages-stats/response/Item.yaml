@@ -1,0 +1,4 @@
+type: object
+properties:
+  field_id:
+    type: string

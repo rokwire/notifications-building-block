@@ -66,7 +66,9 @@ paths:
   /api/admin/message:
     $ref: "./resources/admin/message/message.yaml"
   /api/admin/messages{id}:
-    $ref: "./resources/admin/message/messages-id.yaml"   
+    $ref: "./resources/admin/message/messages-id.yaml"
+  /api/admin/messages/stats/source/{source}:
+    $ref: "./resources/admin/messages/stats/source.yaml"    
 
   #BBs
   /api/bbs/messages:

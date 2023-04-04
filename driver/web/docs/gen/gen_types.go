@@ -93,6 +93,11 @@ type User struct {
 	UserId                *string        `json:"user_id,omitempty"`
 }
 
+// AdminResGetMessagesStats defines model for _admin_res_GetMessagesStats.
+type AdminResGetMessagesStats = []struct {
+	FieldId *string `json:"field_id,omitempty"`
+}
+
 // BbsReqAddRecipients defines model for _bbs_req_AddRecipients.
 type BbsReqAddRecipients = []struct {
 	Mute   bool   `json:"mute"`
