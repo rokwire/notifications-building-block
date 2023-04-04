@@ -305,3 +305,9 @@ func (h AdminApisHandler) GetAllAppPlatforms(l *logs.Log, r *http.Request, claim
 
 	return l.HTTPResponseSuccessJSON(data)
 }
+
+// GetMessagesStats gives messages stats
+func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	//TODO
+	return l.HTTPResponseSuccess()
+}
