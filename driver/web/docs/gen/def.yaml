@@ -1504,10 +1504,33 @@ components:
         notifications_disabled:
           type: boolean
     _admin_res_GetMessagesStats:
+      required:
+        - date_created
+        - sent_by
+        - message
+        - recipients_count
+        - read_count
       type: object
       properties:
-        field_id:
+        date_created:
           type: string
+        time:
+          type: string
+        sent_by:
+          required:
+            - account_id
+          type: object
+          properties:
+            account_id:
+              type: string
+            name:
+              type: string
+        message:
+          type: string
+        recipients_count:
+          type: number
+        read_count:
+          type: number
     _bbs_req_AddRecipients:
       type: array
       items:

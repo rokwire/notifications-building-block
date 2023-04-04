@@ -95,7 +95,15 @@ type User struct {
 
 // AdminResGetMessagesStats defines model for _admin_res_GetMessagesStats.
 type AdminResGetMessagesStats struct {
-	FieldId *string `json:"field_id,omitempty"`
+	DateCreated     string  `json:"date_created"`
+	Message         string  `json:"message"`
+	ReadCount       float32 `json:"read_count"`
+	RecipientsCount float32 `json:"recipients_count"`
+	SentBy          struct {
+		AccountId string  `json:"account_id"`
+		Name      *string `json:"name,omitempty"`
+	} `json:"sent_by"`
+	Time *string `json:"time,omitempty"`
 }
 
 // BbsReqAddRecipients defines model for _bbs_req_AddRecipients.

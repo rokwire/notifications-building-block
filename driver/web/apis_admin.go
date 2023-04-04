@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -312,21 +313,24 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 
 	list := []Def.AdminResGetMessagesStats{}
 
-	//list = append(list, item1)
-
-	/*	aa := Def.AdminResGetMessagesStats{}
-
-		fieldID := "fdsfds"
-		item1 := Def.AdminResGetMessagesStats{FieldId: &fieldID}
-
-		aa = append(aa, struct {
-			FieldId *string "json:\"field_id,omitempty\""
-		}{}) */
-
-	fieldID := "fdsfds"
-	item1 := Def.AdminResGetMessagesStats{FieldId: &fieldID}
+	dateCreated := time.Now().Format(time.RFC3339Nano)
+	time := time.Now().Format(time.RFC3339Nano)
+	name := "Koko"
+	sentByItem := struct {
+		AccountId string  `json:"account_id"`
+		Name      *string `json:"name,omitempty"`
+	}{
+		AccountId: "432432",
+		Name:      &name,
+	}
+	message := "message"
+	recipientsCount := 100
+	readCount := 25
+	item1 := Def.AdminResGetMessagesStats{DateCreated: dateCreated, Time: &time, SentBy: sentByItem,
+		Message: message, RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
 
 	list = append(list, item1)
+	//message := model.Message{Time: time.Now()}
 
 	data, err := json.Marshal(list)
 	if err != nil {
