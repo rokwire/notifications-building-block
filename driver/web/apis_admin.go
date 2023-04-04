@@ -149,7 +149,7 @@ func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *to
 
 	orgID := claims.OrgID
 	appID := claims.AppID
-	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
+	sender := model.Sender{Type: "administrative", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
 	inputMessage := getMessageData(inputData)
 	inputMessage.OrgID = orgID
