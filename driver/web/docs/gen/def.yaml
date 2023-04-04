@@ -1504,12 +1504,10 @@ components:
         notifications_disabled:
           type: boolean
     _admin_res_GetMessagesStats:
-      type: array
-      items:
-        type: object
-        properties:
-          field_id:
-            type: string
+      type: object
+      properties:
+        field_id:
+          type: string
     _bbs_req_AddRecipients:
       type: array
       items:

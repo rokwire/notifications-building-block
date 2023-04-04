@@ -94,7 +94,7 @@ type User struct {
 }
 
 // AdminResGetMessagesStats defines model for _admin_res_GetMessagesStats.
-type AdminResGetMessagesStats = []struct {
+type AdminResGetMessagesStats struct {
 	FieldId *string `json:"field_id,omitempty"`
 }
 

@@ -309,5 +309,29 @@ func (h AdminApisHandler) GetAllAppPlatforms(l *logs.Log, r *http.Request, claim
 // GetMessagesStats gives messages stats
 func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	//TODO
-	return l.HTTPResponseSuccess()
+
+	list := []Def.AdminResGetMessagesStats{}
+
+	//list = append(list, item1)
+
+	/*	aa := Def.AdminResGetMessagesStats{}
+
+		fieldID := "fdsfds"
+		item1 := Def.AdminResGetMessagesStats{FieldId: &fieldID}
+
+		aa = append(aa, struct {
+			FieldId *string "json:\"field_id,omitempty\""
+		}{}) */
+
+	fieldID := "fdsfds"
+	item1 := Def.AdminResGetMessagesStats{FieldId: &fieldID}
+
+	list = append(list, item1)
+
+	data, err := json.Marshal(list)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
 }
