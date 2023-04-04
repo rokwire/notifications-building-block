@@ -313,8 +313,8 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 
 	list := []Def.AdminResGetMessagesStats{}
 
-	dateCreated := time.Now().Format(time.RFC3339Nano)
-	time := time.Now().Format(time.RFC3339Nano)
+	dateCreated := time.Now().UTC().Format(time.RFC3339Nano)
+	time := time.Now().UTC().Format(time.RFC3339Nano)
 	name := "Koko"
 	sentByItem := struct {
 		AccountId string  `json:"account_id"`
