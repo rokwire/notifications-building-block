@@ -21,7 +21,9 @@ get:
       content:
         application/json:
           schema:
-            $ref: "../../../../schemas/apis/admin/get-messages-stats/response/Item.yaml"
+            type: array
+            items:
+              $ref: "../../../../schemas/apis/admin/get-messages-stats/response/Item.yaml"
     400:
       description: Bad request
     401:

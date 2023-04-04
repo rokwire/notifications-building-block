@@ -974,7 +974,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/_admin_res_GetMessagesStats'
+                type: array
+                items:
+                  $ref: '#/components/schemas/_admin_res_GetMessagesStats'
         '400':
           description: Bad request
         '401':
