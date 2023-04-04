@@ -1,4 +1,4 @@
 p, all_admin_notifications, /notifications/api/admin/*, (GET)|(POST)|(PUT)|(DELETE), All notification admin actions
 
-p, get_messages_stats, /notifications/api/admin/messages/stats/me, (GET), Get messages stats for the messages sent by the current admin
-p, get_messages_stats_all, /notifications/api/admin/messages/stats/all, (GET), Get messages stats for the messages sent by all admins
+p, get_messages_stats, /notifications/api/admin/messages/stats/source/me, (GET), Get messages stats for the messages sent by the current admin
+p, get_messages_stats_all, /notifications/api/admin/messages/stats/source/all, (GET), Get messages stats for the messages sent by all admins
