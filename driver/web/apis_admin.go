@@ -309,7 +309,6 @@ func (h AdminApisHandler) GetAllAppPlatforms(l *logs.Log, r *http.Request, claim
 
 // GetMessagesStats gives messages stats
 func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	//TODO
 
 	list := []Def.AdminResGetMessagesStats{}
 
@@ -330,7 +329,6 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 		Message: message, RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
 
 	list = append(list, item1)
-	//message := model.Message{Time: time.Now()}
 
 	data, err := json.Marshal(list)
 	if err != nil {
