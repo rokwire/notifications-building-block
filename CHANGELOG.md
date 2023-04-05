@@ -6,9 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-
-## [1.14.0] - 2023-03-31
 ### Added
+- Expose messages statistics Admin API [#153](https://github.com/rokwire/notifications-building-block/issues/153)
 - Add and delete recepient to message [#147](https://github.com/rokwire/notifications-building-block/issues/147)
 - Expose create and delete many messages BBs APIs [#148](https://github.com/rokwire/notifications-building-block/issues/148)
 

@@ -48,6 +48,7 @@ type Application struct {
 	build   string
 
 	Services Services // expose to the drivers adapters
+	Admin    Admin    // expose to the drivers adapters
 	BBs      BBs      // expose to the drivers adapters
 	logger   *logs.Logger
 
@@ -79,6 +80,7 @@ func NewApplication(version string, build string, storage Storage, firebase Fire
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
+	application.Admin = &adminImpl{app: &application}
 	application.BBs = &bbsImpl{app: &application}
 
 	return &application

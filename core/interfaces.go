@@ -150,6 +150,19 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 	return s.app.sendMail(toEmail, subject, body)
 }
 
+// Admin exposes APIs for the driver adapters
+type Admin interface {
+	AdminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[int][]interface{}, error)
+}
+
+type adminImpl struct {
+	app *Application
+}
+
+func (s *adminImpl) AdminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[int][]interface{}, error) {
+	return s.app.adminGetMessagesStats(orgID, appID, adminAccountID, source, offset, limit, order)
+}
+
 // BBs exposes users related APIs used by the platform building blocks
 type BBs interface {
 	BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error)
@@ -209,12 +222,14 @@ type Storage interface {
 
 	FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error)
 	FindMessagesRecipientsByMessageAndUsers(messageID string, usersIDs []string) ([]model.MessageRecipient, error)
+	FindMessagesRecipientsByMessages(messagesIDs []string) ([]model.MessageRecipient, error)
 	FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
 	DeleteMessagesRecipientsForIDsWithContext(ctx context.Context, ids []string) error
 	DeleteMessagesRecipientsForMessagesWithContext(ctx context.Context, messagesIDs []string) error
 
 	FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error)
+	FindMessagesByParams(orgID string, appID string, senderType string, senderAccountID *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
 	InsertMessagesWithContext(ctx context.Context, messages []model.Message) error

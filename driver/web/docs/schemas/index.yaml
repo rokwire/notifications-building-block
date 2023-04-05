@@ -48,6 +48,7 @@ _shared_req_CreateMessage_InputRecipientCriteria:
 
 ## SERVICES section
 
+### requests
 _client_req_mail:
   $ref: "./apis/mail/request/Request.yaml"
 _client_req_message:
@@ -60,6 +61,16 @@ _client_req_user:
   $ref: "./apis/user/request/Request.yaml"
 
 ## end SERVICES section
+
+## ADMIN section
+
+### responses
+_admin_res_GetMessagesStatsItem:
+  $ref: "./apis/admin/get-messages-stats/response/Item.yaml"
+_admin_res_GetMessagesStatsSentByItem:
+  $ref: "./apis/admin/get-messages-stats/response/SentByItem.yaml"
+
+## end ADMIN section
 
 ## BBs section
 

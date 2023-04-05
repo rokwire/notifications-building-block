@@ -760,6 +760,21 @@ func (sa Adapter) FindMessagesRecipientsByMessageAndUsers(messageID string, user
 	return data, nil
 }
 
+// FindMessagesRecipientsByMessages finds messages recipients by messages
+func (sa Adapter) FindMessagesRecipientsByMessages(messagesIDs []string) ([]model.MessageRecipient, error) {
+	filter := bson.D{
+		primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}},
+	}
+
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // FindMessagesRecipientsDeep finds messages recipients join with messages
 func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool,
 	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,
@@ -937,6 +952,46 @@ func (sa Adapter) FindMessagesWithContext(ctx context.Context, ids []string) ([]
 	}
 
 	return messageArr, nil
+}
+
+// FindMessagesByParams finds messages by params
+func (sa Adapter) FindMessagesByParams(orgID string, appID string, senderType string, senderAccountID *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "sender.type", Value: senderType},
+	}
+	//sender account id
+	if senderAccountID != nil {
+		filter = append(filter, primitive.E{Key: "sender.user.user_id", Value: *senderAccountID})
+	}
+
+	findOptions := options.Find()
+	//limit
+	limitValue := int64(50) //by default - 50
+	if limit != nil {
+		limitValue = int64(*limit)
+	}
+	findOptions.SetLimit(limitValue)
+
+	//offset
+	if offset != nil {
+		findOptions.SetSkip(int64(*offset))
+	}
+	//sort
+	sortValue := -1 //by default -  "asc"
+	if order != nil && *order == "desc" {
+		sortValue = 1
+	}
+	findOptions.SetSort(bson.D{primitive.E{Key: "date_created", Value: sortValue}})
+
+	var messages []model.Message
+	err := sa.db.messages.Find(filter, &messages, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return messages, nil
 }
 
 // GetMessage gets a message by id

@@ -113,6 +113,7 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.UpdateMessage, we.auth.admin.Permissions)).Methods("PUT")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.GetMessage, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.DeleteMessage, we.auth.admin.Permissions)).Methods("DELETE")
+	adminRouter.HandleFunc("/messages/stats/source/{source}", we.wrapFunc(we.adminApisHandler.GetMessagesStats, we.auth.admin.Permissions)).Methods("GET")
 
 	// BB APIs
 	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()

@@ -20,6 +20,8 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	"sort"
+	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -137,24 +139,19 @@ func (h AdminApisHandler) GetMessages(l *logs.Log, r *http.Request, claims *toke
 }
 
 // CreateMessage Creates a message
-// @Description Creates a message
-// @Tags Admin
-// @ID CreateMessage
-// @Accept  json
-// @Param data body model.Message true "body json"
-// @Success 200 {object} model.Message
-// @Security AdminUserAuth
-// @Router /admin/message [post]
 func (h AdminApisHandler) CreateMessage(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var inputData Def.SharedReqCreateMessage
 	err := json.NewDecoder(r.Body).Decode(&inputData)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
+	if len(inputData.Body) == 0 {
+		return l.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
 
 	orgID := claims.OrgID
 	appID := claims.AppID
-	sender := model.Sender{Type: "user", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
+	sender := model.Sender{Type: "administrative", User: &model.CoreAccountRef{UserID: claims.Subject, Name: claims.Name}}
 
 	inputMessage := getMessageData(inputData)
 	inputMessage.OrgID = orgID
@@ -308,5 +305,75 @@ func (h AdminApisHandler) GetAllAppPlatforms(l *logs.Log, r *http.Request, claim
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
 
+	return l.HTTPResponseSuccessJSON(data)
+}
+
+// GetMessagesStats gives messages stats
+func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	//get source
+	params := mux.Vars(r)
+	source := params["source"]
+	if len(source) <= 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("source"), nil, http.StatusBadRequest, false)
+	}
+	if !(source == "me" || source == "all") {
+		return l.HTTPResponseErrorData(logutils.MessageDataStatus(logutils.StatusError), logutils.TypePathParam, logutils.StringArgs("source"), nil, http.StatusBadRequest, false)
+	}
+
+	//offset, limit and order
+	offset := getInt64QueryParam(r, "offset")
+	limit := getInt64QueryParam(r, "limit")
+	order := getStringQueryParam(r, "order")
+
+	messagesStatsData, err := h.app.Admin.AdminGetMessagesStats(claims.OrgID, claims.AppID, claims.Subject, source, offset, limit, order)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages stats", nil, err, http.StatusInternalServerError, true)
+	}
+
+	//prepare the result
+	resultList := []Def.AdminResGetMessagesStatsItem{}
+
+	//verify that we iterate by key order - map is unsorted
+	var keys []int
+	for k := range messagesStatsData {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys) //sort by keys
+	for _, k := range keys {
+		v := messagesStatsData[k]
+
+		message := v[0].(model.Message)
+		messageRecipients := v[1].([]model.MessageRecipient)
+
+		//create response item
+		dateCreated := message.DateCreated.UTC().Format(time.RFC3339Nano)
+		time := message.Time.UTC().Format(time.RFC3339Nano)
+
+		sender := message.Sender.User
+		sentByItem := Def.AdminResGetMessagesStatsSentByItem{
+			AccountId: sender.UserID,
+			Name:      &sender.Name,
+		}
+		body := message.Body
+		recipientsCount := len(messageRecipients)
+
+		//calculate read count
+		readCount := 0
+		for _, rec := range messageRecipients {
+			if rec.Read {
+				readCount++
+			}
+		}
+
+		item1 := Def.AdminResGetMessagesStatsItem{DateCreated: dateCreated, Time: &time, SentBy: sentByItem,
+			Message: body, RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
+
+		resultList = append(resultList, item1)
+	}
+
+	data, err := json.Marshal(resultList)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
+	}
 	return l.HTTPResponseSuccessJSON(data)
 }

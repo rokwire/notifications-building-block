@@ -1,0 +1,20 @@
+required:
+  - date_created
+  - sent_by
+  - message
+  - recipients_count
+  - read_count
+type: object
+properties:
+  date_created:
+    type: string
+  time:
+    type: string
+  sent_by:
+    $ref: "SentByItem.yaml"
+  message:
+    type: string
+  recipients_count:
+    type: number
+  read_count:
+    type: number

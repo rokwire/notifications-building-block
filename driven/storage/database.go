@@ -211,6 +211,12 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 		}
 	}
 
+	//add sender type index
+	err = messages.AddIndex(bson.D{primitive.E{Key: "sender.type", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
 	log.Println("apply messages passed")
 	return nil
 }

@@ -93,6 +93,22 @@ type User struct {
 	UserId                *string        `json:"user_id,omitempty"`
 }
 
+// AdminResGetMessagesStatsItem defines model for _admin_res_GetMessagesStatsItem.
+type AdminResGetMessagesStatsItem struct {
+	DateCreated     string                             `json:"date_created"`
+	Message         string                             `json:"message"`
+	ReadCount       float32                            `json:"read_count"`
+	RecipientsCount float32                            `json:"recipients_count"`
+	SentBy          AdminResGetMessagesStatsSentByItem `json:"sent_by"`
+	Time            *string                            `json:"time,omitempty"`
+}
+
+// AdminResGetMessagesStatsSentByItem defines model for _admin_res_GetMessagesStatsSentByItem.
+type AdminResGetMessagesStatsSentByItem struct {
+	AccountId string  `json:"account_id"`
+	Name      *string `json:"name,omitempty"`
+}
+
 // BbsReqAddRecipients defines model for _bbs_req_AddRecipients.
 type BbsReqAddRecipients = []struct {
 	Mute   bool   `json:"mute"`
@@ -193,6 +209,18 @@ type GetApiAdminMessagesParams struct {
 
 	// end_date - End date filter in milliseconds as an integer epoch value
 	EndDate string `json:"end_date"`
+}
+
+// GetApiAdminMessagesStatsSourceSourceParams defines parameters for GetApiAdminMessagesStatsSourceSource.
+type GetApiAdminMessagesStatsSourceSourceParams struct {
+	// offset
+	Offset *string `json:"offset,omitempty"`
+
+	// limit
+	Limit *string `json:"limit,omitempty"`
+
+	// order - Possible values: asc, desc. Default: asc
+	Order *string `json:"order,omitempty"`
 }
 
 // PutApiAdminTopicJSONBody defines parameters for PutApiAdminTopic.
