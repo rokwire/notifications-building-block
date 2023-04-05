@@ -14,13 +14,10 @@
 
 package core
 
-import (
-	"notifications/core/model"
-	"time"
-)
+import "log"
 
 func (app *Application) adminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[int][]interface{}, error) {
-	/*//1. find the messages
+	//1. find the messages
 	var senderAccountID *string
 	if source == "me" {
 		senderAccountID = &adminAccountID
@@ -34,24 +31,24 @@ func (app *Application) adminGetMessagesStats(orgID string, appID string, adminA
 		return map[int][]interface{}{}, nil
 	}
 
-	log.Println(messages) */
+	log.Println(messages)
 
 	//context.Context
 	//FindMessagesByParams(ctx context.Context, orgID string, appID string, senderType string, senderAccountID *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
+	/*
+		now := time.Now()
 
-	now := time.Now()
+		message1 := model.Message{ID: "1", DateCreated: &now, Time: now, Body: "Body 1", Sender: model.Sender{Type: "administrative", User: &model.CoreAccountRef{UserID: "100", Name: "Ime 1"}}}
+		recps1 := []model.MessageRecipient{{ID: "1", Read: true}} //do not put nil
+		sect1 := []interface{}{message1, recps1}
 
-	message1 := model.Message{ID: "1", DateCreated: &now, Time: now, Body: "Body 1", Sender: model.Sender{Type: "administrative", User: &model.CoreAccountRef{UserID: "100", Name: "Ime 1"}}}
-	recps1 := []model.MessageRecipient{{ID: "1", Read: true}} //do not put nil
-	sect1 := []interface{}{message1, recps1}
-
-	message2 := model.Message{ID: "2", DateCreated: &now, Time: now, Body: "Body 2", Sender: model.Sender{Type: "administrative", User: &model.CoreAccountRef{UserID: "200", Name: "Ime 2"}}}
-	recps2 := []model.MessageRecipient{{ID: "2", Read: false}}
-	sect2 := []interface{}{message2, recps2} //do not put nil
+		message2 := model.Message{ID: "2", DateCreated: &now, Time: now, Body: "Body 2", Sender: model.Sender{Type: "administrative", User: &model.CoreAccountRef{UserID: "200", Name: "Ime 2"}}}
+		recps2 := []model.MessageRecipient{{ID: "2", Read: false}}
+		sect2 := []interface{}{message2, recps2} //do not put nil */
 
 	result := map[int][]interface{}{}
-	result[1] = sect1
-	result[2] = sect2
+	//result[1] = sect1
+	//result[2] = sect2
 
 	//TODO do not return nil
 	return result, nil
