@@ -988,7 +988,7 @@ paths:
             type: string
         - name: order
           in: query
-          description: 'order - Possible values: asc, desc. Default: desc'
+          description: 'order - Possible values: asc, desc. Default: asc'
           required: false
           style: simple
           explode: false

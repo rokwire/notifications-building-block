@@ -216,7 +216,7 @@ type GetApiAdminMessagesStatsSourceSourceParams struct {
 	// limit
 	Limit *string `json:"limit,omitempty"`
 
-	// order - Possible values: asc, desc. Default: desc
+	// order - Possible values: asc, desc. Default: asc
 	Order *string `json:"order,omitempty"`
 }
 
