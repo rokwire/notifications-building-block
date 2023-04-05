@@ -17,7 +17,6 @@ package web
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
@@ -330,30 +329,41 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages stats", nil, err, http.StatusInternalServerError, true)
 	}
 
-	log.Println(messagesStatsData)
+	//prepare the result
+	resultList := []Def.AdminResGetMessagesStats{}
+	for _, v := range messagesStatsData {
+		message := v[0].(model.Message)
+		messageRecipients := v[1].([]model.MessageRecipient)
 
-	//TODO
-	list := []Def.AdminResGetMessagesStats{}
+		//create response item
+		dateCreated := message.DateCreated.UTC().Format(time.RFC3339Nano)
+		time := message.Time.UTC().Format(time.RFC3339Nano)
 
-	dateCreated := time.Now().UTC().Format(time.RFC3339Nano)
-	time := time.Now().UTC().Format(time.RFC3339Nano)
-	name := "Koko"
-	sentByItem := struct {
-		AccountId string  `json:"account_id"`
-		Name      *string `json:"name,omitempty"`
-	}{
-		AccountId: "432432",
-		Name:      &name,
+		sender := message.Sender.User
+		sentByItem := struct {
+			AccountId string  `json:"account_id"`
+			Name      *string `json:"name,omitempty"`
+		}{
+			AccountId: sender.UserID,
+			Name:      &sender.Name,
+		}
+		body := message.Body
+		recipientsCount := len(messageRecipients)
+
+		//calculate read count
+		readCount := 0
+		for _, rec := range messageRecipients {
+			if rec.Read {
+				readCount++
+			}
+		}
+
+		item1 := Def.AdminResGetMessagesStats{DateCreated: dateCreated, Time: &time, SentBy: sentByItem,
+			Message: body, RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
+
+		resultList = append(resultList, item1)
 	}
-	message := "message"
-	recipientsCount := 100
-	readCount := 25
-	item1 := Def.AdminResGetMessagesStats{DateCreated: dateCreated, Time: &time, SentBy: sentByItem,
-		Message: message, RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
-
-	list = append(list, item1)
-
-	data, err := json.Marshal(list)
+	data, err := json.Marshal(resultList)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
