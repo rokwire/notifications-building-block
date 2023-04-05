@@ -957,6 +957,8 @@ paths:
       summary: Gets messages stats
       description: |
         Gets messages stats
+
+        **Auth:** Requires admin access token with `get_messages_stats` permission for "me" source and `get_messages_stats_all` for "all" source
       security:
         - bearerAuth: []
       parameters:
