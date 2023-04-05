@@ -129,7 +129,7 @@ func (we Adapter) Start() {
 
 	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
-	log.Fatal(http.ListenAndServe(":5051", router))
+	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
