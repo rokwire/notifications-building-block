@@ -17,6 +17,7 @@ package web
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
@@ -309,7 +310,27 @@ func (h AdminApisHandler) GetAllAppPlatforms(l *logs.Log, r *http.Request, claim
 
 // GetMessagesStats gives messages stats
 func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	//get source
+	params := mux.Vars(r)
+	source := params["source"]
+	if len(source) <= 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("source"), nil, http.StatusBadRequest, false)
+	}
+	if !(source == "me" || source == "all") {
+		return l.HTTPResponseErrorData(logutils.MessageDataStatus(logutils.StatusError), logutils.TypePathParam, logutils.StringArgs("source"), nil, http.StatusBadRequest, false)
+	}
 
+	//offset, limit and order
+	offset := getInt64QueryParam(r, "offset")
+	limit := getInt64QueryParam(r, "limit")
+	order := getStringQueryParam(r, "order")
+
+	log.Println(source)
+	log.Println(offset)
+	log.Println(limit)
+	log.Println(order)
+
+	//TODO
 	list := []Def.AdminResGetMessagesStats{}
 
 	dateCreated := time.Now().UTC().Format(time.RFC3339Nano)
