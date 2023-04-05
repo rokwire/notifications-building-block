@@ -152,15 +152,15 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 
 // Admin exposes APIs for the driver adapters
 type Admin interface {
-	AdminGetMessagesStats(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
+	AdminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[string][]interface{}, error)
 }
 
 type adminImpl struct {
 	app *Application
 }
 
-func (s *adminImpl) AdminGetMessagesStats(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {
-	return s.app.adminGetMessagesStats(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
+func (s *adminImpl) AdminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[string][]interface{}, error) {
+	return s.app.adminGetMessagesStats(orgID, appID, adminAccountID, source, offset, limit, order)
 }
 
 // BBs exposes users related APIs used by the platform building blocks

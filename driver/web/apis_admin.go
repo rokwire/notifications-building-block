@@ -325,14 +325,9 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 	limit := getInt64QueryParam(r, "limit")
 	order := getStringQueryParam(r, "order")
 
-	log.Println(source)
-	log.Println(offset)
-	log.Println(limit)
-	log.Println(order)
-
-	messagesStatsData, err := h.app.Admin.AdminGetMessagesStats(claims.OrgID, claims.AppID, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	messagesStatsData, err := h.app.Admin.AdminGetMessagesStats(claims.OrgID, claims.AppID, claims.Subject, source, offset, limit, order)
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionGet, "app platforms", nil, err, http.StatusInternalServerError, true)
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "messages stats", nil, err, http.StatusInternalServerError, true)
 	}
 
 	log.Println(messagesStatsData)
