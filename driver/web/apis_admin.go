@@ -330,6 +330,13 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 	log.Println(limit)
 	log.Println(order)
 
+	messagesStatsData, err := h.app.Admin.AdminGetMessagesStats(claims.OrgID, claims.AppID, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionGet, "app platforms", nil, err, http.StatusInternalServerError, true)
+	}
+
+	log.Println(messagesStatsData)
+
 	//TODO
 	list := []Def.AdminResGetMessagesStats{}
 
