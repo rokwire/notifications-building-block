@@ -222,6 +222,7 @@ type Storage interface {
 
 	FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error)
 	FindMessagesRecipientsByMessageAndUsers(messageID string, usersIDs []string) ([]model.MessageRecipient, error)
+	FindMessagesRecipientsByMessages(messagesIDs []string) ([]model.MessageRecipient, error)
 	FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
 	DeleteMessagesRecipientsForIDsWithContext(ctx context.Context, ids []string) error

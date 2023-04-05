@@ -760,6 +760,21 @@ func (sa Adapter) FindMessagesRecipientsByMessageAndUsers(messageID string, user
 	return data, nil
 }
 
+// FindMessagesRecipientsByMessages finds messages recipients by messages
+func (sa Adapter) FindMessagesRecipientsByMessages(messagesIDs []string) ([]model.MessageRecipient, error) {
+	filter := bson.D{
+		primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}},
+	}
+
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // FindMessagesRecipientsDeep finds messages recipients join with messages
 func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool,
 	messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string,

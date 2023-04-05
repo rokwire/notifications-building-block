@@ -31,7 +31,17 @@ func (app *Application) adminGetMessagesStats(orgID string, appID string, adminA
 		return map[int][]interface{}{}, nil
 	}
 
-	log.Println(messages)
+	//2. get the messages recipients for the messages
+	messagesIDs := make([]string, len(messages))
+	for i, message := range messages {
+		messagesIDs[i] = message.ID
+	}
+	allMessagesRecipients, err := app.storage.FindMessagesRecipientsByMessages(messagesIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println(allMessagesRecipients)
 
 	//context.Context
 	//FindMessagesByParams(ctx context.Context, orgID string, appID string, senderType string, senderAccountID *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
