@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
+	"sort"
 	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
@@ -331,7 +332,16 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 
 	//prepare the result
 	resultList := []Def.AdminResGetMessagesStats{}
-	for _, v := range messagesStatsData {
+
+	//verify that we iterate by key order - map is unsorted
+	var keys []int
+	for k := range messagesStatsData {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys) //sort by keys
+	for _, k := range keys {
+		v := messagesStatsData[k]
+
 		message := v[0].(model.Message)
 		messageRecipients := v[1].([]model.MessageRecipient)
 
@@ -363,10 +373,10 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 
 		resultList = append(resultList, item1)
 	}
+
 	data, err := json.Marshal(resultList)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
 	}
-
 	return l.HTTPResponseSuccessJSON(data)
 }

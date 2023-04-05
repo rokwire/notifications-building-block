@@ -152,14 +152,14 @@ func (s *servicesImpl) SendMail(toEmail string, subject string, body string) err
 
 // Admin exposes APIs for the driver adapters
 type Admin interface {
-	AdminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[string][]interface{}, error)
+	AdminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[int][]interface{}, error)
 }
 
 type adminImpl struct {
 	app *Application
 }
 
-func (s *adminImpl) AdminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[string][]interface{}, error) {
+func (s *adminImpl) AdminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[int][]interface{}, error) {
 	return s.app.adminGetMessagesStats(orgID, appID, adminAccountID, source, offset, limit, order)
 }
 
