@@ -65,8 +65,10 @@ _client_req_user:
 ## ADMIN section
 
 ### responses
-_admin_res_GetMessagesStats:
+_admin_res_GetMessagesStatsItem:
   $ref: "./apis/admin/get-messages-stats/response/Item.yaml"
+_admin_res_GetMessagesStatsSentByItem:
+  $ref: "./apis/admin/get-messages-stats/response/SentByItem.yaml"
 
 ## end ADMIN section
 

@@ -1002,7 +1002,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/_admin_res_GetMessagesStats'
+                  $ref: '#/components/schemas/_admin_res_GetMessagesStatsItem'
         '400':
           description: Bad request
         '401':
@@ -1531,7 +1531,7 @@ components:
       properties:
         notifications_disabled:
           type: boolean
-    _admin_res_GetMessagesStats:
+    _admin_res_GetMessagesStatsItem:
       required:
         - date_created
         - sent_by
@@ -1545,20 +1545,22 @@ components:
         time:
           type: string
         sent_by:
-          required:
-            - account_id
-          type: object
-          properties:
-            account_id:
-              type: string
-            name:
-              type: string
+          $ref: '#/components/schemas/_admin_res_GetMessagesStatsSentByItem'
         message:
           type: string
         recipients_count:
           type: number
         read_count:
           type: number
+    _admin_res_GetMessagesStatsSentByItem:
+      required:
+        - account_id
+      type: object
+      properties:
+        account_id:
+          type: string
+        name:
+          type: string
     _bbs_req_AddRecipients:
       type: array
       items:

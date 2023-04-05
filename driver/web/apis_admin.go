@@ -331,7 +331,7 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 	}
 
 	//prepare the result
-	resultList := []Def.AdminResGetMessagesStats{}
+	resultList := []Def.AdminResGetMessagesStatsItem{}
 
 	//verify that we iterate by key order - map is unsorted
 	var keys []int
@@ -350,10 +350,7 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 		time := message.Time.UTC().Format(time.RFC3339Nano)
 
 		sender := message.Sender.User
-		sentByItem := struct {
-			AccountId string  `json:"account_id"`
-			Name      *string `json:"name,omitempty"`
-		}{
+		sentByItem := Def.AdminResGetMessagesStatsSentByItem{
 			AccountId: sender.UserID,
 			Name:      &sender.Name,
 		}
@@ -368,7 +365,7 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 			}
 		}
 
-		item1 := Def.AdminResGetMessagesStats{DateCreated: dateCreated, Time: &time, SentBy: sentByItem,
+		item1 := Def.AdminResGetMessagesStatsItem{DateCreated: dateCreated, Time: &time, SentBy: sentByItem,
 			Message: body, RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
 
 		resultList = append(resultList, item1)

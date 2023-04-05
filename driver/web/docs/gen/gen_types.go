@@ -93,17 +93,20 @@ type User struct {
 	UserId                *string        `json:"user_id,omitempty"`
 }
 
-// AdminResGetMessagesStats defines model for _admin_res_GetMessagesStats.
-type AdminResGetMessagesStats struct {
-	DateCreated     string  `json:"date_created"`
-	Message         string  `json:"message"`
-	ReadCount       float32 `json:"read_count"`
-	RecipientsCount float32 `json:"recipients_count"`
-	SentBy          struct {
-		AccountId string  `json:"account_id"`
-		Name      *string `json:"name,omitempty"`
-	} `json:"sent_by"`
-	Time *string `json:"time,omitempty"`
+// AdminResGetMessagesStatsItem defines model for _admin_res_GetMessagesStatsItem.
+type AdminResGetMessagesStatsItem struct {
+	DateCreated     string                             `json:"date_created"`
+	Message         string                             `json:"message"`
+	ReadCount       float32                            `json:"read_count"`
+	RecipientsCount float32                            `json:"recipients_count"`
+	SentBy          AdminResGetMessagesStatsSentByItem `json:"sent_by"`
+	Time            *string                            `json:"time,omitempty"`
+}
+
+// AdminResGetMessagesStatsSentByItem defines model for _admin_res_GetMessagesStatsSentByItem.
+type AdminResGetMessagesStatsSentByItem struct {
+	AccountId string  `json:"account_id"`
+	Name      *string `json:"name,omitempty"`
 }
 
 // BbsReqAddRecipients defines model for _bbs_req_AddRecipients.
