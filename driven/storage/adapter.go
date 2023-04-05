@@ -964,9 +964,9 @@ func (sa Adapter) FindMessagesByParams(orgID string, appID string, senderType st
 		findOptions.SetSkip(int64(*offset))
 	}
 	//sort
-	sortValue := 1 //by default -  "asc"
+	sortValue := -1 //by default -  "asc"
 	if order != nil && *order == "desc" {
-		sortValue = -1
+		sortValue = 1
 	}
 	findOptions.SetSort(bson.D{primitive.E{Key: "date_created", Value: sortValue}})
 
