@@ -208,6 +208,18 @@ type GetApiAdminMessagesParams struct {
 	EndDate string `json:"end_date"`
 }
 
+// GetApiAdminMessagesStatsSourceSourceParams defines parameters for GetApiAdminMessagesStatsSourceSource.
+type GetApiAdminMessagesStatsSourceSourceParams struct {
+	// offset
+	Offset *string `json:"offset,omitempty"`
+
+	// limit
+	Limit *string `json:"limit,omitempty"`
+
+	// order - Possible values: asc, desc. Default: desc
+	Order *string `json:"order,omitempty"`
+}
+
 // PutApiAdminTopicJSONBody defines parameters for PutApiAdminTopic.
 type PutApiAdminTopicJSONBody = Topic
 

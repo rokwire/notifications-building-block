@@ -970,6 +970,30 @@ paths:
           explode: false
           schema:
             type: string
+        - name: offset
+          in: query
+          description: offset
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: limit
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: 'order - Possible values: asc, desc. Default: desc'
+          required: false
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
         '200':
           description: Success
