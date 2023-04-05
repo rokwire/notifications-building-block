@@ -14,7 +14,7 @@
 
 package core
 
-import "log"
+import "notifications/core/model"
 
 func (app *Application) adminGetMessagesStats(orgID string, appID string, adminAccountID string, source string, offset *int64, limit *int64, order *string) (map[int][]interface{}, error) {
 	//1. find the messages
@@ -41,25 +41,19 @@ func (app *Application) adminGetMessagesStats(orgID string, appID string, adminA
 		return nil, err
 	}
 
-	log.Println(allMessagesRecipients)
-
-	//context.Context
-	//FindMessagesByParams(ctx context.Context, orgID string, appID string, senderType string, senderAccountID *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
-	/*
-		now := time.Now()
-
-		message1 := model.Message{ID: "1", DateCreated: &now, Time: now, Body: "Body 1", Sender: model.Sender{Type: "administrative", User: &model.CoreAccountRef{UserID: "100", Name: "Ime 1"}}}
-		recps1 := []model.MessageRecipient{{ID: "1", Read: true}} //do not put nil
-		sect1 := []interface{}{message1, recps1}
-
-		message2 := model.Message{ID: "2", DateCreated: &now, Time: now, Body: "Body 2", Sender: model.Sender{Type: "administrative", User: &model.CoreAccountRef{UserID: "200", Name: "Ime 2"}}}
-		recps2 := []model.MessageRecipient{{ID: "2", Read: false}}
-		sect2 := []interface{}{message2, recps2} //do not put nil */
-
+	//3. construct the result
 	result := map[int][]interface{}{}
-	//result[1] = sect1
-	//result[2] = sect2
+	for i, message := range messages {
 
-	//TODO do not return nil
+		//find the recipients for the message
+		messageRecipients := []model.MessageRecipient{}
+		for _, recipient := range allMessagesRecipients {
+			if recipient.MessageID == message.ID {
+				messageRecipients = append(messageRecipients, recipient)
+			}
+		}
+
+		result[i] = []interface{}{message, messageRecipients}
+	}
 	return result, nil
 }
