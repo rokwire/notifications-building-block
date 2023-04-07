@@ -97,10 +97,12 @@ type User struct {
 type AdminResGetMessagesStatsItem struct {
 	DateCreated     string                             `json:"date_created"`
 	Message         string                             `json:"message"`
+	MessageId       string                             `json:"message_id"`
 	ReadCount       float32                            `json:"read_count"`
 	RecipientsCount float32                            `json:"recipients_count"`
 	SentBy          AdminResGetMessagesStatsSentByItem `json:"sent_by"`
 	Time            *string                            `json:"time,omitempty"`
+	Title           string                             `json:"title"`
 }
 
 // AdminResGetMessagesStatsSentByItem defines model for _admin_res_GetMessagesStatsSentByItem.

@@ -1533,19 +1533,25 @@ components:
           type: boolean
     _admin_res_GetMessagesStatsItem:
       required:
+        - message_id
         - date_created
         - sent_by
+        - title
         - message
         - recipients_count
         - read_count
       type: object
       properties:
+        message_id:
+          type: string
         date_created:
           type: string
         time:
           type: string
         sent_by:
           $ref: '#/components/schemas/_admin_res_GetMessagesStatsSentByItem'
+        title:
+          type: string
         message:
           type: string
         recipients_count:
