@@ -346,6 +346,7 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 		messageRecipients := v[1].([]model.MessageRecipient)
 
 		//create response item
+		messageID := message.ID
 		dateCreated := message.DateCreated.UTC().Format(time.RFC3339Nano)
 		time := message.Time.UTC().Format(time.RFC3339Nano)
 
@@ -354,6 +355,7 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 			AccountId: sender.UserID,
 			Name:      &sender.Name,
 		}
+		title := message.Subject
 		body := message.Body
 		recipientsCount := len(messageRecipients)
 
@@ -365,10 +367,11 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 			}
 		}
 
-		item1 := Def.AdminResGetMessagesStatsItem{DateCreated: dateCreated, Time: &time, SentBy: sentByItem,
-			Message: body, RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
+		item := Def.AdminResGetMessagesStatsItem{MessageId: messageID,
+			DateCreated: dateCreated, Time: &time, SentBy: sentByItem, Title: title, Message: body,
+			RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
 
-		resultList = append(resultList, item1)
+		resultList = append(resultList, item)
 	}
 
 	data, err := json.Marshal(resultList)
