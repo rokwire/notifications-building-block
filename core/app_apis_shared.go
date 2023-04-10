@@ -128,7 +128,7 @@ func (app *Application) sharedHandleInputMessage(context storage.TransactionCont
 	dateCreated := time.Now()
 	message := model.Message{OrgID: im.OrgID, AppID: im.AppID, ID: *messageID, Priority: im.Priority, Time: im.Time,
 		Subject: im.Subject, Sender: im.Sender, Body: im.Body, Data: im.Data, RecipientsCriteriaList: im.RecipientsCriteriaList,
-		Topic: im.Topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
+		RecipientAccountCriteria: im.RecipientAccountCriteria, Topic: im.Topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
 
 	return &message, recipients, nil
 }
@@ -224,7 +224,7 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 	}
 
 	// recipients from criteria
-	if (recipientsCriteriaList != nil && len(recipientAccountCriteria) > 0) && checkCriteria {
+	if len(recipientsCriteriaList) > 0 && checkCriteria {
 		criteriaUsers, err := app.storage.GetUsersByRecipientCriteriasWithContext(context,
 			orgID, appID, recipientsCriteriaList)
 		if err != nil {
