@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.1] - 2023-04-10
 ### Fixed
 - Error sending admin message with no recipient criteria [#158](https://github.com/rokwire/notifications-building-block/issues/158)
 
