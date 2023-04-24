@@ -1538,6 +1538,7 @@ components:
         - sent_by
         - title
         - message
+        - message_data
         - recipients_count
         - read_count
       type: object
@@ -1554,6 +1555,11 @@ components:
           type: string
         message:
           type: string
+        message_data:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
         recipients_count:
           type: number
         read_count:
