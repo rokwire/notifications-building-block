@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Rokwire Notification Building Block API
   description: Notification Building Block API Documentation
-  version: 1.15.0
+  version: 1.16.0
 servers:
   - url: 'https://api.rokwire.illinois.edu/notifications'
     description: Production server
@@ -1538,6 +1538,7 @@ components:
         - sent_by
         - title
         - message
+        - message_data
         - recipients_count
         - read_count
       type: object
@@ -1554,6 +1555,11 @@ components:
           type: string
         message:
           type: string
+        message_data:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
         recipients_count:
           type: number
         read_count:

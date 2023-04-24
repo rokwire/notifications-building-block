@@ -367,7 +367,9 @@ func (h AdminApisHandler) GetMessagesStats(l *logs.Log, r *http.Request, claims 
 			}
 		}
 
-		item := Def.AdminResGetMessagesStatsItem{MessageId: messageID,
+		messageData := message.Data
+
+		item := Def.AdminResGetMessagesStatsItem{MessageId: messageID, MessageData: &messageData,
 			DateCreated: dateCreated, Time: &time, SentBy: sentByItem, Title: title, Message: body,
 			RecipientsCount: float32(recipientsCount), ReadCount: float32(readCount)}
 

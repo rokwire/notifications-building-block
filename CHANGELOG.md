@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2023-04-24
+### Added
+- Add message data in the response for message stats [#160](https://github.com/rokwire/notifications-building-block/issues/160)
+
+## [1.15.1] - 2023-04-10
+### Fixed
+- Error sending admin message with no recipient criteria [#158](https://github.com/rokwire/notifications-building-block/issues/158)
+
 ## [1.15.0] - 2023-04-07
 ### Changed
 - Update the get messages stats Admin API [#156](https://github.com/rokwire/notifications-building-block/issues/156)
