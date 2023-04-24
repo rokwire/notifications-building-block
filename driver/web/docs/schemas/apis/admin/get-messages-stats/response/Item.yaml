@@ -20,6 +20,8 @@ properties:
     type: string
   message:
     type: string
+  message_data:
+    $ref: "MessageData.yaml"
   recipients_count:
     type: number
   read_count:
