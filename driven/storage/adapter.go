@@ -794,6 +794,7 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 		CalculatedRecipientsCount *int                      `bson:"calculated_recipients_count"`
 		DateCreated               *time.Time                `bson:"date_created"`
 		DateUpdated               *time.Time                `bson:"date_updated"`
+		Time                      time.Time                 `bson:"time"`
 
 		//recipient
 		OrgID     string `bson:"org_id"`
@@ -887,7 +888,7 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 			Sender: item.Sender, Body: item.Body, Data: item.Data, Recipients: item.Recipients,
 			RecipientsCriteriaList: item.RecipientsCriteriaList, RecipientAccountCriteria: item.RecipientAccountCriteria,
 			Topic: item.Topic, CalculatedRecipientsCount: item.CalculatedRecipientsCount, DateCreated: item.DateCreated,
-			DateUpdated: item.DateUpdated}
+			DateUpdated: item.DateUpdated, Time: item.Time}
 
 		recipient := model.MessageRecipient{OrgID: item.OrgID, AppID: item.AppID,
 			ID: item.ID, UserID: item.UserID, MessageID: item.MessageID, Mute: item.Mute,
