@@ -814,7 +814,7 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 		}},
 		{"$unwind": "$message"},
 		{"$project": bson.M{"org_id": 1, "app_id": 1, "_id": 1,
-			"user_id": 1, "message_id": 1, "mute": 1, "read": 1,
+			"user_id": 1, "message_id": 1, "mute": 1, "read": 1, "time": "$message.time",
 			"priority": "$message.priority", "subject": "$message.subject", "sender": "$message.sender",
 			"body": "$message.body", "data": "$message.data", "recipients": "$message.recipients",
 			"recipients_criteria_list": "$message.recipients_criteria_list", "recipient_account_criteria": "$message.recipient_account_criteria",
@@ -843,6 +843,8 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 	if filterTopic != nil {
 		pipeline = append(pipeline, bson.M{"$match": bson.M{"topic": *filterTopic}})
 	}
+
+	pipeline = append(pipeline, bson.M{"$match": bson.M{"time": bson.M{"$lte": time.Now()}}})
 
 	if startDateEpoch != nil {
 		seconds := *startDateEpoch / 1000
