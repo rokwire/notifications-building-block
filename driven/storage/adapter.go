@@ -794,6 +794,7 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 		CalculatedRecipientsCount *int                      `bson:"calculated_recipients_count"`
 		DateCreated               *time.Time                `bson:"date_created"`
 		DateUpdated               *time.Time                `bson:"date_updated"`
+		Time                      time.Time                 `bson:"time"`
 
 		//recipient
 		OrgID     string `bson:"org_id"`
@@ -814,7 +815,7 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 		}},
 		{"$unwind": "$message"},
 		{"$project": bson.M{"org_id": 1, "app_id": 1, "_id": 1,
-			"user_id": 1, "message_id": 1, "mute": 1, "read": 1,
+			"user_id": 1, "message_id": 1, "mute": 1, "read": 1, "time": "$message.time",
 			"priority": "$message.priority", "subject": "$message.subject", "sender": "$message.sender",
 			"body": "$message.body", "data": "$message.data", "recipients": "$message.recipients",
 			"recipients_criteria_list": "$message.recipients_criteria_list", "recipient_account_criteria": "$message.recipient_account_criteria",
@@ -843,6 +844,8 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 	if filterTopic != nil {
 		pipeline = append(pipeline, bson.M{"$match": bson.M{"topic": *filterTopic}})
 	}
+
+	pipeline = append(pipeline, bson.M{"$match": bson.M{"time": bson.M{"$lte": time.Now()}}})
 
 	if startDateEpoch != nil {
 		seconds := *startDateEpoch / 1000
@@ -885,7 +888,7 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 			Sender: item.Sender, Body: item.Body, Data: item.Data, Recipients: item.Recipients,
 			RecipientsCriteriaList: item.RecipientsCriteriaList, RecipientAccountCriteria: item.RecipientAccountCriteria,
 			Topic: item.Topic, CalculatedRecipientsCount: item.CalculatedRecipientsCount, DateCreated: item.DateCreated,
-			DateUpdated: item.DateUpdated}
+			DateUpdated: item.DateUpdated, Time: item.Time}
 
 		recipient := model.MessageRecipient{OrgID: item.OrgID, AppID: item.AppID,
 			ID: item.ID, UserID: item.UserID, MessageID: item.MessageID, Mute: item.Mute,

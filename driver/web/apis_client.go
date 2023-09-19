@@ -263,6 +263,7 @@ type getUserMessageResponse struct {
 	CalculatedRecipientsCount *int                      `json:"calculated_recipients_count"`
 	DateCreated               *time.Time                `json:"date_created"`
 	DateUpdated               *time.Time                `json:"date_updated"`
+	Time                      time.Time                 `json:"time"`
 
 	Mute bool `json:"mute"`
 	Read bool `json:"read"`
@@ -299,7 +300,7 @@ func (h ApisHandler) GetUserMessages(l *logs.Log, r *http.Request, claims *token
 			RecipientsCriteriaList: message.RecipientsCriteriaList, RecipientAccountCriteria: message.RecipientAccountCriteria,
 			Topic: message.Topic, CalculatedRecipientsCount: message.CalculatedRecipientsCount,
 			DateCreated: message.DateCreated, DateUpdated: message.DateUpdated,
-			Mute: item.Mute, Read: item.Read}
+			Mute: item.Mute, Read: item.Read, Time: message.Time}
 		result[i] = respItem
 	}
 	data, err := json.Marshal(result)
