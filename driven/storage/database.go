@@ -211,6 +211,16 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["time_1"] == nil {
+		err := messages.AddIndex(
+			bson.D{
+				primitive.E{Key: "time", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	//add sender type index
 	err = messages.AddIndex(bson.D{primitive.E{Key: "sender.type", Value: 1}}, false)
 	if err != nil {
