@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Rokwire Notification Building Block API
   description: Notification Building Block API Documentation
-  version: 1.13.0
+  version: 1.19.0
 servers:
   - url: 'https://api.rokwire.illinois.edu/notifications'
     description: Production server
@@ -66,15 +66,22 @@ paths:
   /api/admin/message:
     $ref: "./resources/admin/message/message.yaml"
   /api/admin/messages{id}:
-    $ref: "./resources/admin/message/messages-id.yaml"   
+    $ref: "./resources/admin/message/messages-id.yaml"
+  /api/admin/messages/stats/source/{source}:
+    $ref: "./resources/admin/messages/stats/source.yaml"    
 
   #BBs
+  /api/bbs/messages:
+    $ref: "./resources/bbs/messages.yaml"
+  /api/bbs/messages/{message-id}/recipients:
+    $ref: "./resources/bbs/message-id/recipients.yaml"
   /api/bbs/message:
     $ref: "./resources/bbs/message.yaml"
   /api/bbs/{id}:
     $ref: "./resources/bbs/message-id.yaml"
   /api/bbs/mail:
     $ref: "./resources/bbs/mail.yaml"
+
     
 components:
   securitySchemes:

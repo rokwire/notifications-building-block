@@ -5,6 +5,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.19.0] - 2023-10-26
+## [1.18.0] - 2023-09-20
+### Changed
+- Use message.time field as a primary delivery time indicator [#168](https://github.com/rokwire/notifications-building-block/issues/168)
+
+## [1.17.0] - 2023-09-19
+### Changed
+ - Updated docker container and libraries due to golang vulnerabilities along with ticket #166 [#166](https://github.com/rokwire/notifications-building-block/issues/166) 
+### Fixed
+- Follow exact notifications date & time [#166](https://github.com/rokwire/notifications-building-block/issues/166)
+### Added
+- Prepare for deployment in OpenShift [#163](https://github.com/rokwire/notifications-building-block/issues/163)
+
+## [1.16.0] - 2023-04-24
+### Added
+- Add message data in the response for message stats [#160](https://github.com/rokwire/notifications-building-block/issues/160)
+
+## [1.15.1] - 2023-04-10
+### Fixed
+- Error sending admin message with no recipient criteria [#158](https://github.com/rokwire/notifications-building-block/issues/158)
+
+## [1.15.0] - 2023-04-07
+### Changed
+- Update the get messages stats Admin API [#156](https://github.com/rokwire/notifications-building-block/issues/156)
+
+## [1.14.0] - 2023-04-05
+### Added
+- Expose messages statistics Admin API [#153](https://github.com/rokwire/notifications-building-block/issues/153)
+- Add and delete recepient to message [#147](https://github.com/rokwire/notifications-building-block/issues/147)
+- Expose create and delete many messages BBs APIs [#148](https://github.com/rokwire/notifications-building-block/issues/148)
 
 ## [1.13.0] - 2023-02-21
 ### Added
