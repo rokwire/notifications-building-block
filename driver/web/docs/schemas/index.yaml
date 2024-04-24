@@ -1,4 +1,4 @@
-# application
+# items
 AppPlatform:
   $ref: "./application/AppPlatform.yaml"
 AppVersion:
@@ -13,6 +13,8 @@ FirebaseToken:
   $ref: "./application/FirebaseToken.yaml"
 Message:
   $ref: "./application/Message.yaml"
+MessageRecipient:
+  $ref: "./application/MessageRecipient.yaml"
 Recipient:
   $ref: "./application/Recipients.yaml"
 RecipientCriteria:
@@ -26,6 +28,27 @@ Topic:
 User:
   $ref: "./application/User.yaml"
 
+##### APIs requests and responses - they are at bottom
+
+## SHARED requests and responses
+
+### requests
+_shared_req_CreateMessages:
+  $ref: "./apis/shared/requests/create-messages/Request.yaml"
+_shared_req_CreateMessage:
+  $ref: "./apis/shared/requests/create-message/Request.yaml"
+_shared_req_CreateMessage_InputMessageRecipient:
+  $ref: "./apis/shared/requests/create-message/InputMessageRecipient.yaml"
+_shared_req_CreateMessage_InputRecipientCriteria:
+  $ref: "./apis/shared/requests/create-message/InputRecipientCriteria.yaml"
+
+### responses
+
+## end SHARED requests and responses
+
+## SERVICES section
+
+### requests
 _client_req_mail:
   $ref: "./apis/mail/request/Request.yaml"
 _client_req_message:
@@ -37,17 +60,24 @@ _client_req_token:
 _client_req_user:
   $ref: "./apis/user/request/Request.yaml"
 
+## end SERVICES section
 
-##### APIs requests and responses - they are at bottom
-
-## SHARED requests and responses
-
-### requests
-_shared_req_CreateMessage:
-  $ref: "./apis/shared/requests/create-message/Request.yaml"
-_shared_req_CreateMessage_InputMessageRecipient:
-  $ref: "./apis/shared/requests/create-message/InputMessageRecipient.yaml"
-_shared_req_CreateMessage_InputRecipientCriteria:
-  $ref: "./apis/shared/requests/create-message/InputRecipientCriteria.yaml"
+## ADMIN section
 
 ### responses
+_admin_res_GetMessagesStatsItem:
+  $ref: "./apis/admin/get-messages-stats/response/Item.yaml"
+_admin_res_GetMessagesStatsSentByItem:
+  $ref: "./apis/admin/get-messages-stats/response/SentByItem.yaml"
+
+## end ADMIN section
+
+## BBs section
+
+### requests
+_bbs_req_AddRecipients:
+  $ref: "./apis/bbs/add-recipients-to-message/request/Request.yaml"
+_bbs_req_RemoveRecipients:
+  $ref: "./apis/bbs/remove-recipients-from-message/request/Request.yaml"
+
+## end BBs section

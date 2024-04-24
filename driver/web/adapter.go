@@ -113,11 +113,20 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/message", we.wrapFunc(we.adminApisHandler.UpdateMessage, we.auth.admin.Permissions)).Methods("PUT")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.GetMessage, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.DeleteMessage, we.auth.admin.Permissions)).Methods("DELETE")
+	adminRouter.HandleFunc("/messages/stats/source/{source}", we.wrapFunc(we.adminApisHandler.GetMessagesStats, we.auth.admin.Permissions)).Methods("GET")
 
 	// BB APIs
 	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()
+	bbsRouter.HandleFunc("/messages", we.wrapFunc(we.bbsApisHandler.SendMessages, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/messages", we.wrapFunc(we.bbsApisHandler.DeleteMessages, we.auth.bbs.Permissions)).Methods("DELETE")
+	bbsRouter.HandleFunc("/messages/{message-id}/recipients", we.wrapFunc(we.bbsApisHandler.AddRecipients, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/messages/{message-id}/recipients", we.wrapFunc(we.bbsApisHandler.DeleteRecipients, we.auth.bbs.Permissions)).Methods("DELETE")
+
+	//deprecated
 	bbsRouter.HandleFunc("/message", we.wrapFunc(we.bbsApisHandler.SendMessage, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/message/{id}", we.wrapFunc(we.bbsApisHandler.DeleteMessage, we.auth.bbs.Permissions)).Methods("DELETE")
+	//
+
 	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))

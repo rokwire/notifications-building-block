@@ -1,0 +1,58 @@
+get:
+  tags:
+  - Admin
+  summary: Gets messages stats
+  description: |
+     Gets messages stats
+
+     **Auth:** Requires admin access token with `get_messages_stats` permission for "me" source and `get_messages_stats_all` for "all" source
+  security:
+    - bearerAuth: []
+  parameters:
+    - name: source
+      in: path
+      description: source - all or me
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+    - name: offset
+      in: query
+      description: offset
+      required: false
+      style: simple
+      explode: false
+      schema:
+        type: string
+    - name: limit
+      in: query
+      description: limit
+      required: false
+      style: simple
+      explode: false
+      schema:
+        type: string
+    - name: order
+      in: query
+      description: "order - Possible values: asc, desc. Default: asc"
+      required: false
+      style: simple
+      explode: false
+      schema:
+        type: string
+  responses:
+    200:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "../../../../schemas/apis/admin/get-messages-stats/response/Item.yaml"
+    400:
+      description: Bad request
+    401:
+      description: Unauthorized
+    500:
+      description: Internal error
