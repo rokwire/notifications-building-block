@@ -27,8 +27,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/gorilla/mux"
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
@@ -83,7 +83,7 @@ func (we Adapter) Start() {
 	mainRouter.HandleFunc("/int/mail", we.wrapFunc(we.internalApisHandler.SendMail, we.auth.internal)).Methods("POST")
 
 	// Client APIs
-	mainRouter.HandleFunc("/token", we.wrapFunc(we.apisHandler.StoreFirebaseToken, we.auth.client.Standard)).Methods("POST")
+	mainRouter.HandleFunc("/token", we.wrapFunc(we.apisHandler.StoreToken, we.auth.client.Standard)).Methods("POST")
 	mainRouter.HandleFunc("/user", we.wrapFunc(we.apisHandler.GetUser, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/user", we.wrapFunc(we.apisHandler.UpdateUser, we.auth.client.Standard)).Methods("PUT")
 	mainRouter.HandleFunc("/user", we.wrapFunc(we.apisHandler.DeleteUser, we.auth.client.Standard)).Methods("DELETE")
@@ -100,6 +100,7 @@ func (we Adapter) Start() {
 	//mainRouter.HandleFunc("/topic/{topic}/messages", we.wrapFunc(we.apisHandler.GetTopicMessages, we.auth.client.Standard)).Methods("GET")
 	mainRouter.HandleFunc("/topic/{topic}/subscribe", we.wrapFunc(we.apisHandler.Subscribe, we.auth.client.Standard)).Methods("POST")
 	mainRouter.HandleFunc("/topic/{topic}/unsubscribe", we.wrapFunc(we.apisHandler.Unsubscribe, we.auth.client.Standard)).Methods("POST")
+	mainRouter.HandleFunc("/push-subscription", we.wrapFunc(we.apisHandler.PushSubscription, we.auth.client.Standard)).Methods("POST")
 
 	// Admin APIs
 	adminRouter := mainRouter.PathPrefix("/admin").Subrouter()
@@ -114,6 +115,11 @@ func (we Adapter) Start() {
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.GetMessage, we.auth.admin.Permissions)).Methods("GET")
 	adminRouter.HandleFunc("/message/{id}", we.wrapFunc(we.adminApisHandler.DeleteMessage, we.auth.admin.Permissions)).Methods("DELETE")
 	adminRouter.HandleFunc("/messages/stats/source/{source}", we.wrapFunc(we.adminApisHandler.GetMessagesStats, we.auth.admin.Permissions)).Methods("GET")
+	adminRouter.HandleFunc("/configs/{id}", we.wrapFunc(we.adminApisHandler.GetConfig, we.auth.admin.Permissions)).Methods("GET")
+	adminRouter.HandleFunc("/configs", we.wrapFunc(we.adminApisHandler.GetConfigs, we.auth.admin.Permissions)).Methods("GET")
+	adminRouter.HandleFunc("/configs", we.wrapFunc(we.adminApisHandler.CreateConfig, we.auth.admin.Permissions)).Methods("POST")
+	adminRouter.HandleFunc("/configs/{id}", we.wrapFunc(we.adminApisHandler.UpdateConfig, we.auth.admin.Permissions)).Methods("PUT")
+	adminRouter.HandleFunc("/configs/{id}", we.wrapFunc(we.adminApisHandler.DeleteConfig, we.auth.admin.Permissions)).Methods("DELETE")
 
 	// BB APIs
 	bbsRouter := mainRouter.PathPrefix("/bbs").Subrouter()

@@ -21,7 +21,7 @@ import (
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
 
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
 )

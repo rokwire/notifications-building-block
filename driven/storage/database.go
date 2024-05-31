@@ -43,6 +43,7 @@ type database struct {
 	messagesRecipients *collectionWrapper
 	queue              *collectionWrapper
 	queueData          *collectionWrapper
+	configs  *collectionWrapper
 
 	appVersions  *collectionWrapper
 	appPlatforms *collectionWrapper
@@ -133,6 +134,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	configs := &collectionWrapper{database: m, coll: db.Collection("configs")}
+	err = m.applyConfigsChecks(configs)
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -146,9 +153,11 @@ func (m *database) start() error {
 	m.appPlatforms = appPlatforms
 	m.appVersions = appVersions
 	m.firebaseConfigurations = firebaseConfigurations
+	m.configs = configs
 
 	go m.firebaseConfigurations.Watch(nil)
 	go m.queueData.Watch(nil)
+	go m.configs.Watch(nil)
 
 	return nil
 }
@@ -466,6 +475,18 @@ func (m *database) applyFirebaseConfigurationsChecks(fc *collectionWrapper) erro
 	}
 
 	log.Println("apply firebase configurations passed")
+	return nil
+}
+
+func (m *database) applyConfigsChecks(configs *collectionWrapper) error {
+	log.Println("apply configs checks.....")
+
+	err := configs.AddIndex(bson.D{primitive.E{Key: "type", Value: 1}, primitive.E{Key: "app_id", Value: 1}, primitive.E{Key: "org_id", Value: 1}}, true)
+	if err != nil {
+		return err
+	}
+
+	m.logger.Info("apply configs passed")
 	return nil
 }
 

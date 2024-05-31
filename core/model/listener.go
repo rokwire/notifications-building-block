@@ -14,11 +14,11 @@
 
 package model
 
-// TokenInfo wraps the input json while registering token
-type TokenInfo struct {
-	PreviousToken *string `json:"previous_token" bson:"previous_token"`
-	Token         *string `json:"token" bson:"token"`
-	AppVersion    *string `json:"app_version" bson:"app_version"`
-	AppPlatform   *string `json:"app_platform" bson:"app_platform"`
-	TokenType     *string `json:"token_type" bson:"token_type,omitempty"`
-} // @name TokenInfo
+// DefaultStorageListener default storage listener implementation
+type DefaultStorageListener struct{}
+
+// OnConfigsUpdated notifies that the configs collection has been updated
+func (d *DefaultStorageListener) OnConfigsUpdated() {}
+
+// OnExamplesUpdated notifies that the examples collection has been updated
+func (d *DefaultStorageListener) OnExamplesUpdated() {}

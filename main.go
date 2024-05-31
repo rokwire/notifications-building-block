@@ -18,6 +18,7 @@ import (
 	"log"
 	"notifications/core"
 	"notifications/core/model"
+	"notifications/driven/airship"
 	corebb "notifications/driven/core"
 	"notifications/driven/firebase"
 	"notifications/driven/mailer"
@@ -27,9 +28,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang-jwt/jwt"
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/sigauth"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
@@ -69,15 +68,21 @@ func main() {
 	}
 
 	// firebase adapter
-	firebaseConfs, err := storageAdapter.LoadFirebaseConfigurations()
+	// firebaseConfs, err := storageAdapter.LoadFirebaseConfigurations()
+	_, err = storageAdapter.LoadFirebaseConfigurations()
 	if err != nil {
 		log.Fatal("Error loading the firebase confogirations from the storage - " + err.Error())
 	}
 	firebaseAdapter := firebase.NewFirebaseAdapter()
-	err = firebaseAdapter.Start(firebaseConfs)
-	if err != nil {
-		log.Fatal("Cannot start the Firebase adapter - " + err.Error())
-	}
+	// err = firebaseAdapter.Start(firebaseConfs)
+	// if err != nil {
+	// 	log.Fatal("Cannot start the Firebase adapter - " + err.Error())
+	// }
+
+	//airship adapter
+	airshipHost := getEnvKey("AIRSHIP_HOST", true)
+	airshipAdapter := airship.NewAirshipAdapter(airshipHost)
+	//mastadon adapter
 
 	smtpHost := getEnvKey("SMTP_HOST", true)
 	smtpPort := getEnvKey("SMTP_PORT", true)
@@ -100,40 +105,40 @@ func main() {
 		AuthBaseURL: coreBBHost,
 	}
 
-	serviceRegLoader, err := authservice.NewRemoteServiceRegLoader(&authService, []string{"auth"})
+	serviceRegLoader, err := authservice.NewRemoteServiceRegLoader(&authService, []string{"groups", "notifications"})
 	if err != nil {
-		log.Fatalf("Error initializing remote service registration loader: %v", err)
+		logger.Fatalf("Error initializing remote service registration loader: %v", err)
 	}
 
-	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
+	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader, !strings.HasPrefix(host, "http://localhost"))
 	if err != nil {
-		log.Fatalf("Error initializing service registration manager: %v", err)
+		logger.Fatalf("Error initializing service registration manager: %v", err)
 	}
 
 	//core adapter
-	serviceAccountID := getEnvKey("NOTIFICATIONS_SERVICE_ACCOUNT_ID", false)
+	// serviceAccountID := getEnvKey("NOTIFICATIONS_SERVICE_ACCOUNT_ID", false)
 	privKeyRaw := getEnvKey("NOTIFICATIONS_PRIV_KEY", true)
 	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
-	if err != nil {
-		log.Fatalf("Error parsing priv key: %v", err)
-	}
-	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false)
-	if err != nil {
-		log.Fatalf("Error initializing signature auth: %v", err)
-	}
+	// privKey, err := keys.NewPrivKey(keys.RS256, privKeyRaw)
+	// if err != nil {
+	// 	log.Fatalf("Failed to parse auth priv key: %v", err)
+	// }
+	// signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false, false)
+	// if err != nil {
+	// 	log.Fatalf("Error initializing signature auth: %v", err)
+	// }
 
-	serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
-	if err != nil {
-		log.Fatalf("Error initializing remote service account loader: %v", err)
-	}
+	// serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
+	// if err != nil {
+	// 	log.Fatalf("Error initializing remote service account loader: %v", err)
+	// }
 
-	serviceAccountManager, err := authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
-	if err != nil {
-		log.Fatalf("Error initializing service account manager: %v", err)
-	}
+	// serviceAccountManager, err := authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
+	// if err != nil {
+	// 	log.Fatalf("Error initializing service account manager: %v", err)
+	// }
 
-	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
+	coreAdapter := corebb.NewCoreAdapter(coreBBHost, nil)
 
 	config := &model.Config{
 		InternalAPIKey:          internalAPIKey,
@@ -142,7 +147,7 @@ func main() {
 	}
 
 	// application
-	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter, logger, coreAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter, logger, coreAdapter, airshipAdapter)
 	application.Start()
 
 	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, logger)

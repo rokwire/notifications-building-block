@@ -21,9 +21,12 @@ import (
 	"notifications/core/model"
 	"notifications/utils"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/rokwire/logging-library-go/v2/logs"
+	"golang.org/x/sync/syncmap"
 
 	"github.com/google/uuid"
 	"github.com/rokwire/logging-library-go/v2/errors"
@@ -37,11 +40,21 @@ import (
 // Adapter implements the Storage interface
 type Adapter struct {
 	db *database
+
+	cachedConfigs *syncmap.Map
+	configsLock   *sync.RWMutex
 }
 
 // Start starts the storage
 func (sa *Adapter) Start() error {
 	err := sa.db.start()
+
+	//cache the configs
+	err = sa.cacheConfigs()
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionCache, model.TypeConfig, nil, err)
+	}
+
 	return err
 }
 
@@ -90,9 +103,12 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 	}
 	timeoutMS := time.Millisecond * time.Duration(timeout)
 
+	cachedConfigs := &syncmap.Map{}
+	configsLock := &sync.RWMutex{}
+
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS,
 		multiTenancyOrgID: multiTenancyOrgID, multiTenancyAppID: multiTenancyAppID, logger: logger}
-	return &Adapter{db: db}
+	return &Adapter{db: db, cachedConfigs: cachedConfigs, configsLock: configsLock}
 }
 
 // LoadFirebaseConfigurations loads all firebase configurations
@@ -124,16 +140,26 @@ func (sa Adapter) FindUsersByIDs(usersIDs []string) ([]model.User, error) {
 
 // FindUserByToken finds firebase token
 func (sa Adapter) FindUserByToken(orgID string, appID string, token string) (*model.User, error) {
-	return sa.findUserByTokenWithContext(context.Background(), orgID, appID, token)
+	return sa.findUserByTokenWithContext(context.Background(), orgID, appID, token, nil)
 }
 
-func (sa Adapter) findUserByTokenWithContext(context context.Context, orgID string, appID string, token string) (*model.User, error) {
+func (sa Adapter) findUserByTokenWithContext(context context.Context, orgID string, appID string, token string, tokenType *string) (*model.User, error) {
 	filter := bson.D{}
 	if len(token) > 0 {
-		filter = bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+		if tokenType != nil {
+			if *tokenType == "airship" {
+				filter = bson.D{
+					primitive.E{Key: "org_id", Value: orgID},
+					primitive.E{Key: "app_id", Value: appID},
+					primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+				}
+			}
+		} else {
+			filter = bson.D{
+				primitive.E{Key: "org_id", Value: orgID},
+				primitive.E{Key: "app_id", Value: appID},
+				primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+			}
 		}
 	}
 
@@ -182,9 +208,9 @@ func (sa Adapter) StoreFirebaseToken(orgID string, appID string, tokenInfo *mode
 
 		// Remove previous token no matter on with user is linked
 		if tokenInfo.PreviousToken != nil {
-			existingUser, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.PreviousToken)
+			existingUser, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.PreviousToken, nil)
 			if existingUser != nil {
-				err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.PreviousToken, existingUser.UserID)
+				err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.PreviousToken, existingUser.UserID, nil)
 				if err != nil {
 					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *tokenInfo.PreviousToken, userID, err)
 					return err
@@ -192,16 +218,16 @@ func (sa Adapter) StoreFirebaseToken(orgID string, appID string, tokenInfo *mode
 			}
 		}
 
-		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.Token)
+		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.Token, nil)
 		if userRecord == nil {
 			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, userID)
 			if existingUser != nil {
-				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, nil)
 			} else {
 				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
 			}
 		} else if userRecord.UserID != userID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.Token, userRecord.UserID)
+			err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.Token, userRecord.UserID, nil)
 			if err != nil {
 				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, userRecord.UserID, err)
 				return err
@@ -209,7 +235,7 @@ func (sa Adapter) StoreFirebaseToken(orgID string, appID string, tokenInfo *mode
 
 			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, userID)
 			if existingUser != nil {
-				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, nil)
 			} else {
 				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
 			}
@@ -270,24 +296,43 @@ func (sa Adapter) createUserWithContext(context context.Context, orgID string, a
 	return record, err
 }
 
-func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, appID string, userID string, token string, appPlatform *string, appVersion *string) error {
+func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, appID string, userID string, token string, appPlatform *string, appVersion *string, tokenType *string) error {
 	// transaction
+	update := bson.D{}
+
 	filter := bson.D{
 		primitive.E{Key: "org_id", Value: orgID},
 		primitive.E{Key: "app_id", Value: appID},
 		primitive.E{Key: "user_id", Value: userID},
 	}
 
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-		}},
-		primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: model.FirebaseToken{
-			Token:       token,
-			AppVersion:  appVersion,
-			AppPlatform: appPlatform,
-			DateCreated: time.Now().UTC(),
-		}}}},
+	if tokenType != nil {
+
+		update = bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+			}},
+			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "airbase_tokens", Value: model.FirebaseToken{
+				Token:       token,
+				AppVersion:  appVersion,
+				AppPlatform: appPlatform,
+				DateCreated: time.Now().UTC(),
+			}}}},
+		}
+
+	} else {
+
+		update = bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+			}},
+			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: model.FirebaseToken{
+				Token:       token,
+				AppVersion:  appVersion,
+				AppPlatform: appPlatform,
+				DateCreated: time.Now().UTC(),
+			}}}},
+		}
 	}
 
 	_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -310,18 +355,30 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, a
 	return nil
 }
 
-func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID string, appID string, token string, userID string) error {
+func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID string, appID string, token string, userID string, tokenType *string) error {
 	filter := bson.D{
 		primitive.E{Key: "org_id", Value: orgID},
 		primitive.E{Key: "app_id", Value: appID},
 		primitive.E{Key: "user_id", Value: userID},
 	}
 
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-		}},
-		primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+	update := bson.D{}
+	if tokenType != nil {
+
+		update = bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+			}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "airbase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+		}
+	} else {
+
+		update = bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+			}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+		}
 	}
 
 	_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -1312,6 +1369,238 @@ func (sa *Adapter) DeleteQueueDataForRecipientsWithContext(ctx context.Context, 
 	if err != nil {
 		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
 	}
+	return nil
+}
+
+// StoreAirshipToken stores airship token
+func (sa Adapter) StoreAirshipToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.Token, tokenInfo.TokenType)
+		if userRecord == nil {
+			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, userID)
+			if existingUser != nil {
+				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, tokenInfo.TokenType)
+			} else {
+				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+			}
+		} else if userRecord.UserID != userID {
+			err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.Token, userRecord.UserID, tokenInfo.TokenType)
+			if err != nil {
+				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, userRecord.UserID, err)
+				return err
+			}
+
+			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, userID)
+			if existingUser != nil {
+				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, tokenInfo.TokenType)
+			} else {
+				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+			}
+			if err != nil {
+				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", *tokenInfo.Token, userID, err)
+				return err
+			}
+		}
+
+		if err != nil {
+			fmt.Printf("error while storing token (%s) to user (%s) %s\n", *tokenInfo.Token, userID, err)
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			abortTransaction(sessionContext)
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+
+	return err
+}
+
+// FindConfig finds the config for the specified type, appID, and orgID
+func (sa *Adapter) FindConfig(configType string, appID string, orgID string) (*model.Configs, error) {
+	return sa.getCachedConfig("", configType, appID, orgID)
+}
+
+// FindConfigByID finds the config for the specified ID
+func (sa *Adapter) FindConfigByID(id string) (*model.Configs, error) {
+	return sa.getCachedConfig(id, "", "", "")
+}
+
+// FindConfigs finds all configs for the specified type
+func (sa *Adapter) FindConfigs(configType *string) ([]model.Configs, error) {
+	return sa.getCachedConfigs(configType)
+}
+
+func (sa *Adapter) setCachedConfigs(configs []model.Configs) {
+	sa.configsLock.Lock()
+	defer sa.configsLock.Unlock()
+
+	sa.cachedConfigs = &syncmap.Map{}
+
+	for _, config := range configs {
+		var err error
+		switch config.Type {
+		case model.ConfigTypeEnv:
+			err = parseConfigsData[model.EnvConfigData](&config)
+		default:
+			err = parseConfigsData[map[string]interface{}](&config)
+		}
+		if err != nil {
+			sa.db.logger.Warn(err.Error())
+		}
+		sa.cachedConfigs.Store(config.ID, config)
+		sa.cachedConfigs.Store(fmt.Sprintf("%s_%s_%s", config.Type, config.AppID, config.OrgID), config)
+	}
+}
+
+func parseConfigsData[T model.ConfigData](config *model.Configs) error {
+	bsonBytes, err := bson.Marshal(config.Data)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeConfig, nil, err)
+	}
+
+	var data T
+	err = bson.Unmarshal(bsonBytes, &data)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeConfigData, &logutils.FieldArgs{"type": config.Type}, err)
+	}
+
+	config.Data = data
+	return nil
+}
+
+func (sa *Adapter) getCachedConfig(id string, configType string, appID string, orgID string) (*model.Configs, error) {
+	sa.configsLock.RLock()
+	defer sa.configsLock.RUnlock()
+
+	var item any
+	var errArgs logutils.FieldArgs
+	if id != "" {
+		errArgs = logutils.FieldArgs{"id": id}
+		item, _ = sa.cachedConfigs.Load(id)
+	} else {
+		errArgs = logutils.FieldArgs{"type": configType, "app_id": appID, "org_id": orgID}
+		item, _ = sa.cachedConfigs.Load(fmt.Sprintf("%s_%s_%s", configType, appID, orgID))
+	}
+
+	if item != nil {
+		config, ok := item.(model.Configs)
+		if !ok {
+			return nil, errors.ErrorAction(logutils.ActionCast, model.TypeConfig, &errArgs)
+		}
+		return &config, nil
+	}
+	return nil, nil
+}
+
+func (sa *Adapter) getCachedConfigs(configType *string) ([]model.Configs, error) {
+	sa.configsLock.RLock()
+	defer sa.configsLock.RUnlock()
+
+	var err error
+	configList := make([]model.Configs, 0)
+	sa.cachedConfigs.Range(func(key, item interface{}) bool {
+		keyStr, ok := key.(string)
+		if !ok || item == nil {
+			return false
+		}
+		if !strings.Contains(keyStr, "_") {
+			return true
+		}
+
+		config, ok := item.(model.Configs)
+		if !ok {
+			err = errors.ErrorAction(logutils.ActionCast, model.TypeConfig, &logutils.FieldArgs{"key": key})
+			return false
+		}
+
+		if configType == nil || strings.HasPrefix(keyStr, fmt.Sprintf("%s_", *configType)) {
+			configList = append(configList, config)
+		}
+
+		return true
+	})
+
+	return configList, err
+}
+
+// loadConfigs loads configs
+func (sa *Adapter) loadConfigs() ([]model.Configs, error) {
+	filter := bson.M{}
+
+	var configs []model.Configs
+	err := sa.db.configs.Find(filter, &configs, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, model.TypeConfig, nil, err)
+	}
+
+	return configs, nil
+}
+
+// InsertConfig inserts a new config
+func (sa *Adapter) InsertConfig(config model.Configs) error {
+	_, err := sa.db.configs.InsertOne(config)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionInsert, model.TypeConfig, nil, err)
+	}
+
+	return nil
+}
+
+// UpdateConfig updates an existing config
+func (sa *Adapter) UpdateConfig(config model.Configs) error {
+	filter := bson.M{"_id": config.ID}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "type", Value: config.Type},
+			primitive.E{Key: "app_id", Value: config.AppID},
+			primitive.E{Key: "org_id", Value: config.OrgID},
+			primitive.E{Key: "system", Value: config.System},
+			primitive.E{Key: "data", Value: config.Data},
+			primitive.E{Key: "date_updated", Value: config.DateUpdated},
+		}},
+	}
+	_, err := sa.db.configs.UpdateOne(filter, update, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionUpdate, model.TypeConfig, &logutils.FieldArgs{"id": config.ID}, err)
+	}
+
+	return nil
+}
+
+// DeleteConfig deletes a configuration from storage
+func (sa *Adapter) DeleteConfig(id string) error {
+	delFilter := bson.M{"_id": id}
+	_, err := sa.db.configs.DeleteMany(delFilter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, model.TypeConfig, &logutils.FieldArgs{"id": id}, err)
+	}
+
+	return nil
+}
+
+// cacheConfigs caches the configs from the DB
+func (sa *Adapter) cacheConfigs() error {
+	sa.db.logger.Info("cacheConfigs...")
+
+	configs, err := sa.loadConfigs()
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionLoad, model.TypeConfig, nil, err)
+	}
+
+	sa.setCachedConfigs(configs)
+
 	return nil
 }
 
