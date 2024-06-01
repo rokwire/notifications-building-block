@@ -30,8 +30,9 @@ func (a *Adapter) SendNotificationToToken(orgID string, appID string, deviceToke
 
 	//TODO allow for different variables and multiple tokens for audience types
 	//TODO get from configs
+	topic := data["topic"]
 	audience := map[string]interface{}{
-		"device_token": deviceToken,
+		"tag": topic,
 	}
 
 	iosAlert := map[string]interface{}{
@@ -73,7 +74,8 @@ func (a *Adapter) SendNotificationToToken(orgID string, appID string, deviceToke
 		return err
 	}
 
-	// req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", bearerToken))
+	bearerToken := data["bearer_token"]
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", bearerToken))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -85,8 +87,8 @@ func (a *Adapter) SendNotificationToToken(orgID string, appID string, deviceToke
 
 	//TODO save response?
 	if resp.StatusCode != 200 {
-		log.Printf("error with Twitter response code - %d", resp.StatusCode)
-		return fmt.Errorf("error with Twitter response code != 200")
+		log.Printf("error with airship response code - %d", resp.StatusCode)
+		return fmt.Errorf("error with airship response code != 200")
 	} else {
 		return nil
 	}

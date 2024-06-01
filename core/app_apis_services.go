@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rokwire/core-auth-library-go/v3/authutils"
 	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 )
 
 func (app *Application) getVersion() string {
@@ -35,6 +36,8 @@ func (app *Application) storeToken(orgID string, appID string, tokenInfo *model.
 	if tokenInfo.TokenType != nil || len(*tokenInfo.TokenType) != 0 {
 		if *tokenInfo.TokenType == "airship" {
 			return app.storage.StoreAirshipToken(orgID, appID, tokenInfo, userID)
+		} else if *tokenInfo.TokenType == "firebase" {
+			return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, userID)
 		} else {
 			return errors.New("error not a valid token type")
 		}
@@ -199,18 +202,18 @@ func (app *Application) deleteUserWithID(orgID string, appID string, userID stri
 			return fmt.Errorf("unable to delete user(%s): %s", userID, err)
 		}
 
-		// if user.Topics != nil && len(user.Topics) > 0 {
-		// 	for _, topic := range user.Topics {
-		// 		if user.FirebaseTokens != nil && len(user.FirebaseTokens) > 0 {
-		// 			for _, token := range user.FirebaseTokens {
-		// 				err := app.firebase.UnsubscribeToTopic(orgID, appID, token.Token, topic)
-		// 				if err != nil {
-		// 					return fmt.Errorf("error unsubscribe user(%s) with token(%s) from topic(%s): %s", userID, token.Token, topic, err)
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }
+		if user.Topics != nil && len(user.Topics) > 0 {
+			for _, topic := range user.Topics {
+				if user.FirebaseTokens != nil && len(user.FirebaseTokens) > 0 {
+					for _, token := range user.FirebaseTokens {
+						err := app.firebase.UnsubscribeToTopic(orgID, appID, token.Token, topic)
+						if err != nil {
+							return fmt.Errorf("error unsubscribe user(%s) with token(%s) from topic(%s): %s", userID, token.Token, topic, err)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return nil
@@ -221,31 +224,23 @@ func (app *Application) sendMail(toEmail string, subject string, body string) er
 }
 
 func (app *Application) pushSubscription(orgID string, appID string) error {
-	var err error
-
-	//generate the keys
-	// privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	// publicKey = privateKey.PublicKey
-
-	return err
+	return errors.New(logutils.Unimplemented)
 }
 
 func (app *Application) getConfig(id string, claims *tokenauth.Claims) (*model.Configs, error) {
 	config, err := app.storage.FindConfigByID(id)
 	if err != nil {
-		// return nil, errors.WrapErrorAction(logutils.ActionFind, model.TypeConfig, nil, err)
-		return nil, fmt.Errorf("unable to delete user(%s): %s", id, err)
+		return nil, fmt.Errorf("error finding config(%s): %s", id, err)
 
 	}
 	if config == nil {
-		// return nil, errors.ErrorData(logutils.StatusMissing, model.TypeConfig, &logutils.FieldArgs{"id": id})
-		return nil, fmt.Errorf("unable to delete user(%s): %s", id, err)
+		return nil, fmt.Errorf("error with config config(%s): %s", id, err)
 	}
 
-	// err = claims.CanAccess(config.AppID, config.OrgID, config.System)
-	// if err != nil {
-	// 	return nil, errors.WrapErrorAction(logutils.ActionValidate, "config access", nil, err)
-	// }
+	err = claims.CanAccess(config.AppID, config.OrgID, config.System)
+	if err != nil {
+		return nil, fmt.Errorf("unable to access config: %s", err)
+	}
 
 	return config, nil
 }
@@ -253,14 +248,14 @@ func (app *Application) getConfig(id string, claims *tokenauth.Claims) (*model.C
 func (app *Application) getConfigs(configType *string, claims *tokenauth.Claims) ([]model.Configs, error) {
 	configs, err := app.storage.FindConfigs(configType)
 	if err != nil {
-		return nil, fmt.Errorf("unable to delete user(%s): %s", *configType, err)
+		return nil, fmt.Errorf("error finding configs(%s): %s", *configType, err)
 	}
 
 	allowedConfigs := make([]model.Configs, 0)
 	for _, config := range configs {
-		// if err := claims.CanAccess(config.AppID, config.OrgID, config.System); err == nil {
-		// 	allowedConfigs = append(allowedConfigs, config)
-		// }
+		if err := claims.CanAccess(config.AppID, config.OrgID, config.System); err == nil {
+			allowedConfigs = append(allowedConfigs, config)
+		}
 		allowedConfigs = append(allowedConfigs, config)
 	}
 	return allowedConfigs, nil
@@ -269,21 +264,20 @@ func (app *Application) getConfigs(configType *string, claims *tokenauth.Claims)
 func (app *Application) createConfig(config model.Configs, claims *tokenauth.Claims) (*model.Configs, error) {
 	// must be a system config if applying to all orgs
 	if config.OrgID == authutils.AllOrgs && !config.System {
-		// return nil, errors.ErrorData(logutils.StatusInvalid, "config system status", &logutils.FieldArgs{"config.org_id": authutils.AllOrgs})
-		return nil, fmt.Errorf("unable to delete user")
+		return nil, fmt.Errorf("unauthorized to create config")
 
 	}
 
 	err := claims.CanAccess(config.AppID, config.OrgID, config.System)
 	if err != nil {
-		return nil, fmt.Errorf("unable to delete user")
+		return nil, fmt.Errorf("unable to access config: %s", err)
 	}
 
 	config.ID = uuid.NewString()
 	config.DateCreated = time.Now().UTC()
 	err = app.storage.InsertConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("unable to delete user")
+		return nil, fmt.Errorf("unable to insert config")
 
 	}
 	return &config, nil
@@ -292,27 +286,24 @@ func (app *Application) createConfig(config model.Configs, claims *tokenauth.Cla
 func (app *Application) updateConfig(config model.Configs, claims *tokenauth.Claims) error {
 	// must be a system config if applying to all orgs
 	if config.OrgID == authutils.AllOrgs && !config.System {
-		// return errors.ErrorData(logutils.StatusInvalid, "config system status", &logutils.FieldArgs{"config.org_id": authutils.AllOrgs})
-		return fmt.Errorf("unable to delete user")
+		return fmt.Errorf("unable to update config")
 	}
 
 	oldConfig, err := app.storage.FindConfig(config.Type, config.AppID, config.OrgID)
 	if err != nil {
-		// return errors.WrapErrorAction(logutils.ActionFind, model.TypeConfig, nil, err)
-		return fmt.Errorf("unable to delete user")
+		return fmt.Errorf("unable  to update config")
 	}
 	if oldConfig == nil {
-		return fmt.Errorf("unable to delete user")
-		// return errors.ErrorData(logutils.StatusMissing, model.TypeConfig, &logutils.FieldArgs{"type": config.Type, "app_id": config.AppID, "org_id": config.OrgID})
+		return fmt.Errorf("unable to update config, old config is null")
 	}
 
 	//cannot update a system config if not a system admin
 	if !claims.System && oldConfig.System {
-		return fmt.Errorf("unable to delete user")
+		return fmt.Errorf("unable to update user, not s system admin")
 	}
 	err = claims.CanAccess(config.AppID, config.OrgID, config.System)
 	if err != nil {
-		return fmt.Errorf("unable to delete user")
+		return fmt.Errorf("unauthorized to update user")
 	}
 
 	now := time.Now().UTC()
@@ -321,8 +312,7 @@ func (app *Application) updateConfig(config model.Configs, claims *tokenauth.Cla
 
 	err = app.storage.UpdateConfig(config)
 	if err != nil {
-		return fmt.Errorf("unable to delete user")
-		// return errors.WrapErrorAction(logutils.ActionUpdate, model.TypeConfig, nil, err)
+		return fmt.Errorf("unable to update user")
 	}
 	return nil
 }
@@ -330,22 +320,20 @@ func (app *Application) updateConfig(config model.Configs, claims *tokenauth.Cla
 func (app *Application) deleteConfig(id string, claims *tokenauth.Claims) error {
 	config, err := app.storage.FindConfigByID(id)
 	if err != nil {
-		return fmt.Errorf("unable to delete user")
-		// return errors.WrapErrorAction(logutils.ActionFind, model.TypeConfig, nil, err)
+		return fmt.Errorf("unable to delete config")
 	}
 	if config == nil {
-		return fmt.Errorf("unable to delete user")
-		// return errors.ErrorData(logutils.StatusMissing, model.TypeConfig, &logutils.FieldArgs{"id": id})
+		return fmt.Errorf("unable to delete config, config is null")
 	}
 
 	err = claims.CanAccess(config.AppID, config.OrgID, config.System)
 	if err != nil {
-		return fmt.Errorf("unable to delete user")
+		return fmt.Errorf("unauthorized to delete config")
 	}
 
 	err = app.storage.DeleteConfig(id)
 	if err != nil {
-		return fmt.Errorf("unable to delete user")
+		return fmt.Errorf("unable to delete config")
 	}
 	return nil
 }

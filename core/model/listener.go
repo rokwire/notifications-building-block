@@ -19,6 +19,3 @@ type DefaultStorageListener struct{}
 
 // OnConfigsUpdated notifies that the configs collection has been updated
 func (d *DefaultStorageListener) OnConfigsUpdated() {}
-
-// OnExamplesUpdated notifies that the examples collection has been updated
-func (d *DefaultStorageListener) OnExamplesUpdated() {}

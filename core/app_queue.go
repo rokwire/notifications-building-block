@@ -165,8 +165,13 @@ func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
 		}
 
 		//check if available
-		if queue == nil || queue.Status != "ready" {
-			q.logger.Infof("the queue is not ready")
+		if queue == nil {
+			q.logger.Infof("the queue is nil")
+			queueAvailable = false
+			return nil
+		}
+		if queue.Status != "ready" {
+			q.logger.Infof("the queue is not ready but %s", queue.Status)
 			queueAvailable = false
 			return nil
 		}
@@ -235,13 +240,6 @@ func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 			continue //do not send notification if disabled for the user
 		}
 
-		// var airShiptokens []model.FirebaseToken
-		// if item.TokenPlatform == "airship" {
-		// 	tokens = user.AirshipTokens
-		// } else {
-		// 	tokens = user.FirebaseTokens
-		// }
-
 		airshipTokens := user.AirshipTokens
 		firebaseTokens := user.FirebaseTokens
 
@@ -271,7 +269,7 @@ func (q queueLogic) sendNotifications(queueItem model.QueueItem, firebaseTokens 
 
 	for _, aToken := range airshipTokens {
 		token := aToken.Token
-		sendErr := q.airship.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
+		sendErr := q.airship.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data,)
 		if sendErr != nil {
 			q.logger.Errorf("error send notification to token (%s): %s", token, sendErr)
 		} else {

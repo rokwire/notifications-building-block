@@ -149,6 +149,9 @@ func (app *Application) sharedCreateQueueItems(message model.Message, messageRec
 		subject := message.Subject
 		body := message.Body
 		data := message.Data
+		if message.Topic != nil {
+			data["topic"] = *message.Topic
+		}
 
 		time := message.Time
 		priority := message.Priority

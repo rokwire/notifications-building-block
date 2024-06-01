@@ -147,12 +147,11 @@ func (sa Adapter) findUserByTokenWithContext(context context.Context, orgID stri
 	filter := bson.D{}
 	if len(token) > 0 {
 		if tokenType != nil {
-			if *tokenType == "airship" {
-				filter = bson.D{
-					primitive.E{Key: "org_id", Value: orgID},
-					primitive.E{Key: "app_id", Value: appID},
-					primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
-				}
+			tokenTypeString := *tokenType + "_tokens"
+			filter = bson.D{
+				primitive.E{Key: "org_id", Value: orgID},
+				primitive.E{Key: "app_id", Value: appID},
+				primitive.E{Key: tokenTypeString, Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 			}
 		} else {
 			filter = bson.D{
@@ -307,12 +306,12 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, a
 	}
 
 	if tokenType != nil {
-
+		tokenTypeString := *tokenType + "_tokens"
 		update = bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 			}},
-			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "airbase_tokens", Value: model.FirebaseToken{
+			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: tokenTypeString, Value: model.FirebaseToken{
 				Token:       token,
 				AppVersion:  appVersion,
 				AppPlatform: appPlatform,
@@ -364,12 +363,12 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID stri
 
 	update := bson.D{}
 	if tokenType != nil {
-
+		tokenTypeString := *tokenType + "_tokens"
 		update = bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 			}},
-			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "airbase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: tokenTypeString, Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 		}
 	} else {
 

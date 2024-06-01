@@ -48,7 +48,7 @@ func (a *Adapter) PushSubscription(userID string, mastadonToken string) (map[str
 
 	alerts := map[string]interface{}{
 		"mention": true,
-		"follow": true,
+		"follow":  true,
 	}
 
 	data := map[string]interface{}{
@@ -69,7 +69,7 @@ func (a *Adapter) PushSubscription(userID string, mastadonToken string) (map[str
 
 	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
 	if err != nil {
-		log.Printf("error creating Twitter request - %s", err)
+		log.Printf("error creating mastadon request - %s", err)
 		return nil, err
 	}
 
@@ -77,27 +77,27 @@ func (a *Adapter) PushSubscription(userID string, mastadonToken string) (map[str
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("error loading Twitter data - %s", err)
+		log.Printf("error loading mastadon data - %s", err)
 		return nil, err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		log.Printf("error with Twitter response code - %d", resp.StatusCode)
-		return nil, fmt.Errorf("error with Twitter response code != 200")
+		log.Printf("error with mastadon response code - %d", resp.StatusCode)
+		return nil, fmt.Errorf("error with mastadon response code != 200")
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("error reading the body data for the loading Twitter data request - %s", err)
+		log.Printf("error reading the body data for the loading mastadon data request - %s", err)
 		return nil, err
 	}
 
 	var result map[string]interface{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		log.Printf("error converting data for the loading Twitter data request - %s", err)
+		log.Printf("error converting data for the loading mastadon data request - %s", err)
 		return nil, err
 	}
 
