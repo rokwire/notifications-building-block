@@ -110,9 +110,9 @@ paths:
     post:
       tags:
         - Client
-      summary: Store Firebase token
+      summary: Store Airship or Firebase token
       description: |
-        Store Firebase token
+        Store Airship or Firebase token
       security:
         - bearerAuth: []
       requestBody:
@@ -1389,6 +1389,8 @@ components:
           type: string
         app_platform:
           type: string
+        token_type:
+          type: string
     Topic:
       type: object
       properties:
@@ -1523,6 +1525,8 @@ components:
         app_version:
           type: string
         app_platform:
+          type: string
+        token_type:
           type: string
     _client_req_user:
       required:

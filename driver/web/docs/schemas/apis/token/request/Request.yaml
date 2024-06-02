@@ -10,3 +10,5 @@ properties:
     type: string
   app_platform:
     type: string
+  token_type:
+    type: string

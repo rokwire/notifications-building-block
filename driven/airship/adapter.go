@@ -28,11 +28,8 @@ func (a *Adapter) SendNotificationToToken(orgID string, appID string, deviceToke
 
 	deviceTypes := [2]string{"ios", "android"}
 
-	//TODO allow for different variables and multiple tokens for audience types
-	//TODO get from configs
-	topic := data["topic"]
 	audience := map[string]interface{}{
-		"tag": topic,
+		"device_token": deviceToken,
 	}
 
 	iosAlert := map[string]interface{}{
