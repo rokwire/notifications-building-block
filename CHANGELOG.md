@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Add in  [#97](https://github.com/rokwire/lms-building-block/issues/97)
+- Add in Airship Push Notifications [#173](https://github.com/rokwire/notifications-building-block/issues/173)
 
 ## [1.19.0] - 2023-10-26
 ## [1.18.0] - 2023-09-20
