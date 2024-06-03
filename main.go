@@ -24,11 +24,11 @@ import (
 	"notifications/driven/mailer"
 	storage "notifications/driven/storage"
 	driver "notifications/driver/web"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/envloader"
 	"github.com/rokwire/core-auth-library-go/v3/keys"
 	"github.com/rokwire/core-auth-library-go/v3/sigauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -51,18 +51,19 @@ func main() {
 	loggerOpts := logs.LoggerOpts{SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties(serviceID + "/version")}
 	loggerOpts.SuppressRequests = append(loggerOpts.SuppressRequests, logs.NewStandardHealthCheckHTTPRequestProperties("notifications/api/version")...)
 	logger := logs.NewLogger(serviceID, &loggerOpts)
+	envLoader := envloader.NewEnvLoader(Version, logger)
 
-	port := getEnvKey("PORT", false)
+	port := envLoader.GetAndLogEnvVar("PORT", false, false)
 	if len(port) == 0 {
 		port = "80"
 	}
 
 	// mongoDB adapter
-	mongoDBAuth := getEnvKey("MONGO_AUTH", true)
-	mongoDBName := getEnvKey("MONGO_DATABASE", true)
-	mongoTimeout := getEnvKey("MONGO_TIMEOUT", false)
-	mtOrgID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_ORG_ID", true)
-	mtAppID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_APP_ID", true)
+	mongoDBAuth := envLoader.GetAndLogEnvVar("MONGO_AUTH", true, true)
+	mongoDBName := envLoader.GetAndLogEnvVar("MONGO_DATABASE", true, false)
+	mongoTimeout := envLoader.GetAndLogEnvVar("MONGO_TIMEOUT", false, false)
+	mtOrgID := envLoader.GetAndLogEnvVar("NOTIFICATIONS_MULTI_TENANCY_ORG_ID", true, false)
+	mtAppID := envLoader.GetAndLogEnvVar("NOTIFICATIONS_MULTI_TENANCY_APP_ID", true, false)
 	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout, mtOrgID, mtAppID, logger)
 	err := storageAdapter.Start()
 	if err != nil {
@@ -82,23 +83,23 @@ func main() {
 	}
 
 	//airship adapter
-	airshipHost := getEnvKey("NOTIFICATIONS_AIRSHIP_HOST", false)
-	airshipBearerToken := getEnvKey("NOTIFICATIONS_AIRSHIP_BEARER_TOKEN", false)
+	airshipHost := envLoader.GetAndLogEnvVar("NOTIFICATIONS_AIRSHIP_HOST", false, false)
+	airshipBearerToken := envLoader.GetAndLogEnvVar("NOTIFICATIONS_AIRSHIP_BEARER_TOKEN", false, true)
 	airshipAdapter := airship.NewAirshipAdapter(airshipHost, airshipBearerToken)
 
-	smtpHost := getEnvKey("SMTP_HOST", false)
-	smtpPort := getEnvKey("SMTP_PORT", false)
-	smtpUser := getEnvKey("SMTP_USER", false)
-	smtpPassword := getEnvKey("SMTP_PASSWORD", false)
-	smtpFrom := getEnvKey("SMTP_EMAIL_FROM", false)
+	smtpHost := envLoader.GetAndLogEnvVar("SMTP_HOST", false, false)
+	smtpPort := envLoader.GetAndLogEnvVar("SMTP_PORT", false, false)
+	smtpUser := envLoader.GetAndLogEnvVar("SMTP_USER", false, false)
+	smtpPassword := envLoader.GetAndLogEnvVar("SMTP_PASSWORD", false, true)
+	smtpFrom := envLoader.GetAndLogEnvVar("SMTP_EMAIL_FROM", false, false)
 	smtpPortNum, _ := strconv.Atoi(smtpPort)
 	mailAdapter := mailer.NewMailerAdapter(smtpHost, smtpPortNum, smtpUser, smtpPassword, smtpFrom)
 
 	// web adapter
-	host := getEnvKey("HOST", true)
-	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
-	coreBBHost := getEnvKey("CORE_BB_HOST", true)
-	notificationsServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
+	host := envLoader.GetAndLogEnvVar("HOST", true, false)
+	internalAPIKey := envLoader.GetAndLogEnvVar("INTERNAL_API_KEY", true, true)
+	coreBBHost := envLoader.GetAndLogEnvVar("CORE_BB_HOST", true, false)
+	notificationsServiceURL := envLoader.GetAndLogEnvVar("NOTIFICATIONS_SERVICE_URL", true, false)
 
 	authService := authservice.AuthService{
 		ServiceID:   serviceID,
@@ -118,8 +119,8 @@ func main() {
 	}
 
 	//core adapter
-	serviceAccountID := getEnvKey("NOTIFICATIONS_SERVICE_ACCOUNT_ID", false)
-	privKeyRaw := getEnvKey("NOTIFICATIONS_PRIV_KEY", false)
+	serviceAccountID := envLoader.GetAndLogEnvVar("NOTIFICATIONS_SERVICE_ACCOUNT_ID", false, false)
+	privKeyRaw := envLoader.GetAndLogEnvVar("NOTIFICATIONS_PRIV_KEY", false, true)
 	var serviceAccountManager *authservice.ServiceAccountManager
 	if privKeyRaw != "" {
 		privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
@@ -158,16 +159,4 @@ func main() {
 	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, logger)
 
 	webAdapter.Start()
-}
-
-func getEnvKey(key string, required bool) string {
-	//get from the environment
-	value, exist := os.LookupEnv(key)
-	if !exist {
-		if required {
-			log.Fatal("No provided environment variable for " + key)
-		}
-	}
-
-	return value
 }
