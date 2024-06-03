@@ -196,12 +196,15 @@ func (h ApisHandler) Subscribe(l *logs.Log, r *http.Request, claims *tokenauth.C
 
 	//TODO check and only decode
 	var body tokenBody
+	token := ""
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+		l.WarnError(logutils.MessageAction(logutils.StatusError, logutils.ActionDecode, logutils.TypeRequestBody, nil), err)
+	} else if body.Token != nil {
+		token = *body.Token
 	}
 
-	err = h.app.Services.SubscribeToTopic(claims.OrgID, claims.AppID, *body.Token, claims.Subject, claims.Anonymous, topic)
+	err = h.app.Services.SubscribeToTopic(claims.OrgID, claims.AppID, token, claims.Subject, claims.Anonymous, topic)
 	if err != nil {
 		return l.HTTPResponseErrorAction("subscribing", "topic", nil, err, http.StatusInternalServerError, true)
 	}
@@ -227,12 +230,15 @@ func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth
 
 	//TODO check for ID and decode
 	var body tokenBody
+	token := ""
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+		l.WarnError(logutils.MessageAction(logutils.StatusError, logutils.ActionDecode, logutils.TypeRequestBody, nil), err)
+	} else if body.Token != nil {
+		token = *body.Token
 	}
 
-	err = h.app.Services.UnsubscribeToTopic(claims.OrgID, claims.AppID, *body.Token, claims.Subject, claims.Anonymous, topic)
+	err = h.app.Services.UnsubscribeToTopic(claims.OrgID, claims.AppID, token, claims.Subject, claims.Anonymous, topic)
 	if err != nil {
 		return l.HTTPResponseErrorAction("unsubscribing", "topic", nil, err, http.StatusInternalServerError, true)
 	}
