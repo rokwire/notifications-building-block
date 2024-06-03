@@ -4,7 +4,8 @@
         "SMTP_PASSWORD": "<smtp password>",
         "INTERNAL_API_KEY": "<internal api key>",
         "CORE_AUTH_PRIVATE_KEY": "",
-        "NOTIFICATIONS_PRIV_KEY": "<service account priv key>"
+        "NOTIFICATIONS_PRIV_KEY": "",
+        "NOTIFICATIONS_AIRSHIP_BEARER_TOKEN": ""
     },
     "app_config":{
         "PORT": "5000",
@@ -19,6 +20,7 @@
         "HOST": "<host>",
         "CORE_BB_HOST": "<core bb host>",
         "NOTIFICATIONS_SERVICE_URL": "<service url>",
-        "NOTIFICATIONS_SERVICE_ACCOUNT_ID": "<service account id>"
+        "NOTIFICATIONS_SERVICE_ACCOUNT_ID": "<service account id>",
+        "NOTIFICATIONS_AIRSHIP_HOST": ""
     }
 }

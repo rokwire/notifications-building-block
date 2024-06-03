@@ -1,9 +1,9 @@
  post:
   tags:
   - Client
-  summary: Store Firebase token
+  summary: Store Airship or Firebase token
   description: |
-    Store Firebase token
+    Store Airship or Firebase token
   security:
     - bearerAuth: []
   requestBody:

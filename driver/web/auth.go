@@ -19,12 +19,12 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 
-	"github.com/rokwire/core-auth-library-go/v2/authorization"
+	"github.com/rokwire/core-auth-library-go/v3/authorization"
 	"github.com/rokwire/logging-library-go/v2/errors"
 	"github.com/rokwire/logging-library-go/v2/logutils"
 
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 )
 
 // Auth handler
@@ -107,7 +107,7 @@ type ClientAuth struct {
 
 // Check validates the request contains a valid client token
 func (auth ClientAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
-	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	claims, err := auth.tokenAuth.CheckRequestToken(req)
 	if err != nil {
 		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
 	}
@@ -151,7 +151,7 @@ type AdminAuth struct {
 
 // Check validates the request contains a valid admin token
 func (auth AdminAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
-	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	claims, err := auth.tokenAuth.CheckRequestToken(req)
 	if err != nil {
 		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
 	}
@@ -186,7 +186,7 @@ type BBsAuth struct {
 
 // Check validates the request contains a valid first-party service token
 func (auth *BBsAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
-	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	claims, err := auth.tokenAuth.CheckRequestToken(req)
 	if err != nil {
 		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
 	}

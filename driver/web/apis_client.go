@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
 
@@ -63,8 +63,8 @@ func (h ApisHandler) Version(l *logs.Log, r *http.Request, claims *tokenauth.Cla
 	return l.HTTPResponseSuccessMessage(h.app.Services.GetVersion())
 }
 
-// StoreFirebaseToken Sends a message to a user, list of users or a topic
-// @Description Stores a firebase token and maps it to a idToken if presents
+// StoreToken Sends a message to a user, list of users or a topic
+// @Description Stores a token and maps it to a idToken if presents
 // @Tags Client
 // @ID Token
 // @Param data body model.TokenInfo true "body json"
@@ -72,7 +72,7 @@ func (h ApisHandler) Version(l *logs.Log, r *http.Request, claims *tokenauth.Cla
 // @Success 200
 // @Security RokwireAuth UserAuth
 // @Router /token [post]
-func (h ApisHandler) StoreFirebaseToken(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+func (h ApisHandler) StoreToken(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	var tokenInfo model.TokenInfo
 	err := json.NewDecoder(r.Body).Decode(&tokenInfo)
 	if err != nil {
@@ -91,7 +91,7 @@ func (h ApisHandler) StoreFirebaseToken(l *logs.Log, r *http.Request, claims *to
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "app platform", logutils.StringArgs("empty or nil"), nil, http.StatusBadRequest, false)
 	}
 
-	err = h.app.Services.StoreFirebaseToken(claims.OrgID, claims.AppID, &tokenInfo, claims.Subject)
+	err = h.app.Services.StoreToken(claims.OrgID, claims.AppID, &tokenInfo, claims.Subject)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSave, "token", nil, err, http.StatusInternalServerError, true)
 	}
@@ -194,14 +194,11 @@ func (h ApisHandler) Subscribe(l *logs.Log, r *http.Request, claims *tokenauth.C
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("topic"), nil, http.StatusBadRequest, false)
 	}
 
+	//TODO check and only decode
 	var body tokenBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
-	}
-
-	if len(*body.Token) == 0 {
-		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypeToken, nil, nil, http.StatusBadRequest, false)
 	}
 
 	err = h.app.Services.SubscribeToTopic(claims.OrgID, claims.AppID, *body.Token, claims.Subject, claims.Anonymous, topic)
@@ -228,14 +225,11 @@ func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth
 		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("topic"), nil, http.StatusBadRequest, false)
 	}
 
+	//TODO check for ID and decode
 	var body tokenBody
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
-	}
-
-	if len(*body.Token) == 0 {
-		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypeToken, nil, nil, http.StatusBadRequest, false)
 	}
 
 	err = h.app.Services.UnsubscribeToTopic(claims.OrgID, claims.AppID, *body.Token, claims.Subject, claims.Anonymous, topic)
@@ -578,6 +572,42 @@ func (h ApisHandler) UpdateAllUserMessagesRead(l *logs.Log, r *http.Request, cla
 	err = h.app.Services.UpdateAllUserMessagesRead(claims.OrgID, claims.AppID, claims.Subject, body.Read)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "all messages read", nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
+}
+
+// PushSubscription Subscribes the current user
+// @Description Subscribes the current user
+// @Tags Client
+// @ID PushSubscription
+// @Param data body tokenBody true "body json"
+// @Accept  json
+// @Success 200
+// @Security RokwireAuth UserAuth
+// @Router /push-subscription [post]
+func (h ApisHandler) PushSubscription(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	// params := mux.Vars(r)
+	// topic := params["topic"]
+	// if len(topic) == 0 {
+	// 	return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("topic"), nil, http.StatusBadRequest, false)
+	// }
+
+	// parse the token needed for mastadon
+
+	var body tokenBody
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+
+	if len(*body.Token) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypeToken, nil, nil, http.StatusBadRequest, false)
+	}
+
+	err = h.app.Services.PushSubscription(claims.OrgID, claims.AppID)
+	if err != nil {
+		return l.HTTPResponseErrorAction("subscribing", "topic", nil, err, http.StatusInternalServerError, true)
 	}
 
 	return l.HTTPResponseSuccess()

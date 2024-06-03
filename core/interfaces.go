@@ -20,13 +20,14 @@ import (
 	"notifications/driven/storage"
 	"time"
 
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 // Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
-	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
+	StoreToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
 	SubscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error
 	UnsubscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error
 	GetTopics(orgID string, appID string) ([]model.Topic, error)
@@ -52,6 +53,14 @@ type Services interface {
 	GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error)
 
 	SendMail(toEmail string, subject string, body string) error
+
+	PushSubscription(orgID string, appID string) error
+
+	GetConfig(id string, claims *tokenauth.Claims) (*model.Configs, error)
+	GetConfigs(configType *string, claims *tokenauth.Claims) ([]model.Configs, error)
+	CreateConfig(config model.Configs, claims *tokenauth.Claims) (*model.Configs, error)
+	UpdateConfig(config model.Configs, claims *tokenauth.Claims) error
+	DeleteConfig(id string, claims *tokenauth.Claims) error
 }
 
 type servicesImpl struct {
@@ -62,8 +71,8 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
-func (s *servicesImpl) StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
-	return s.app.storeFirebaseToken(orgID, appID, tokenInfo, userID)
+func (s *servicesImpl) StoreToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
+	return s.app.storeToken(orgID, appID, tokenInfo, userID)
 }
 
 func (s *servicesImpl) SubscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error {
@@ -148,6 +157,30 @@ func (s *servicesImpl) DeleteUserWithID(orgID string, appID string, userID strin
 
 func (s *servicesImpl) SendMail(toEmail string, subject string, body string) error {
 	return s.app.sendMail(toEmail, subject, body)
+}
+
+func (s *servicesImpl) PushSubscription(orgID string, appID string) error {
+	return s.app.pushSubscription(orgID, appID)
+}
+
+func (s *servicesImpl) GetConfig(id string, claims *tokenauth.Claims) (*model.Configs, error) {
+	return s.app.getConfig(id, claims)
+}
+
+func (s *servicesImpl) GetConfigs(configType *string, claims *tokenauth.Claims) ([]model.Configs, error) {
+	return s.app.getConfigs(configType, claims)
+}
+
+func (s *servicesImpl) CreateConfig(config model.Configs, claims *tokenauth.Claims) (*model.Configs, error) {
+	return s.app.createConfig(config, claims)
+}
+
+func (s *servicesImpl) UpdateConfig(config model.Configs, claims *tokenauth.Claims) error {
+	return s.app.updateConfig(config, claims)
+}
+
+func (s *servicesImpl) DeleteConfig(id string, claims *tokenauth.Claims) error {
+	return s.app.deleteConfig(id, claims)
 }
 
 // Admin exposes APIs for the driver adapters
@@ -251,6 +284,14 @@ type Storage interface {
 	DeleteQueueData(ids []string) error
 	DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error
 	DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error
+
+	FindConfig(configType string, appID string, orgID string) (*model.Configs, error)
+	FindConfigByID(id string) (*model.Configs, error)
+	FindConfigs(configType *string) ([]model.Configs, error)
+	InsertConfig(config model.Configs) error
+	UpdateConfig(config model.Configs) error
+	DeleteConfig(id string) error
+	StoreAirshipToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
@@ -270,4 +311,9 @@ type Mailer interface {
 // Core exposes Core APIs for the driver adapters
 type Core interface {
 	RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]model.CoreAccount, error)
+}
+
+// Airship is used to wrap all Airship Messaging API Functions
+type Airship interface {
+	SendNotificationToToken(orgID string, appID string, deviceToken string, title string, body string, data map[string]string) error
 }

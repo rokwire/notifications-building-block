@@ -2,3 +2,12 @@ p, all_admin_notifications, /notifications/api/admin/*, (GET)|(POST)|(PUT)|(DELE
 
 p, get_messages_stats, /notifications/api/admin/messages/stats/source/me, (GET), Get messages stats for the messages sent by the current admin
 p, get_messages_stats_all, /notifications/api/admin/messages/stats/source/all, (GET), Get messages stats for the messages sent by all admins
+
+p, all_configs_<name>, /<name>/api/admin/configs/*, (GET)|(PUT)|(DELETE), All <name> config admin actions
+p, all_configs_<name>, /<name>/api/admin/configs, (GET)|(POST),
+p, get_configs_<name>, /<name>/api/admin/configs/*, (GET), Get <name> configs
+p, get_configs_<name>, /<name>/api/admin/configs, (GET),
+p, update_configs_<name>, /<name>/api/admin/configs/*, (GET)|(PUT), Update <name> configs
+p, update_configs_<name>, /<name>/api/admin/configs, (GET)|(POST),
+p, delete_configs_<name>, /<name>/api/admin/configs/*, (GET)|(DELETE), Delete <name> configs
+p, delete_configs_<name>, /<name>/api/admin/configs, (GET),

@@ -28,6 +28,7 @@ type queueLogic struct {
 
 	storage  Storage
 	firebase Firebase
+	airship  Airship
 
 	//timer
 	queueTimer *time.Timer
@@ -164,6 +165,11 @@ func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
 		}
 
 		//check if available
+		if queue == nil {
+			q.logger.Infof("the queue is nil")
+			queueAvailable = false
+			return nil
+		}
 		if queue.Status != "ready" {
 			q.logger.Infof("the queue is not ready but %s", queue.Status)
 			queueAvailable = false
@@ -234,8 +240,10 @@ func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 			continue //do not send notification if disabled for the user
 		}
 
-		tokens := user.FirebaseTokens
-		go q.sendNotifications(item, tokens) //new thread
+		airshipTokens := user.AirshipTokens
+		firebaseTokens := user.FirebaseTokens
+
+		go q.sendNotifications(item, firebaseTokens, airshipTokens) //new thread
 	}
 
 	//remove the items from the queue
@@ -248,10 +256,20 @@ func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 	return nil
 }
 
-func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.FirebaseToken) {
-	for _, fToken := range tokens {
+func (q queueLogic) sendNotifications(queueItem model.QueueItem, firebaseTokens []model.FirebaseToken, airshipTokens []model.FirebaseToken) {
+	for _, fToken := range firebaseTokens {
 		token := fToken.Token
 		sendErr := q.firebase.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
+		if sendErr != nil {
+			q.logger.Errorf("error send notification to token (%s): %s", token, sendErr)
+		} else {
+			q.logger.Infof("queue item(%s:%s:%s) has been sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
+		}
+	}
+
+	for _, aToken := range airshipTokens {
+		token := aToken.Token
+		sendErr := q.airship.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
 		if sendErr != nil {
 			q.logger.Errorf("error send notification to token (%s): %s", token, sendErr)
 		} else {

@@ -19,21 +19,39 @@ import (
 	"errors"
 	"fmt"
 	"notifications/core/model"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/rokwire/core-auth-library-go/v3/authutils"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 )
 
 func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) storeFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
-	return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, userID)
+func (app *Application) storeToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
+
+	if tokenInfo.TokenType != nil || len(*tokenInfo.TokenType) != 0 {
+		if *tokenInfo.TokenType == "airship" {
+			return app.storage.StoreAirshipToken(orgID, appID, tokenInfo, userID)
+		} else if *tokenInfo.TokenType == "firebase" {
+			return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, userID)
+		} else {
+			return errors.New("error not a valid token type")
+		}
+	} else {
+		return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, userID)
+	}
+
 }
 
 func (app *Application) subscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error {
 	var err error
 	if !anonymous {
 		err = app.storage.SubscribeToTopic(orgID, appID, token, userID, topic)
-		if err == nil {
+		if err == nil && token != "" {
 			err = app.firebase.SubscribeToTopic(orgID, appID, token, topic)
 		}
 	} else if token != "" {
@@ -47,7 +65,7 @@ func (app *Application) unsubscribeToTopic(orgID string, appID string, token str
 	var err error
 	if !anonymous {
 		err = app.storage.UnsubscribeToTopic(orgID, appID, token, userID, topic)
-		if err == nil {
+		if err == nil && token != "" {
 			err = app.firebase.UnsubscribeToTopic(orgID, appID, token, topic)
 		}
 	} else if token != "" {
@@ -203,4 +221,119 @@ func (app *Application) deleteUserWithID(orgID string, appID string, userID stri
 
 func (app *Application) sendMail(toEmail string, subject string, body string) error {
 	return app.sharedSendMail(toEmail, subject, body)
+}
+
+func (app *Application) pushSubscription(orgID string, appID string) error {
+	return errors.New(logutils.Unimplemented)
+}
+
+func (app *Application) getConfig(id string, claims *tokenauth.Claims) (*model.Configs, error) {
+	config, err := app.storage.FindConfigByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("error finding config(%s): %s", id, err)
+
+	}
+	if config == nil {
+		return nil, fmt.Errorf("error with config config(%s): %s", id, err)
+	}
+
+	err = claims.CanAccess(config.AppID, config.OrgID, config.System)
+	if err != nil {
+		return nil, fmt.Errorf("unable to access config: %s", err)
+	}
+
+	return config, nil
+}
+
+func (app *Application) getConfigs(configType *string, claims *tokenauth.Claims) ([]model.Configs, error) {
+	configs, err := app.storage.FindConfigs(configType)
+	if err != nil {
+		return nil, fmt.Errorf("error finding configs(%s): %s", *configType, err)
+	}
+
+	allowedConfigs := make([]model.Configs, 0)
+	for _, config := range configs {
+		if err := claims.CanAccess(config.AppID, config.OrgID, config.System); err == nil {
+			allowedConfigs = append(allowedConfigs, config)
+		}
+		allowedConfigs = append(allowedConfigs, config)
+	}
+	return allowedConfigs, nil
+}
+
+func (app *Application) createConfig(config model.Configs, claims *tokenauth.Claims) (*model.Configs, error) {
+	// must be a system config if applying to all orgs
+	if config.OrgID == authutils.AllOrgs && !config.System {
+		return nil, fmt.Errorf("unauthorized to create config")
+
+	}
+
+	err := claims.CanAccess(config.AppID, config.OrgID, config.System)
+	if err != nil {
+		return nil, fmt.Errorf("unable to access config: %s", err)
+	}
+
+	config.ID = uuid.NewString()
+	config.DateCreated = time.Now().UTC()
+	err = app.storage.InsertConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to insert config")
+
+	}
+	return &config, nil
+}
+
+func (app *Application) updateConfig(config model.Configs, claims *tokenauth.Claims) error {
+	// must be a system config if applying to all orgs
+	if config.OrgID == authutils.AllOrgs && !config.System {
+		return fmt.Errorf("unable to update config")
+	}
+
+	oldConfig, err := app.storage.FindConfig(config.Type, config.AppID, config.OrgID)
+	if err != nil {
+		return fmt.Errorf("unable  to update config")
+	}
+	if oldConfig == nil {
+		return fmt.Errorf("unable to update config, old config is null")
+	}
+
+	//cannot update a system config if not a system admin
+	if !claims.System && oldConfig.System {
+		return fmt.Errorf("unable to update user, not s system admin")
+	}
+	err = claims.CanAccess(config.AppID, config.OrgID, config.System)
+	if err != nil {
+		return fmt.Errorf("unauthorized to update user")
+	}
+
+	now := time.Now().UTC()
+	config.ID = oldConfig.ID
+	config.DateUpdated = &now
+
+	err = app.storage.UpdateConfig(config)
+	if err != nil {
+		return fmt.Errorf("unable to update user")
+	}
+	return nil
+}
+
+func (app *Application) deleteConfig(id string, claims *tokenauth.Claims) error {
+	config, err := app.storage.FindConfigByID(id)
+	if err != nil {
+		return fmt.Errorf("unable to delete config")
+	}
+	if config == nil {
+		return fmt.Errorf("unable to delete config, config is null")
+	}
+
+	err = claims.CanAccess(config.AppID, config.OrgID, config.System)
+	if err != nil {
+		return fmt.Errorf("unauthorized to delete config")
+	}
+
+	err = app.storage.DeleteConfig(id)
+	if err != nil {
+		return fmt.Errorf("unable to delete config")
+	}
+	return nil
 }
