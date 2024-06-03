@@ -79,7 +79,7 @@ func (h ApisHandler) StoreToken(l *logs.Log, r *http.Request, claims *tokenauth.
 		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
 	}
 
-	if tokenInfo.Token == nil || len(*tokenInfo.Token) == 0 {
+	if len(tokenInfo.Token) == 0 {
 		return l.HTTPResponseErrorData(logutils.StatusInvalid, "token", logutils.StringArgs("empty or nil"), nil, http.StatusBadRequest, false)
 	}
 

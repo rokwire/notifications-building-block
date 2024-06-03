@@ -16,9 +16,10 @@ package model
 
 import "time"
 
-// FirebaseToken Firebase token
-type FirebaseToken struct {
+// DeviceToken Firebase token
+type DeviceToken struct {
 	Token       string     `json:"token" bson:"token"`
+	TokenType   string     `json:"token_type" bson:"token_type"`
 	AppPlatform *string    `json:"app_platform" bson:"app_platform"`
 	AppVersion  *string    `json:"app_version" bson:"app_version"`
 	DateCreated time.Time  `json:"date_created" bson:"date_created"`

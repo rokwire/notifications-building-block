@@ -9,8 +9,8 @@ CoreToken:
   $ref: "./application/CoreToken.yaml"
 CoreAccountRef:
   $ref: "./application/CoreAccountRef.yaml"
-FirebaseToken:
-  $ref: "./application/FirebaseToken.yaml"
+DeviceToken:
+  $ref: "./application/DeviceToken.yaml"
 Message:
   $ref: "./application/Message.yaml"
 MessageRecipient:

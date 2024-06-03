@@ -243,8 +243,8 @@ type Storage interface {
 	DeleteUserWithID(orgID string, appID string, userID string) error
 
 	FindUserByToken(orgID string, appID string, token string) (*model.User, error)
-	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
-	GetFirebaseTokensByRecipients(orgID string, appID string, recipient []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error)
+	StoreDeviceToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
+	GetDeviceTokensByRecipients(orgID string, appID string, recipient []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error)
 	GetUsersByTopicWithContext(ctx context.Context, orgID string, appID string, topic string) ([]model.User, error)
 	GetUsersByRecipientCriteriasWithContext(ctx context.Context, orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.User, error)
 	SubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
@@ -291,7 +291,6 @@ type Storage interface {
 	InsertConfig(config model.Configs) error
 	UpdateConfig(config model.Configs) error
 	DeleteConfig(id string) error
-	StoreAirshipToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions

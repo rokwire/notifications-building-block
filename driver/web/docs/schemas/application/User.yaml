@@ -6,7 +6,7 @@ properties:
     type: string
   firebase_tokens:
     type: array  
-    $ref: "./FirebaseToken.yaml"
+    $ref: "./DeviceToken.yaml"
   user_id:
     type: string  
   topics:

@@ -140,32 +140,23 @@ func (sa Adapter) FindUsersByIDs(usersIDs []string) ([]model.User, error) {
 
 // FindUserByToken finds firebase token
 func (sa Adapter) FindUserByToken(orgID string, appID string, token string) (*model.User, error) {
-	return sa.findUserByTokenWithContext(context.Background(), orgID, appID, token, nil)
+	return sa.findUserByTokenWithContext(context.Background(), orgID, appID, token)
 }
 
-func (sa Adapter) findUserByTokenWithContext(context context.Context, orgID string, appID string, token string, tokenType *string) (*model.User, error) {
+func (sa Adapter) findUserByTokenWithContext(context context.Context, orgID string, appID string, token string) (*model.User, error) {
 	filter := bson.D{}
 	if len(token) > 0 {
-		if tokenType != nil {
-			tokenTypeString := *tokenType + "_tokens"
-			filter = bson.D{
-				primitive.E{Key: "org_id", Value: orgID},
-				primitive.E{Key: "app_id", Value: appID},
-				primitive.E{Key: tokenTypeString, Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
-			}
-		} else {
-			filter = bson.D{
-				primitive.E{Key: "org_id", Value: orgID},
-				primitive.E{Key: "app_id", Value: appID},
-				primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
-			}
+		filter = bson.D{
+			primitive.E{Key: "org_id", Value: orgID},
+			primitive.E{Key: "app_id", Value: appID},
+			primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 		}
 	}
 
 	var result *model.User
 	err := sa.db.users.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
-		log.Printf("warning: error while retriving token (%s) - %s", token, err)
+		log.Printf("warning: error while retrieving token (%s) - %s", token, err)
 	}
 
 	return result, err
@@ -196,95 +187,29 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, orgID string,
 	return result, err
 }
 
-// StoreFirebaseToken stores firebase token
-func (sa Adapter) StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
-
-		// Remove previous token no matter on with user is linked
-		if tokenInfo.PreviousToken != nil {
-			existingUser, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.PreviousToken, nil)
-			if existingUser != nil {
-				err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.PreviousToken, existingUser.UserID, nil)
-				if err != nil {
-					fmt.Printf("error while removing the previous token (%s) from user (%s)- %s\n", *tokenInfo.PreviousToken, userID, err)
-					return err
-				}
-			}
-		}
-
-		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.Token, nil)
-		if userRecord == nil {
-			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, userID)
-			if existingUser != nil {
-				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, nil)
-			} else {
-				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
-			}
-		} else if userRecord.UserID != userID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.Token, userRecord.UserID, nil)
-			if err != nil {
-				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, userRecord.UserID, err)
-				return err
-			}
-
-			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, userID)
-			if existingUser != nil {
-				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, nil)
-			} else {
-				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
-			}
-			if err != nil {
-				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", *tokenInfo.Token, userID, err)
-				return err
-			}
-		}
-
-		if err != nil {
-			fmt.Printf("error while storing token (%s) to user (%s) %s\n", *tokenInfo.Token, userID, err)
-			abortTransaction(sessionContext)
-			return err
-		}
-
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			abortTransaction(sessionContext)
-			fmt.Println(err)
-			return err
-		}
-		return nil
-	})
-
-	return err
-}
-
-func (sa Adapter) createUserWithContext(context context.Context, orgID string, appID string, userID string, token string, appPlatform *string, appVersion *string) (*model.User, error) {
+func (sa Adapter) createUserWithContext(context context.Context, orgID string, appID string, userID string, token string, appPlatform *string, appVersion *string, tokenType string) (*model.User, error) {
 
 	now := time.Now().UTC()
 
-	tokenList := []model.FirebaseToken{}
+	tokenList := []model.DeviceToken{}
 	if token != "" {
-		tokenList = append(tokenList, model.FirebaseToken{
+		tokenList = append(tokenList, model.DeviceToken{
 			Token:       token,
+			TokenType:   tokenType,
 			AppVersion:  appVersion,
 			AppPlatform: appPlatform,
 			DateCreated: now,
 		})
 	}
 	record := &model.User{
-		OrgID:          orgID,
-		AppID:          appID,
-		ID:             uuid.NewString(),
-		UserID:         userID,
-		FirebaseTokens: tokenList,
-		Topics:         []string{},
-		DateCreated:    now,
-		DateUpdated:    now,
+		OrgID:        orgID,
+		AppID:        appID,
+		ID:           uuid.NewString(),
+		UserID:       userID,
+		DeviceTokens: tokenList,
+		Topics:       []string{},
+		DateCreated:  now,
+		DateUpdated:  now,
 	}
 
 	_, err := sa.db.users.InsertOneWithContext(context, &record)
@@ -295,7 +220,7 @@ func (sa Adapter) createUserWithContext(context context.Context, orgID string, a
 	return record, err
 }
 
-func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, appID string, userID string, token string, appPlatform *string, appVersion *string, tokenType *string) error {
+func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, appID string, userID string, token string, appPlatform *string, appVersion *string, tokenType string) error {
 	// transaction
 	update := bson.D{}
 
@@ -305,33 +230,17 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, a
 		primitive.E{Key: "user_id", Value: userID},
 	}
 
-	if tokenType != nil {
-		tokenTypeString := *tokenType + "_tokens"
-		update = bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-			}},
-			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: tokenTypeString, Value: model.FirebaseToken{
-				Token:       token,
-				AppVersion:  appVersion,
-				AppPlatform: appPlatform,
-				DateCreated: time.Now().UTC(),
-			}}}},
-		}
-
-	} else {
-
-		update = bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-			}},
-			primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: model.FirebaseToken{
-				Token:       token,
-				AppVersion:  appVersion,
-				AppPlatform: appPlatform,
-				DateCreated: time.Now().UTC(),
-			}}}},
-		}
+	update = bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+		}},
+		primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: model.DeviceToken{
+			Token:       token,
+			TokenType:   tokenType,
+			AppVersion:  appVersion,
+			AppPlatform: appPlatform,
+			DateCreated: time.Now().UTC(),
+		}}}},
 	}
 
 	_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -354,7 +263,7 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, a
 	return nil
 }
 
-func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID string, appID string, token string, userID string, tokenType *string) error {
+func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID string, appID string, token string, userID string, tokenType string) error {
 	filter := bson.D{
 		primitive.E{Key: "org_id", Value: orgID},
 		primitive.E{Key: "app_id", Value: appID},
@@ -362,22 +271,11 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID stri
 	}
 
 	update := bson.D{}
-	if tokenType != nil {
-		tokenTypeString := *tokenType + "_tokens"
-		update = bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-			}},
-			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: tokenTypeString, Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
-		}
-	} else {
-
-		update = bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-			}},
-			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
-		}
+	update = bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+		}},
+		primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
 	}
 
 	_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -388,8 +286,8 @@ func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID stri
 	return nil
 }
 
-// GetFirebaseTokensByRecipients Gets all users mapped to the recipients input list
-func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, recipients []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error) {
+// GetDeviceTokensByRecipients Gets all users mapped to the recipients input list
+func (sa Adapter) GetDeviceTokensByRecipients(orgID string, appID string, recipients []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error) {
 	if len(recipients) > 0 {
 		innerFilter := []string{}
 		for _, recipient := range recipients {
@@ -413,7 +311,7 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 		tokens := []string{}
 		for _, tokenMapping := range users {
 			if !tokenMapping.NotificationsDisabled {
-				for _, token := range tokenMapping.FirebaseTokens {
+				for _, token := range tokenMapping.DeviceTokens {
 					if len(criteriaList) > 0 {
 						include := false
 						for _, criteria := range criteriaList {
@@ -1371,8 +1269,8 @@ func (sa *Adapter) DeleteQueueDataForRecipientsWithContext(ctx context.Context, 
 	return nil
 }
 
-// StoreAirshipToken stores airship token
-func (sa Adapter) StoreAirshipToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
+// StoreDeviceToken stores device token
+func (sa Adapter) StoreDeviceToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
 		if err != nil {
@@ -1380,35 +1278,35 @@ func (sa Adapter) StoreAirshipToken(orgID string, appID string, tokenInfo *model
 			return err
 		}
 
-		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, *tokenInfo.Token, tokenInfo.TokenType)
+		userRecord, _ := sa.findUserByTokenWithContext(sessionContext, orgID, appID, tokenInfo.Token)
 		if userRecord == nil {
 			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, userID)
 			if existingUser != nil {
-				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, tokenInfo.TokenType)
+				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, tokenInfo.TokenType)
 			} else {
-				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, tokenInfo.TokenType)
 			}
 		} else if userRecord.UserID != userID {
-			err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, *tokenInfo.Token, userRecord.UserID, tokenInfo.TokenType)
+			err = sa.removeTokenFromUserWithContext(sessionContext, orgID, appID, tokenInfo.Token, userRecord.UserID, tokenInfo.TokenType)
 			if err != nil {
-				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", *tokenInfo.Token, userRecord.UserID, err)
+				fmt.Printf("error while unlinking token (%s) from user (%s)- %s\n", tokenInfo.Token, userRecord.UserID, err)
 				return err
 			}
 
 			existingUser, _ := sa.findUserByIDWithContext(sessionContext, orgID, appID, userID)
 			if existingUser != nil {
-				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, tokenInfo.TokenType)
+				err = sa.addTokenToUserWithContext(sessionContext, orgID, appID, userID, tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, tokenInfo.TokenType)
 			} else {
-				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, *tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion)
+				_, err = sa.createUserWithContext(sessionContext, orgID, appID, userID, tokenInfo.Token, tokenInfo.AppPlatform, tokenInfo.AppVersion, tokenInfo.TokenType)
 			}
 			if err != nil {
-				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", *tokenInfo.Token, userID, err)
+				fmt.Printf("error while linking token (%s) from user (%s)- %s\n", tokenInfo.Token, userID, err)
 				return err
 			}
 		}
 
 		if err != nil {
-			fmt.Printf("error while storing token (%s) to user (%s) %s\n", *tokenInfo.Token, userID, err)
+			fmt.Printf("error while storing token (%s) to user (%s) %s\n", tokenInfo.Token, userID, err)
 			abortTransaction(sessionContext)
 			return err
 		}

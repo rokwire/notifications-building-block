@@ -32,19 +32,7 @@ func (app *Application) getVersion() string {
 }
 
 func (app *Application) storeToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
-
-	if tokenInfo.TokenType != nil || len(*tokenInfo.TokenType) != 0 {
-		if *tokenInfo.TokenType == "airship" {
-			return app.storage.StoreAirshipToken(orgID, appID, tokenInfo, userID)
-		} else if *tokenInfo.TokenType == "firebase" {
-			return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, userID)
-		} else {
-			return errors.New("error not a valid token type")
-		}
-	} else {
-		return app.storage.StoreFirebaseToken(orgID, appID, tokenInfo, userID)
-	}
-
+	return app.storage.StoreDeviceToken(orgID, appID, tokenInfo, userID)
 }
 
 func (app *Application) subscribeToTopic(orgID string, appID string, token string, userID string, anonymous bool, topic string) error {
@@ -204,8 +192,8 @@ func (app *Application) deleteUserWithID(orgID string, appID string, userID stri
 
 		if user.Topics != nil && len(user.Topics) > 0 {
 			for _, topic := range user.Topics {
-				if user.FirebaseTokens != nil && len(user.FirebaseTokens) > 0 {
-					for _, token := range user.FirebaseTokens {
+				if user.DeviceTokens != nil && len(user.DeviceTokens) > 0 {
+					for _, token := range user.DeviceTokens {
 						err := app.firebase.UnsubscribeToTopic(orgID, appID, token.Token, topic)
 						if err != nil {
 							return fmt.Errorf("error unsubscribe user(%s) with token(%s) from topic(%s): %s", userID, token.Token, topic, err)

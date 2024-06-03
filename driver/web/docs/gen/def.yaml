@@ -1286,10 +1286,12 @@ components:
           type: string
         name:
           type: string
-    FirebaseToken:
+    DeviceToken:
       type: object
       properties:
         token:
+          type: string
+        token_type:
           type: string
         app_platform:
           type: string
@@ -1415,7 +1417,7 @@ components:
           type: string
         firebase_tokens:
           type: array
-          $ref: '#/components/schemas/FirebaseToken'
+          $ref: '#/components/schemas/DeviceToken'
         user_id:
           type: string
         topics:

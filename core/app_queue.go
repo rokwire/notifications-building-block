@@ -240,10 +240,9 @@ func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 			continue //do not send notification if disabled for the user
 		}
 
-		airshipTokens := user.AirshipTokens
-		firebaseTokens := user.FirebaseTokens
+		tokens := user.DeviceTokens
 
-		go q.sendNotifications(item, firebaseTokens, airshipTokens) //new thread
+		go q.sendNotifications(item, tokens) //new thread
 	}
 
 	//remove the items from the queue
@@ -256,20 +255,15 @@ func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 	return nil
 }
 
-func (q queueLogic) sendNotifications(queueItem model.QueueItem, firebaseTokens []model.FirebaseToken, airshipTokens []model.FirebaseToken) {
-	for _, fToken := range firebaseTokens {
-		token := fToken.Token
-		sendErr := q.firebase.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
-		if sendErr != nil {
-			q.logger.Errorf("error send notification to token (%s): %s", token, sendErr)
+func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.DeviceToken) {
+	for _, deviceToken := range tokens {
+		token := deviceToken.Token
+		var sendErr error
+		if deviceToken.TokenType == "airship" {
+			sendErr = q.airship.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
 		} else {
-			q.logger.Infof("queue item(%s:%s:%s) has been sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
+			sendErr = q.firebase.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
 		}
-	}
-
-	for _, aToken := range airshipTokens {
-		token := aToken.Token
-		sendErr := q.airship.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
 		if sendErr != nil {
 			q.logger.Errorf("error send notification to token (%s): %s", token, sendErr)
 		} else {

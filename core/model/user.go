@@ -21,30 +21,29 @@ type User struct {
 	OrgID string `json:"org_id" bson:"org_id"`
 	AppID string `json:"app_id" bson:"app_id"`
 
-	ID                    string          `json:"id" bson:"_id"`
-	NotificationsDisabled bool            `json:"notifications_disabled" bson:"notifications_disabled"`
-	FirebaseTokens        []FirebaseToken `json:"firebase_tokens" bson:"firebase_tokens"`
-	AirshipTokens         []FirebaseToken `json:"airship_tokens" bson:"airship_tokens"`
-	UserID                string          `json:"user_id" bson:"user_id"`
-	Topics                []string        `json:"topics" bson:"topics"`
-	DateCreated           time.Time       `json:"date_created" bson:"date_created"`
-	DateUpdated           time.Time       `json:"date_updated" bson:"date_updated"`
+	ID                    string        `json:"id" bson:"_id"`
+	NotificationsDisabled bool          `json:"notifications_disabled" bson:"notifications_disabled"`
+	DeviceTokens          []DeviceToken `json:"firebase_tokens" bson:"firebase_tokens"`
+	UserID                string        `json:"user_id" bson:"user_id"`
+	Topics                []string      `json:"topics" bson:"topics"`
+	DateCreated           time.Time     `json:"date_created" bson:"date_created"`
+	DateUpdated           time.Time     `json:"date_updated" bson:"date_updated"`
 } //@name User
 
 // AddToken adds topic to the list
 func (t *User) AddToken(token string) {
-	if t.FirebaseTokens == nil {
-		t.FirebaseTokens = []FirebaseToken{}
+	if t.DeviceTokens == nil {
+		t.DeviceTokens = []DeviceToken{}
 	}
 	exists := false
-	for _, entry := range t.FirebaseTokens {
+	for _, entry := range t.DeviceTokens {
 		if token == entry.Token {
 			exists = true
 			break
 		}
 	}
 	if !exists {
-		t.FirebaseTokens = append(t.FirebaseTokens, FirebaseToken{
+		t.DeviceTokens = append(t.DeviceTokens, DeviceToken{
 			Token:       token,
 			DateCreated: time.Now().UTC(),
 		})
@@ -53,14 +52,14 @@ func (t *User) AddToken(token string) {
 
 // RemoveToken removes a topic
 func (t *User) RemoveToken(token string) {
-	if t.FirebaseTokens != nil {
-		tokens := []FirebaseToken{}
-		for _, entry := range t.FirebaseTokens {
+	if t.DeviceTokens != nil {
+		tokens := []DeviceToken{}
+		for _, entry := range t.DeviceTokens {
 			if entry.Token != token {
 				tokens = append(tokens, entry)
 			}
 		}
-		t.FirebaseTokens = tokens
+		t.DeviceTokens = tokens
 	}
 }
 
