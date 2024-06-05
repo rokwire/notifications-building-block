@@ -944,6 +944,21 @@ func (sa Adapter) DeleteMessagesRecipientsForMessagesWithContext(ctx context.Con
 	return nil
 }
 
+// DeleteMessagesRecipientsForUsers deletes messages recipients for users
+func (sa Adapter) DeleteMessagesRecipientsForUsers(ctx context.Context, orgID string, appID string, accountsIDs []string) error {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
+	}
+
+	_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "message recipient", nil, err)
+	}
+	return nil
+}
+
 // FindMessagesWithContext finds messages by ids using context
 func (sa Adapter) FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
