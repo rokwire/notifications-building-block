@@ -208,6 +208,7 @@ type Storage interface {
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
+	DeleteUsersWithIDs(ctx context.Context, orgID string, appID string, accountsIDs []string) error
 
 	FindUserByToken(orgID string, appID string, token string) (*model.User, error)
 	StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
@@ -227,6 +228,7 @@ type Storage interface {
 	InsertMessagesRecipientsWithContext(ctx context.Context, items []model.MessageRecipient) error
 	DeleteMessagesRecipientsForIDsWithContext(ctx context.Context, ids []string) error
 	DeleteMessagesRecipientsForMessagesWithContext(ctx context.Context, messagesIDs []string) error
+	DeleteMessagesRecipientsForUsers(ctx context.Context, orgID string, appID string, accountsIDs []string) error
 
 	FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error)
 	FindMessagesByParams(orgID string, appID string, senderType string, senderAccountID *string, offset *int64, limit *int64, order *string) ([]model.Message, error)
@@ -251,6 +253,7 @@ type Storage interface {
 	DeleteQueueData(ids []string) error
 	DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error
 	DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error
+	DeleteQueueDataForUsers(ctx context.Context, orgID string, appID string, accountsIDs []string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions
@@ -270,4 +273,5 @@ type Mailer interface {
 // Core exposes Core APIs for the driver adapters
 type Core interface {
 	RetrieveCoreUserAccountByCriteria(accountCriteria map[string]interface{}, appID *string, orgID *string) ([]model.CoreAccount, error)
+	LoadDeletedMemberships() ([]model.DeletedUserData, error)
 }
