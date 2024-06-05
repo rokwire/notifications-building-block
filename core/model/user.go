@@ -99,3 +99,16 @@ type CoreAccountRef struct {
 	UserID string `json:"user_id" bson:"user_id"`
 	Name   string `json:"name" bson:"name"`
 }
+
+// DeletedUserData represents a user-deleted
+type DeletedUserData struct {
+	AppID       string              `json:"app_id"`
+	Memberships []DeletedMembership `json:"memberships"`
+	OrgID       string              `json:"org_id"`
+}
+
+// DeletedMembership defines model for DeletedMembership.
+type DeletedMembership struct {
+	AccountID string                  `json:"account_id"`
+	Context   *map[string]interface{} `json:"context,omitempty"`
+}
