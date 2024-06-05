@@ -545,6 +545,21 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 	return nil
 }
 
+// DeleteUsersWithIDs Deletes users
+func (sa Adapter) DeleteUsersWithIDs(ctx context.Context, orgID string, appID string, accountsIDs []string) error {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
+	}
+
+	_, err := sa.db.users.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "user", nil, err)
+	}
+	return nil
+}
+
 // GetMessagesStats counts read/unread and muted/unmuted messages
 func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error) {
 	filter := bson.D{

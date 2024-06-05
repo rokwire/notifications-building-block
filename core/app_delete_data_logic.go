@@ -157,6 +157,13 @@ func (d deleteDataLogic) deleteAppOrgUsersData(appID string, orgID string, accou
 		d.logger.Errorf("error deleting the queue data items for users - %s", err)
 		return
 	}
+
+	// delete the users
+	err = d.storage.DeleteUsersWithIDs(nil, appID, orgID, accountsIDs)
+	if err != nil {
+		d.logger.Errorf("error deleting the users - %s", err)
+		return
+	}
 }
 
 func (d deleteDataLogic) getAccountsIDs(memberships []model.DeletedMembership) []string {
