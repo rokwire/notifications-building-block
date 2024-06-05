@@ -55,7 +55,7 @@ func (d deleteDataLogic) setupTimerForDelete() {
 	}
 
 	//wait until it is the correct moment from the day
-	/*location, err := time.LoadLocation("America/Chicago")
+	location, err := time.LoadLocation("America/Chicago")
 	if err != nil {
 		d.logger.Errorf("Error getting location:%s\n", err.Error())
 	}
@@ -74,10 +74,10 @@ func (d deleteDataLogic) setupTimerForDelete() {
 		d.logger.Infof("setupTimerForDelete -> the delete process has already been processed today, so the first process will be tomorrow")
 		leftToday := 86400 - nowSecondsInDay
 		durationInSeconds = leftToday + desiredMoment // the time which left today + desired moment from tomorrow
-	} */
+	}
 	//log.Println(durationInSeconds)
-	duration := time.Second * time.Duration(3)
-	//duration := time.Second * time.Duration(durationInSeconds)
+	//duration := time.Second * time.Duration(3)
+	duration := time.Second * time.Duration(durationInSeconds)
 	d.logger.Infof("setupTimerForDelete -> first call after %s", duration)
 
 	d.dailyDeleteTimer = time.NewTimer(duration)
