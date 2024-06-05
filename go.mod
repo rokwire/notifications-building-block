@@ -1,6 +1,6 @@
 module notifications
 
-go 1.20
+go 1.22
 
 require (
 	firebase.google.com/go v3.13.0+incompatible
