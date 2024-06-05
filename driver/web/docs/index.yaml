@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Rokwire Notification Building Block API
   description: Notification Building Block API Documentation
-  version: 1.19.0
+  version: 1.20.0
 servers:
   - url: 'https://api.rokwire.illinois.edu/notifications'
     description: Production server
