@@ -1330,6 +1330,21 @@ func (sa *Adapter) DeleteQueueDataForRecipientsWithContext(ctx context.Context, 
 	return nil
 }
 
+// DeleteQueueDataForUsers removes queue data items for users
+func (sa *Adapter) DeleteQueueDataForUsers(ctx context.Context, orgID string, appID string, accountsIDs []string) error {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
+	}
+
+	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
+	}
+	return nil
+}
+
 func abortTransaction(sessionContext mongo.SessionContext) {
 	err := sessionContext.AbortTransaction(sessionContext)
 	if err != nil {

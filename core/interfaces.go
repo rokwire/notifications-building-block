@@ -252,6 +252,7 @@ type Storage interface {
 	DeleteQueueData(ids []string) error
 	DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error
 	DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error
+	DeleteQueueDataForUsers(ctx context.Context, orgID string, appID string, accountsIDs []string) error
 }
 
 // Firebase is used to wrap all Firebase Messaging API functions

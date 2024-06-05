@@ -150,13 +150,13 @@ func (d deleteDataLogic) deleteAppOrgUsersData(appID string, orgID string, accou
 		d.logger.Errorf("error deleting the messages recipients for users - %s", err)
 		return
 	}
-	/*
-		// delete the person
-		err = d.storage.DeleteEventPersonsByAccountsIDs(nil, nil, appID, orgID, accountsIDs)
-		if err != nil {
-			d.logger.Errorf("error deleting the person by account ID - %s", err)
-			return
-		} */
+
+	// delete the queue data items
+	err = d.storage.DeleteQueueDataForUsers(nil, appID, orgID, accountsIDs)
+	if err != nil {
+		d.logger.Errorf("error deleting the queue data items for users - %s", err)
+		return
+	}
 }
 
 func (d deleteDataLogic) getAccountsIDs(memberships []model.DeletedMembership) []string {
