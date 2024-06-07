@@ -24,7 +24,7 @@ func NewAirshipAdapter(host string, bearerToken string) *Adapter {
 
 // SendNotificationToToken sends a notification to an Airship token
 func (a *Adapter) SendNotificationToToken(orgID string, appID string, deviceToken string, title string, body string, data map[string]string) error {
-	url := fmt.Sprintf(a.host)
+	url := fmt.Sprintf("%s/api/push", a.host)
 
 	client := &http.Client{
 		Timeout: 120 * time.Second,
@@ -89,7 +89,7 @@ func (a *Adapter) SendNotificationToToken(orgID string, appID string, deviceToke
 	defer resp.Body.Close()
 
 	//TODO save response?
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != 202 {
 		log.Printf("error with airship response code - %d", resp.StatusCode)
 		return fmt.Errorf("error with airship response code != 200")
 	}
