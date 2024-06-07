@@ -25,7 +25,7 @@ import (
 	"github.com/rokwire/logging-library-go/v2/errors"
 )
 
-func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) ([]model.Message, error) {
+func (app *Application) sharedCreateMessages(imMessages []model.InputMessage, isBatch bool) ([]model.Message, error) {
 
 	if len(imMessages) == 0 {
 		return nil, errors.New("no data")
@@ -43,6 +43,26 @@ func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) ([
 		allQueueItems := []model.QueueItem{}
 
 		//process every message
+		// TODO: Handle batching properly
+		// if isBatch {
+		// 	inputMessageMap := make(map[string]struct{}, len(imMessages))
+		// 	for _, im := range imMessages {
+		// 		//check to ensure we dont send duplicated messages
+		// 		_, ok := inputMessageMap[im.Sender.User.UserID]
+		// 		if !ok {
+		// 			message, recipients, err := app.sharedHandleInputMessage(context, im)
+		// 			if err != nil {
+		// 				fmt.Printf("error on handling a message: %s", err)
+		// 				return err
+		// 			}
+		// 			queueItems := app.sharedCreateQueueItems(*message, recipients)
+		// 			allMessages = append(allMessages, *message)
+		// 			allRecipients = append(allRecipients, recipients...)
+		// 			allQueueItems = append(allQueueItems, queueItems...)
+		// 			inputMessageMap[im.Sender.User.UserID] = struct{}{}
+		// 		}
+		// 	}
+		// } else {
 		for _, im := range imMessages {
 			message, recipients, err := app.sharedHandleInputMessage(context, im)
 			if err != nil {
@@ -50,11 +70,11 @@ func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) ([
 				return err
 			}
 			queueItems := app.sharedCreateQueueItems(*message, recipients)
-
 			allMessages = append(allMessages, *message)
 			allRecipients = append(allRecipients, recipients...)
 			allQueueItems = append(allQueueItems, queueItems...)
 		}
+		// }
 
 		//store the messages object
 		err = app.storage.InsertMessagesWithContext(context, allMessages)
@@ -113,7 +133,7 @@ func (app *Application) sharedHandleInputMessage(context storage.TransactionCont
 	//calculate the recipients
 	recipients, err := app.sharedCalculateRecipients(context, im.OrgID, im.AppID,
 		im.Subject, im.Body, im.InputRecipients, im.RecipientsCriteriaList,
-		im.RecipientAccountCriteria, im.Topic, *messageID)
+		im.RecipientAccountCriteria, im.Topics, *messageID)
 	if err != nil {
 		fmt.Printf("error on calculating recipients for a message: %s", err)
 		return nil, nil, err
@@ -128,7 +148,7 @@ func (app *Application) sharedHandleInputMessage(context storage.TransactionCont
 	dateCreated := time.Now()
 	message := model.Message{OrgID: im.OrgID, AppID: im.AppID, ID: *messageID, Priority: im.Priority, Time: im.Time,
 		Subject: im.Subject, Sender: im.Sender, Body: im.Body, Data: im.Data, RecipientsCriteriaList: im.RecipientsCriteriaList,
-		RecipientAccountCriteria: im.RecipientAccountCriteria, Topic: im.Topic, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
+		RecipientAccountCriteria: im.RecipientAccountCriteria, Topic: im.Topic, Topics: im.Topics, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
 
 	return &message, recipients, nil
 }
@@ -149,9 +169,6 @@ func (app *Application) sharedCreateQueueItems(message model.Message, messageRec
 		subject := message.Subject
 		body := message.Body
 		data := message.Data
-		if message.Topic != nil {
-			data["topic"] = *message.Topic
-		}
 
 		time := message.Time
 		priority := message.Priority
@@ -170,7 +187,7 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 	orgID string, appID string,
 	subject string, body string,
 	recipients []model.MessageRecipient, recipientsCriteriaList []model.RecipientCriteria,
-	recipientAccountCriteria map[string]interface{}, topic *string, messageID string) ([]model.MessageRecipient, error) {
+	recipientAccountCriteria map[string]interface{}, topics []string, messageID string) ([]model.MessageRecipient, error) {
 
 	messageRecipients := []model.MessageRecipient{}
 	checkCriteria := true
@@ -194,14 +211,14 @@ func (app *Application) sharedCalculateRecipients(context storage.TransactionCon
 	}
 
 	// recipients from topic
-	if topic != nil {
-		topicUsers, err := app.storage.GetUsersByTopicWithContext(context, orgID,
-			appID, *topic)
+	if topics != nil {
+		topicUsers, err := app.storage.GetUsersByTopicsWithContext(context, orgID,
+			appID, topics)
 		if err != nil {
-			fmt.Printf("error retrieving recipients by topic (%s): %s", *topic, err)
+			fmt.Printf("error retrieving recipients by topic (%s): %s", topics, err)
 			return nil, err
 		}
-		log.Printf("retrieve recipients (%+v) for topic (%s)", topicUsers, *topic)
+		log.Printf("retrieve recipients (%+v) for topic (%s)", topicUsers, topics)
 
 		topicRecipients := make([]model.MessageRecipient, len(topicUsers))
 		for i, item := range topicUsers {

@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+type m map[string]interface{}
+
 // Adapter is the Airship adapter
 type Adapter struct {
 	host        string
@@ -28,37 +30,39 @@ func (a *Adapter) SendNotificationToToken(orgID string, appID string, deviceToke
 		Timeout: 120 * time.Second,
 	}
 
-	deviceTypes := [2]string{"ios", "android"}
+	//TODO check body for additional urls, localization and additional parameters for notification
 
-	audience := map[string]interface{}{
-		"device_token": deviceToken,
+	ios := m{
+		"alert": m{
+			"title": title,
+			"body":  body,
+		},
 	}
-
-	iosAlert := map[string]interface{}{
-		title: title,
-		body:  body,
-	}
-
-	iosNotification := map[string]interface{}{
-		"alert": iosAlert,
-	}
-
-	androidNotification := map[string]interface{}{
+	android := m{
 		"title": title,
 		"alert": body,
 	}
 
-	notification := map[string]interface{}{
-		"ios":     iosNotification,
-		"android": androidNotification,
+	if val, ok := data["url"]; ok {
+		actions := m{
+			"open": m{
+				"type":    "url",
+				"content": val,
+			},
+		}
+		ios["actions"] = actions
+		android["actions"] = actions
 	}
 
-	//TODO check body for additional urls, localization and additional parameters for notification
-
-	bodyData := map[string]interface{}{
-		"device_types": deviceTypes,
-		"audience":     audience,
-		"notification": notification,
+	bodyData := m{
+		"device_types": []string{"ios", "android"},
+		"audience": m{
+			"channel": deviceToken,
+		},
+		"notification": m{
+			"ios":     ios,
+			"android": android,
+		},
 	}
 
 	bodyBytes, err := json.Marshal(bodyData)

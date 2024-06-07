@@ -77,7 +77,7 @@ func (app *Application) updateTopic(topic *model.Topic) (*model.Topic, error) {
 
 func (app *Application) createMessage(inputMessage model.InputMessage) (*model.Message, error) {
 	inputMessages := []model.InputMessage{inputMessage} //only one
-	messages, err := app.sharedCreateMessages(inputMessages)
+	messages, err := app.sharedCreateMessages(inputMessages, false)
 	if err != nil {
 		return nil, err
 	}

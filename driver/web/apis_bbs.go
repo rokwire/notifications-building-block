@@ -20,6 +20,7 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -81,7 +82,7 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 
 	inputMessages := []model.InputMessage{inputMessage} //only one message
 
-	messages, err := h.app.BBs.BBsCreateMessages(inputMessages)
+	messages, err := h.app.BBs.BBsCreateMessages(inputMessages, false)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}
@@ -99,6 +100,13 @@ func (h BBsAPIsHandler) SendMessage(l *logs.Log, r *http.Request, claims *tokena
 
 // SendMessages sends messages
 func (h BBsAPIsHandler) SendMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+
+	isBatch := false //false by default
+	isBatchParam := r.URL.Query().Get("isBatch")
+	if isBatchParam != "" {
+		isBatch, _ = strconv.ParseBool(isBatchParam)
+	}
+
 	var bodyData Def.SharedReqCreateMessages
 	err := json.NewDecoder(r.Body).Decode(&bodyData)
 	if err != nil {
@@ -128,7 +136,7 @@ func (h BBsAPIsHandler) SendMessages(l *logs.Log, r *http.Request, claims *token
 		inputMessages = append(inputMessages, inputMessage)
 	}
 
-	createdMessages, err := h.app.BBs.BBsCreateMessages(inputMessages)
+	createdMessages, err := h.app.BBs.BBsCreateMessages(inputMessages, isBatch)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
 	}

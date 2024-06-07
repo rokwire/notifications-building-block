@@ -25,9 +25,9 @@ import (
 	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
-func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error) {
+func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage, isBatch bool) ([]model.Message, error) {
 
-	return app.sharedCreateMessages(inputMessages)
+	return app.sharedCreateMessages(inputMessages, isBatch)
 }
 
 func (app *Application) bbsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error {

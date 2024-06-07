@@ -198,7 +198,7 @@ func (s *adminImpl) AdminGetMessagesStats(orgID string, appID string, adminAccou
 
 // BBs exposes users related APIs used by the platform building blocks
 type BBs interface {
-	BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error)
+	BBsCreateMessages(inputMessages []model.InputMessage, isBatch bool) ([]model.Message, error)
 	BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error
 	BBsSendMail(toEmail string, subject string, body string) error
 	BBsAddRecipients(l *logs.Log, serviceAccountID string, messageID string, recipients []model.InputMessageRecipient) ([]model.MessageRecipient, error)
@@ -209,8 +209,8 @@ type bbsImpl struct {
 	app *Application
 }
 
-func (s *bbsImpl) BBsCreateMessages(inputMessages []model.InputMessage) ([]model.Message, error) {
-	return s.app.bbsCreateMessages(inputMessages)
+func (s *bbsImpl) BBsCreateMessages(inputMessages []model.InputMessage, isBatch bool) ([]model.Message, error) {
+	return s.app.bbsCreateMessages(inputMessages, isBatch)
 }
 
 func (s *bbsImpl) BBsDeleteMessages(l *logs.Log, serviceAccountID string, messagesIDs []string) error {
@@ -245,7 +245,7 @@ type Storage interface {
 	FindUserByToken(orgID string, appID string, token string) (*model.User, error)
 	StoreDeviceToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error
 	GetDeviceTokensByRecipients(orgID string, appID string, recipient []model.MessageRecipient, criteriaList []model.RecipientCriteria) ([]string, error)
-	GetUsersByTopicWithContext(ctx context.Context, orgID string, appID string, topic string) ([]model.User, error)
+	GetUsersByTopicsWithContext(ctx context.Context, orgID string, appID string, topic []string) ([]model.User, error)
 	GetUsersByRecipientCriteriasWithContext(ctx context.Context, orgID string, appID string, recipientCriterias []model.RecipientCriteria) ([]model.User, error)
 	SubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
 	UnsubscribeToTopic(orgID string, appID string, token string, userID string, topic string) error
