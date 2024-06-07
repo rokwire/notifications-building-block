@@ -69,7 +69,14 @@ func getMessageData(inputMessage Def.SharedReqCreateMessage) model.InputMessage 
 	}
 
 	//TODO add topic to topics array
-	topics := append(inputMessage.Topics, *inputMessage.Topic)
+	var topics []string
+	if inputMessage.Topic != nil {
+		if inputMessage.Topics != nil {
+			topics = append(inputMessage.Topics, *inputMessage.Topic)
+		} else {
+			topics = []string{*inputMessage.Topic}
+		}
+	}
 	inputRecipients := messagesRecipientsListFromDef(inputMessage.Recipients)
 	recipientsCriteria := recipientsCriteriaListFromDef(inputMessage.RecipientsCriteriaList)
 	recipientsAccountCriteria := inputMessage.RecipientAccountCriteria
