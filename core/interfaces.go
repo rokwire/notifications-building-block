@@ -33,7 +33,7 @@ type Services interface {
 	GetTopics(orgID string, appID string) ([]model.Topic, error)
 	AppendTopic(*model.Topic) (*model.Topic, error)
 	UpdateTopic(*model.Topic) (*model.Topic, error)
-	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
+	FindUserByID(orgID string, appID string, userID string, l *logs.Log) (*model.User, error)
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
 
@@ -143,8 +143,8 @@ func (s *servicesImpl) GetAllAppPlatforms(orgID string, appID string) ([]model.A
 	return s.app.getAllAppPlatforms(orgID, appID)
 }
 
-func (s *servicesImpl) FindUserByID(orgID string, appID string, userID string) (*model.User, error) {
-	return s.app.findUserByID(orgID, appID, userID)
+func (s *servicesImpl) FindUserByID(orgID string, appID string, userID string, l *logs.Log) (*model.User, error) {
+	return s.app.findUserByID(orgID, appID, userID, l)
 }
 
 func (s *servicesImpl) UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error) {
@@ -239,6 +239,7 @@ type Storage interface {
 
 	FindUsersByIDs(usersIDs []string) ([]model.User, error)
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
+	InsertUser(orgID string, appID string, userID string) (*model.User, error)
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
 

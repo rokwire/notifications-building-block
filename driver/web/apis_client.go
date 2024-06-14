@@ -107,7 +107,7 @@ func (h ApisHandler) StoreToken(l *logs.Log, r *http.Request, claims *tokenauth.
 // @Security RokwireAuth UserAuth
 // @Router /user [get]
 func (h ApisHandler) GetUser(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	userMapping, err := h.app.Services.FindUserByID(claims.OrgID, claims.AppID, claims.Subject)
+	userMapping, err := h.app.Services.FindUserByID(claims.OrgID, claims.AppID, claims.Subject, l)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionFind, "user", nil, err, http.StatusInternalServerError, true)
 	}

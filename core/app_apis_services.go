@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rokwire/core-auth-library-go/v3/authutils"
 	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
 )
 
@@ -170,8 +171,19 @@ func (app *Application) getAllAppPlatforms(orgID string, appID string) ([]model.
 	return app.storage.GetAllAppPlatforms(orgID, appID)
 }
 
-func (app *Application) findUserByID(orgID string, appID string, userID string) (*model.User, error) {
-	return app.storage.FindUserByID(orgID, appID, userID)
+func (app *Application) findUserByID(orgID string, appID string, userID string, l *logs.Log) (*model.User, error) {
+	user, err := app.storage.FindUserByID(orgID, appID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to find user(%s): %s", userID, err)
+	}
+	if user == nil {
+		l.Infof("user not found for id {%s}, creating new user record", userID)
+		user, err = app.storage.InsertUser(orgID, appID, userID)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create user(%s): %s", userID, err)
+		}
+	}
+	return user, nil
 }
 
 func (app *Application) updateUserByID(orgID string, appID string, userID string, notificationsDisabled bool) (*model.User, error) {

@@ -48,6 +48,9 @@ type Adapter struct {
 // Start starts the storage
 func (sa *Adapter) Start() error {
 	err := sa.db.start()
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionStart, "storage adapter", nil, err)
+	}
 
 	//cache the configs
 	err = sa.cacheConfigs()
@@ -181,10 +184,18 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, orgID string,
 	err := sa.db.users.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
 		log.Printf("warning: error while retriving user (%s) - %s", userID, err)
+		if strings.Contains(err.Error(), "mongo: no documents in result") {
+			return nil, nil
+		}
 		return nil, err
 	}
 
 	return result, err
+}
+
+// InsertUser inserts a new user document
+func (sa Adapter) InsertUser(orgID string, appID string, userID string) (*model.User, error) {
+	return sa.createUserWithContext(context.Background(), orgID, appID, userID, "", nil, nil, "")
 }
 
 func (sa Adapter) createUserWithContext(context context.Context, orgID string, appID string, userID string, token string, appPlatform *string, appVersion *string, tokenType string) (*model.User, error) {
