@@ -46,8 +46,9 @@ func (a *Adapter) SendNotificationToToken(orgID string, appID string, deviceToke
 	if val, ok := data["url"]; ok {
 		actions := m{
 			"open": m{
-				"type":    "url",
-				"content": val,
+				"type":         "deep_link",
+				"content":      val,
+				"fallback_url": val,
 			},
 		}
 		ios["actions"] = actions
