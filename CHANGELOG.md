@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Fixed
+- Problem while deleting recipients from BB API [#178](https://github.com/rokwire/notifications-building-block/issues/178)
+
 ## [1.20.0] - 2024-06-06
 ### Added
 - Remove user data [#175](https://github.com/rokwire/notifications-building-block/issues/175)
