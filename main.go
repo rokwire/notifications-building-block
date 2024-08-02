@@ -28,10 +28,13 @@ import (
 	"strings"
 
 	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/authutils"
 	"github.com/rokwire/core-auth-library-go/v3/envloader"
 	"github.com/rokwire/core-auth-library-go/v3/keys"
 	"github.com/rokwire/core-auth-library-go/v3/sigauth"
+	"github.com/rokwire/logging-library-go/v2/errors"
 	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 )
 
 var (
@@ -156,7 +159,24 @@ func main() {
 	application := core.NewApplication(Version, Build, storageAdapter, firebaseAdapter, mailAdapter, logger, coreAdapter, airshipAdapter)
 	application.Start()
 
-	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, logger)
+	// read CORS parameters from stored env config
+	var corsAllowedHeaders []string
+	var corsAllowedOrigins []string
+	envConfig, err := storageAdapter.FindConfig(model.ConfigTypeEnv, authutils.AllApps, authutils.AllOrgs)
+	if err != nil {
+		logger.Fatal(errors.WrapErrorAction(logutils.ActionFind, model.TypeConfig, nil, err).Error())
+	}
+	if envConfig != nil {
+		envData, err := model.GetConfigData[model.EnvConfigData](*envConfig)
+		if err != nil {
+			logger.Fatal(errors.WrapErrorAction(logutils.ActionCast, model.TypeEnvConfigData, nil, err).Error())
+		}
+
+		corsAllowedHeaders = envData.CORSAllowedHeaders
+		corsAllowedOrigins = envData.CORSAllowedOrigins
+	}
+
+	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, corsAllowedOrigins, corsAllowedHeaders, logger)
 
 	webAdapter.Start()
 }

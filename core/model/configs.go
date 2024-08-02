@@ -49,7 +49,8 @@ type Configs struct {
 
 // EnvConfigData contains environment configs for this service
 type EnvConfigData struct {
-	ExampleEnv string `json:"example_env" bson:"example_env"`
+	CORSAllowedOrigins []string `json:"cors_allowed_origins" bson:"cors_allowed_origins"`
+	CORSAllowedHeaders []string `json:"cors_allowed_headers" bson:"cors_allowed_headers"`
 }
 
 // GetConfigData returns a pointer to the given config's Data as the given type T

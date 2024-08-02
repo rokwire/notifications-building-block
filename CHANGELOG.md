@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add in Airship Push Notifications [#173](https://github.com/rokwire/notifications-building-block/issues/173)
 - Add multiple topic support
+- Add CORS support
 
 ## [1.19.0] - 2023-10-26
 ## [1.18.0] - 2023-09-20

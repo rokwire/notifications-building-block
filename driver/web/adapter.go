@@ -17,7 +17,6 @@ package web
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
 	"notifications/core"
 	"notifications/core/model"
@@ -29,6 +28,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rokwire/core-auth-library-go/v3/authservice"
 	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v3/webauth"
 
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
@@ -51,6 +51,9 @@ type Adapter struct {
 	bbsApisHandler      BBsAPIsHandler
 
 	app *core.Application
+
+	corsAllowedOrigins []string
+	corsAllowedHeaders []string
 
 	logger *logs.Logger
 }
@@ -135,7 +138,11 @@ func (we Adapter) Start() {
 
 	bbsRouter.HandleFunc("/mail", we.wrapFunc(we.bbsApisHandler.SendMail, we.auth.bbs.Permissions)).Methods("POST")
 
-	log.Fatal(http.ListenAndServe(":"+we.port, router))
+	var handler http.Handler = router
+	if len(we.corsAllowedOrigins) > 0 {
+		handler = webauth.SetupCORS(we.corsAllowedOrigins, we.corsAllowedHeaders, router)
+	}
+	we.logger.Fatalf("Error serving: %v", http.ListenAndServe(":"+we.port, handler))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
@@ -212,7 +219,8 @@ func (we Adapter) wrapFunc(handler handlerFunc, authorization tokenauth.Handler)
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(host string, port string, app *core.Application, config *model.Config, serviceRegManager *authservice.ServiceRegManager, logger *logs.Logger) Adapter {
+func NewWebAdapter(host string, port string, app *core.Application, config *model.Config, serviceRegManager *authservice.ServiceRegManager,
+	corsAllowedOrigins []string, corsAllowedHeaders []string, logger *logs.Logger) Adapter {
 	yamlDoc, err := loadDocsYAML(host)
 	if err != nil {
 		logger.Fatalf("error parsing docs yaml - %s", err.Error())
@@ -229,7 +237,7 @@ func NewWebAdapter(host string, port string, app *core.Application, config *mode
 	bbsApisHandler := NewBBsAPIsHandler(app)
 	return Adapter{host: host, port: port, cachedYamlDoc: yamlDoc, auth: auth, apisHandler: apisHandler,
 		adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsApisHandler: bbsApisHandler,
-		app: app, logger: logger}
+		app: app, corsAllowedOrigins: corsAllowedOrigins, corsAllowedHeaders: corsAllowedHeaders, logger: logger}
 }
 
 // AppListener implements core.ApplicationListener interface
