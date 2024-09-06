@@ -137,27 +137,29 @@ func (app *Application) sharedCreateQueueItems(message model.Message, messageRec
 	queueItems := []model.QueueItem{}
 
 	for _, messageRecipient := range messageRecipients {
-		orgID := messageRecipient.OrgID
-		appID := messageRecipient.AppID
-		id := uuid.NewString()
+		if !messageRecipient.Mute {
+			orgID := messageRecipient.OrgID
+			appID := messageRecipient.AppID
+			id := uuid.NewString()
 
-		messageID := message.ID
+			messageID := message.ID
 
-		messageRecipientID := messageRecipient.ID
-		userID := messageRecipient.UserID
+			messageRecipientID := messageRecipient.ID
+			userID := messageRecipient.UserID
 
-		subject := message.Subject
-		body := message.Body
-		data := message.Data
+			subject := message.Subject
+			body := message.Body
+			data := message.Data
 
-		time := message.Time
-		priority := message.Priority
+			time := message.Time
+			priority := message.Priority
 
-		queueItem := model.QueueItem{OrgID: orgID, AppID: appID, ID: id,
-			MessageID: messageID, MessageRecipientID: messageRecipientID, UserID: userID,
-			Subject: subject, Body: body, Data: data, Time: time, Priority: priority}
+			queueItem := model.QueueItem{OrgID: orgID, AppID: appID, ID: id,
+				MessageID: messageID, MessageRecipientID: messageRecipientID, UserID: userID,
+				Subject: subject, Body: body, Data: data, Time: time, Priority: priority}
 
-		queueItems = append(queueItems, queueItem)
+			queueItems = append(queueItems, queueItem)
+		}
 	}
 
 	return queueItems
@@ -304,22 +306,24 @@ func (app *Application) sharedCreateRecipientsQueueItems(message *model.Message,
 	queueItems := []model.QueueItem{}
 
 	for _, messageRecipient := range messageRecipients {
-		orgID := messageRecipient.OrgID
-		appID := messageRecipient.AppID
-		id := messageRecipient.ID
-		userID := messageRecipient.UserID
-		messageID := messageRecipient.MessageID
-		subject := message.Subject
-		body := message.Body
-		data := message.Data
-		time := message.Time
-		priority := message.Priority
+		if !messageRecipient.Mute {
+			orgID := messageRecipient.OrgID
+			appID := messageRecipient.AppID
+			id := messageRecipient.ID
+			userID := messageRecipient.UserID
+			messageID := messageRecipient.MessageID
+			subject := message.Subject
+			body := message.Body
+			data := message.Data
+			time := message.Time
+			priority := message.Priority
 
-		queueItem := model.QueueItem{OrgID: orgID, AppID: appID, ID: id,
-			MessageID: messageID, MessageRecipientID: id, UserID: userID, Subject: subject, Body: body,
-			Data: data, Time: time, Priority: priority}
+			queueItem := model.QueueItem{OrgID: orgID, AppID: appID, ID: id,
+				MessageID: messageID, MessageRecipientID: id, UserID: userID, Subject: subject, Body: body,
+				Data: data, Time: time, Priority: priority}
 
-		queueItems = append(queueItems, queueItem)
+			queueItems = append(queueItems, queueItem)
+		}
 	}
 
 	return queueItems
