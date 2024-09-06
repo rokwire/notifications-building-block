@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.1] - 2024-09-06
 ### Fixed
 - Group Members receive Post Notifications even when Groups Notifications are overridden and disabled. [#181](https://github.com/rokwire/notifications-building-block/issues/181)
 
