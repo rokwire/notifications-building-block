@@ -89,6 +89,10 @@ func (app *Application) createMessage(inputMessage model.InputMessage) (*model.M
 	return &messages[0], nil //return only one
 }
 
+func (app *Application) createMessages(inputMessages []model.InputMessage, isBatch bool) ([]model.Message, error) {
+	return app.sharedCreateMessages(inputMessages, isBatch)
+}
+
 func (app *Application) getMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error) {
 	return app.storage.FindMessagesRecipientsDeep(orgID, appID, userID, read, mute, messageIDs, startDateEpoch, endDateEpoch, filterTopic, offset, limit, order)
 }

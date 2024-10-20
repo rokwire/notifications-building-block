@@ -43,6 +43,7 @@ type Services interface {
 	GetMessage(orgID string, appID string, ID string) (*model.Message, error)
 	GetUserMessage(orgID string, appID string, ID string, accountID string) (*model.Message, error)
 	CreateMessage(inputMessage model.InputMessage) (*model.Message, error)
+	CreateMessages(inputMessages []model.InputMessage, isBatch bool) ([]model.Message, error)
 	UpdateMessage(userID *string, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(orgID string, appID string, userID string, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
@@ -113,6 +114,10 @@ func (s *servicesImpl) GetUserMessage(orgID string, appID string, ID string, acc
 
 func (s *servicesImpl) CreateMessage(inputMessage model.InputMessage) (*model.Message, error) {
 	return s.app.createMessage(inputMessage)
+}
+
+func (s *servicesImpl) CreateMessages(inputMessages []model.InputMessage, isBatch bool) ([]model.Message, error) {
+	return s.app.createMessages(inputMessages, isBatch)
 }
 
 func (s *servicesImpl) UpdateMessage(userID *string, message *model.Message) (*model.Message, error) {

@@ -82,6 +82,7 @@ func (we Adapter) Start() {
 	// Internal APIs
 	// DEPRECATED - Use "bbs" APIs
 	mainRouter.HandleFunc("/int/message", we.wrapFunc(we.internalApisHandler.SendMessage, we.auth.internal)).Methods("POST")
+	mainRouter.HandleFunc("/int/messages", we.wrapFunc(we.internalApisHandler.SendMessages, we.auth.internal)).Methods("POST")
 	mainRouter.HandleFunc("/int/v2/message", we.wrapFunc(we.internalApisHandler.SendMessageV2, we.auth.internal)).Methods("POST")
 	mainRouter.HandleFunc("/int/mail", we.wrapFunc(we.internalApisHandler.SendMail, we.auth.internal)).Methods("POST")
 

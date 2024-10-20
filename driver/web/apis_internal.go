@@ -20,6 +20,7 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
+	"strconv"
 
 	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -61,6 +62,53 @@ func (h InternalApisHandler) SendMessage(l *logs.Log, r *http.Request, claims *t
 	inputMessage.AppID = appID
 
 	return h.processSendMessage(l, inputMessage, r)
+}
+
+// SendMessages sends messages
+func (h InternalApisHandler) SendMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+
+	isBatch := false //false by default
+	isBatchParam := r.URL.Query().Get("isBatch")
+	if isBatchParam != "" {
+		isBatch, _ = strconv.ParseBool(isBatchParam)
+	}
+
+	var bodyData Def.SharedReqCreateMessages
+	err := json.NewDecoder(r.Body).Decode(&bodyData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDecode, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+
+	if len(bodyData) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, "no data", nil, nil, http.StatusBadRequest, false)
+	}
+
+	inputMessages := []model.InputMessage{}
+	//loop through the messages, validate each message and prepare InputMessage obj for every message
+	for _, m := range bodyData {
+		if len(m.OrgId) == 0 || len(m.AppId) == 0 {
+			return l.HTTPResponseErrorData(logutils.StatusInvalid, "org or app id", nil, nil, http.StatusBadRequest, false)
+		}
+
+		inputMessage := getMessageData(m)
+		inputMessage.OrgID = m.OrgId
+		inputMessage.AppID = m.AppId
+		inputMessage.Sender = model.Sender{Type: "system"}
+
+		inputMessages = append(inputMessages, inputMessage)
+	}
+
+	createdMessages, err := h.app.Services.CreateMessages(inputMessages, isBatch)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionSend, "message", nil, err, http.StatusInternalServerError, true)
+	}
+
+	data, err := json.Marshal(createdMessages)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponse, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
 }
 
 // sendMessageRequestBody message request body

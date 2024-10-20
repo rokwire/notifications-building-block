@@ -26,7 +26,6 @@ import (
 )
 
 func (app *Application) bbsCreateMessages(inputMessages []model.InputMessage, isBatch bool) ([]model.Message, error) {
-
 	return app.sharedCreateMessages(inputMessages, isBatch)
 }
 

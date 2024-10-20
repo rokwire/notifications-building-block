@@ -42,39 +42,33 @@ func (app *Application) sharedCreateMessages(imMessages []model.InputMessage, is
 		allRecipients := []model.MessageRecipient{}
 		allQueueItems := []model.QueueItem{}
 
+		recipientsMap := map[string]bool{}
+
 		//process every message
-		// TODO: Handle batching properly
-		// if isBatch {
-		// 	inputMessageMap := make(map[string]struct{}, len(imMessages))
-		// 	for _, im := range imMessages {
-		// 		//check to ensure we dont send duplicated messages
-		// 		_, ok := inputMessageMap[im.Sender.User.UserID]
-		// 		if !ok {
-		// 			message, recipients, err := app.sharedHandleInputMessage(context, im)
-		// 			if err != nil {
-		// 				fmt.Printf("error on handling a message: %s", err)
-		// 				return err
-		// 			}
-		// 			queueItems := app.sharedCreateQueueItems(*message, recipients)
-		// 			allMessages = append(allMessages, *message)
-		// 			allRecipients = append(allRecipients, recipients...)
-		// 			allQueueItems = append(allQueueItems, queueItems...)
-		// 			inputMessageMap[im.Sender.User.UserID] = struct{}{}
-		// 		}
-		// 	}
-		// } else {
 		for _, im := range imMessages {
 			message, recipients, err := app.sharedHandleInputMessage(context, im)
 			if err != nil {
 				fmt.Printf("error on handling a message: %s", err)
 				return err
 			}
+			// if batched messages, only send single highest priority (first) message to each recipient
+			if isBatch {
+				batchRecipients := []model.MessageRecipient{}
+				for _, recipient := range recipients {
+					if _, ok := recipientsMap[recipient.UserID]; !ok {
+						recipientsMap[recipient.UserID] = true
+						batchRecipients = append(batchRecipients, recipient)
+					}
+				}
+				recipients = batchRecipients
+				recipientCount := len(recipients)
+				message.CalculatedRecipientsCount = &recipientCount
+			}
 			queueItems := app.sharedCreateQueueItems(*message, recipients)
 			allMessages = append(allMessages, *message)
 			allRecipients = append(allRecipients, recipients...)
 			allQueueItems = append(allQueueItems, queueItems...)
 		}
-		// }
 
 		//store the messages object
 		err = app.storage.InsertMessagesWithContext(context, allMessages)
@@ -148,7 +142,8 @@ func (app *Application) sharedHandleInputMessage(context storage.TransactionCont
 	dateCreated := time.Now()
 	message := model.Message{OrgID: im.OrgID, AppID: im.AppID, ID: *messageID, Priority: im.Priority, Time: im.Time,
 		Subject: im.Subject, Sender: im.Sender, Body: im.Body, Data: im.Data, RecipientsCriteriaList: im.RecipientsCriteriaList,
-		RecipientAccountCriteria: im.RecipientAccountCriteria, Topic: im.Topic, Topics: im.Topics, CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
+		RecipientAccountCriteria: im.RecipientAccountCriteria, Topic: im.Topic, Topics: im.Topics,
+		CalculatedRecipientsCount: &calculatedRecipients, DateCreated: &dateCreated}
 
 	return &message, recipients, nil
 }
