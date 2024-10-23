@@ -669,36 +669,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  messages:
-                    type: array
-                    properties:
-                      _id:
-                        type: string
-                      user_id:
-                        type: string
-                  message_recipient:
-                    type: array
-                    properties:
-                      _id:
-                        type: string
-                      user_id:
-                        type: string
-                  queue:
-                    type: array
-                    properties:
-                      _id:
-                        type: string
-                      user_id:
-                        type: string
-                  users:
-                    type: array
-                    properties:
-                      _id:
-                        type: string
-                      user_id:
-                        type: string
+                $ref: '#/components/schemas/UserDataResponse'
         '400':
           description: Bad request
         '401':
@@ -1472,6 +1443,49 @@ components:
         date_created:
           type: string
         date_updated:
+          type: string
+    UserDataResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          $ref: '#/components/schemas/MessageResponse'
+        message_recipient:
+          type: array
+          $ref: '#/components/schemas/MessageRecipientResponse'
+        queue:
+          type: array
+          $ref: '#/components/schemas/QueueItemResponse'
+        users:
+          type: array
+          $ref: '#/components/schemas/UserResponse'
+    UserResponse:
+      type: object
+      properties:
+        _id:
+          type: string
+        user_id:
+          type: string
+    MessageRecipientResponse:
+      type: object
+      properties:
+        _id:
+          type: string
+        user_id:
+          type: string
+    MessageResponse:
+      type: object
+      properties:
+        _id:
+          type: string
+        user_id:
+          type: string
+    QueueItemResponse:
+      type: object
+      properties:
+        _id:
+          type: string
+        user_id:
           type: string
     _shared_req_CreateMessages:
       type: array
