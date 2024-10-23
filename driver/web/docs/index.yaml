@@ -81,6 +81,8 @@ paths:
     $ref: "./resources/bbs/message-id.yaml"
   /api/bbs/mail:
     $ref: "./resources/bbs/mail.yaml"
+  /api/bbs/user-data:
+    $ref: "./resources/bbs/user-data.yaml"  
 
     
 components:

@@ -1230,6 +1230,57 @@ paths:
           description: Unauthorized
         '500':
           description: Internal error
+  /api/bbs/user-data:
+    get:
+      tags:
+        - BBs
+      summary: Get the user data
+      description: |
+        Get the user data
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    properties:
+                      _id:
+                        type: string
+                      user_id:
+                        type: string
+                  message_recipient:
+                    type: array
+                    properties:
+                      _id:
+                        type: string
+                      user_id:
+                        type: string
+                  queue:
+                    type: array
+                    properties:
+                      _id:
+                        type: string
+                      user_id:
+                        type: string
+                  users:
+                    type: array
+                    properties:
+                      _id:
+                        type: string
+                      user_id:
+                        type: string
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal error
 components:
   securitySchemes:
     bearerAuth:

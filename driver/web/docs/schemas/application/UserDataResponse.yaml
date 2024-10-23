@@ -1,0 +1,15 @@
+type: object
+properties:
+  messages:
+    type: array  
+    $ref: "./MessageResponse.yaml"
+  message_recipient:
+    type: array  
+    $ref: "./MessageRecipientResponse.yaml"
+  queue:
+    type: array  
+    $ref: "./QueueItemResponse.yaml"
+  users:
+    type: array  
+    $ref: "./UserResponse.yaml"    
+      
