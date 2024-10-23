@@ -1,6 +1,6 @@
 get:
   tags:
-  - BBs
+  - Client
   summary: Get the user data
   description: |
     Get the user data
