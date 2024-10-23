@@ -1449,16 +1449,20 @@ components:
       properties:
         messages:
           type: array
-          $ref: '#/components/schemas/MessageResponse'
+          items:
+            $ref: '#/components/schemas/MessageResponse'
         message_recipient:
           type: array
-          $ref: '#/components/schemas/MessageRecipientResponse'
+          items:
+            $ref: '#/components/schemas/MessageRecipientResponse'
         queue:
           type: array
-          $ref: '#/components/schemas/QueueItemResponse'
+          items:
+            $ref: '#/components/schemas/QueueItemResponse'
         users:
           type: array
-          $ref: '#/components/schemas/UserResponse'
+          items:
+            $ref: '#/components/schemas/UserResponse'
     UserResponse:
       type: object
       properties:
