@@ -1392,6 +1392,21 @@ func (sa *Adapter) DeleteQueueDataForUsers(ctx context.Context, orgID string, ap
 	return nil
 }
 
+// FindQueueDataByUserID gets all queue data by userID
+func (sa Adapter) FindQueueDataByUserID(userID string) ([]model.QueueItem, error) {
+	filter := bson.D{
+		primitive.E{Key: "user_id", Value: userID},
+	}
+
+	var queue []model.QueueItem
+	err := sa.db.queueData.Find(filter, &queue, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return queue, nil
+}
+
 func abortTransaction(sessionContext mongo.SessionContext) {
 	err := sessionContext.AbortTransaction(sessionContext)
 	if err != nil {

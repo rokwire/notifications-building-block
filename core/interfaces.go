@@ -258,6 +258,7 @@ type Storage interface {
 	SaveQueue(queue model.Queue) error
 
 	FindQueueData(time *time.Time, limit int) ([]model.QueueItem, error)
+	FindQueueDataByUserID(userID string) ([]model.QueueItem, error)
 	DeleteQueueData(ids []string) error
 	DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error
 	DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error

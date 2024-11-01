@@ -61,6 +61,7 @@ func (app *Application) getUserData(orgID string, appID string, userID string) (
 	var usersResponse []model.UserResponse
 	var messageResponse []model.MessageResponse
 	var messageRecipientResponse []model.MessageRecipientResponse
+	var queueResponse []model.QueueItemResponse
 	messages, err := app.storage.GetMessagesByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -92,7 +93,20 @@ func (app *Application) getUserData(orgID string, appID string, userID string) (
 		usersResponse = append(usersResponse, ur)
 	}
 
-	userDataResponse := model.UserDataResponse{Messages: messageResponse, MessageRecipient: messageRecipientResponse, Users: usersResponse}
+	queue, err := app.storage.FindQueueDataByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if queue != nil {
+		for _, q := range queue {
+			qu := model.QueueItemResponse{ID: q.ID, UserID: q.UserID}
+			queueResponse = append(queueResponse, qu)
+		}
+	}
+
+	userDataResponse := model.UserDataResponse{Messages: messageResponse, MessageRecipient: messageRecipientResponse,
+		Users: usersResponse, Queue: queueResponse}
 
 	return &userDataResponse, nil
 }
