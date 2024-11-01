@@ -246,7 +246,7 @@ func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth
 	return l.HTTPResponseSuccess()
 }
 
-// Get the user data
+// GetUserData Get the user data
 // @Description Get the user data
 // @Tags Client
 // @ID Unsubscribe

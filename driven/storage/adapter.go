@@ -1061,7 +1061,7 @@ func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Mess
 	return message, nil
 }
 
-// GetAllAppVersions gets all registered versions
+// GetMessagesByUserID gets all messages by userID
 func (sa Adapter) GetMessagesByUserID(userID string) ([]model.Message, error) {
 	filter := bson.D{
 		primitive.E{Key: "sender.user.user_id", Value: userID},
