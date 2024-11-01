@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"notifications/core/model"
+	"sync"
 )
 
 func (app *Application) getVersion() string {
@@ -58,55 +59,113 @@ func (app *Application) unsubscribeToTopic(orgID string, appID string, token str
 }
 
 func (app *Application) getUserData(orgID string, appID string, userID string) (*model.UserDataResponse, error) {
-	var usersResponse []model.UserResponse
-	var messageResponse []model.MessageResponse
-	var messageRecipientResponse []model.MessageRecipientResponse
-	var queueResponse []model.QueueItemResponse
-	messages, err := app.storage.GetMessagesByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
-	if messages != nil {
-		for _, m := range messages {
-			message := model.MessageResponse{ID: m.ID, UserID: m.Sender.User.UserID}
-			messageResponse = append(messageResponse, message)
+	var (
+		usersResponse            []model.UserResponse
+		messageResponse          []model.MessageResponse
+		messageRecipientResponse []model.MessageRecipientResponse
+		queueResponse            []model.QueueItemResponse
+		err                      error
+		mu                       sync.Mutex
+		wg                       sync.WaitGroup
+	)
+
+	// Define an error channel to capture any errors from the goroutines
+	errChan := make(chan error, 4)
+
+	// Fetch messages concurrently
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		messages, e := app.storage.GetMessagesByUserID(userID)
+		if e != nil {
+			errChan <- e
+			return
 		}
-	}
-
-	messageRecipient, err := app.storage.FindMessagesRecipientsByUserID(orgID, appID, userID)
-	if err != nil {
-		return nil, err
-	}
-	if messageRecipient != nil {
-		for _, mr := range messageRecipient {
-			messRec := model.MessageRecipientResponse{ID: mr.ID, UserID: mr.UserID}
-			messageRecipientResponse = append(messageRecipientResponse, messRec)
+		if messages != nil {
+			localMessageResponse := make([]model.MessageResponse, len(messages))
+			for i, m := range messages {
+				localMessageResponse[i] = model.MessageResponse{ID: m.ID, UserID: m.Sender.User.UserID}
+			}
+			mu.Lock()
+			messageResponse = append(messageResponse, localMessageResponse...)
+			mu.Unlock()
 		}
-	}
+	}()
 
-	user, err := app.storage.FindUserByID(orgID, appID, userID)
-	if err != nil {
-		return nil, err
-	}
-	if user != nil {
-		ur := model.UserResponse{ID: user.ID, UserID: user.UserID}
-		usersResponse = append(usersResponse, ur)
-	}
-
-	queue, err := app.storage.FindQueueDataByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	if queue != nil {
-		for _, q := range queue {
-			qu := model.QueueItemResponse{ID: q.ID, UserID: q.UserID}
-			queueResponse = append(queueResponse, qu)
+	// Fetch message recipients concurrently
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		messageRecipient, e := app.storage.FindMessagesRecipientsByUserID(orgID, appID, userID)
+		if e != nil {
+			errChan <- e
+			return
 		}
+		if messageRecipient != nil {
+			localMessageRecipientResponse := make([]model.MessageRecipientResponse, len(messageRecipient))
+			for i, mr := range messageRecipient {
+				localMessageRecipientResponse[i] = model.MessageRecipientResponse{ID: mr.ID, UserID: mr.UserID}
+			}
+			mu.Lock()
+			messageRecipientResponse = append(messageRecipientResponse, localMessageRecipientResponse...)
+			mu.Unlock()
+		}
+	}()
+
+	// Fetch user information concurrently
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user, e := app.storage.FindUserByID(orgID, appID, userID)
+		if e != nil {
+			errChan <- e
+			return
+		}
+		if user != nil {
+			mu.Lock()
+			usersResponse = append(usersResponse, model.UserResponse{ID: user.ID, UserID: user.UserID})
+			mu.Unlock()
+		}
+	}()
+
+	// Fetch queue data concurrently
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		queue, e := app.storage.FindQueueDataByUserID(userID)
+		if e != nil {
+			errChan <- e
+			return
+		}
+		if queue != nil {
+			localQueueResponse := make([]model.QueueItemResponse, len(queue))
+			for i, q := range queue {
+				localQueueResponse[i] = model.QueueItemResponse{ID: q.ID, UserID: q.UserID}
+			}
+			mu.Lock()
+			queueResponse = append(queueResponse, localQueueResponse...)
+			mu.Unlock()
+		}
+	}()
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+	close(errChan)
+
+	// Check if there were any errors
+	if len(errChan) > 0 {
+		// Take the first error that occurred
+		err = <-errChan
+		return nil, err
 	}
 
-	userDataResponse := model.UserDataResponse{Messages: messageResponse, MessageRecipient: messageRecipientResponse,
-		Users: usersResponse, Queue: queueResponse}
+	// Construct the final response
+	userDataResponse := model.UserDataResponse{
+		Messages:         messageResponse,
+		MessageRecipient: messageRecipientResponse,
+		Users:            usersResponse,
+		Queue:            queueResponse,
+	}
 
 	return &userDataResponse, nil
 }
