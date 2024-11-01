@@ -59,6 +59,30 @@ func (app *Application) unsubscribeToTopic(orgID string, appID string, token str
 
 func (app *Application) getUserData(orgID string, appID string, userID string) (*model.UserDataResponse, error) {
 	var usersResponse []model.UserResponse
+	var messageResponse []model.MessageResponse
+	var messageRecipientResponse []model.MessageRecipientResponse
+	messages, err := app.storage.GetMessagesByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if messages != nil {
+		for _, m := range messages {
+			message := model.MessageResponse{ID: m.ID, UserID: m.Sender.User.UserID}
+			messageResponse = append(messageResponse, message)
+		}
+	}
+
+	messageRecipient, err := app.storage.FindMessagesRecipientsByUserID(orgID, appID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if messageRecipient != nil {
+		for _, mr := range messageRecipient {
+			messRec := model.MessageRecipientResponse{ID: mr.ID, UserID: mr.UserID}
+			messageRecipientResponse = append(messageRecipientResponse, messRec)
+		}
+	}
+
 	user, err := app.storage.FindUserByID(orgID, appID, userID)
 	if err != nil {
 		return nil, err
@@ -68,7 +92,7 @@ func (app *Application) getUserData(orgID string, appID string, userID string) (
 		usersResponse = append(usersResponse, ur)
 	}
 
-	userDataResponse := model.UserDataResponse{Users: usersResponse}
+	userDataResponse := model.UserDataResponse{Messages: messageResponse, MessageRecipient: messageRecipientResponse, Users: usersResponse}
 
 	return &userDataResponse, nil
 }

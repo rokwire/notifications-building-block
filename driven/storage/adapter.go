@@ -937,6 +937,23 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 	return nil
 }
 
+// FindMessagesRecipientsByUserID finds messages recipients
+func (sa Adapter) FindMessagesRecipientsByUserID(orgID string, appID string, userID string) ([]model.MessageRecipient, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "user_id", Value: userID},
+	}
+
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // DeleteMessagesRecipientsForIDsWithContext deletes messages recipients for ids
 func (sa Adapter) DeleteMessagesRecipientsForIDsWithContext(ctx context.Context, ids []string) error {
 	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
@@ -1042,6 +1059,21 @@ func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Mess
 	}
 
 	return message, nil
+}
+
+// GetAllAppVersions gets all registered versions
+func (sa Adapter) GetMessagesByUserID(userID string) ([]model.Message, error) {
+	filter := bson.D{
+		primitive.E{Key: "sender.user.user_id", Value: userID},
+	}
+
+	var versions []model.Message
+	err := sa.db.messages.Find(filter, &versions, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return versions, nil
 }
 
 // CreateMessageWithContext creates a new message.
