@@ -57,8 +57,20 @@ func (app *Application) unsubscribeToTopic(orgID string, appID string, token str
 	return err
 }
 
-func (app *Application) getUserData(userID string) (*model.UserDataResponse, error) {
-	return nil, nil
+func (app *Application) getUserData(orgID string, appID string, userID string) (*model.UserDataResponse, error) {
+	var usersResponse []model.UserResponse
+	user, err := app.storage.FindUserByID(orgID, appID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user != nil {
+		ur := model.UserResponse{ID: user.ID, UserID: user.UserID}
+		usersResponse = append(usersResponse, ur)
+	}
+
+	userDataResponse := model.UserDataResponse{Users: usersResponse}
+
+	return &userDataResponse, nil
 }
 
 func (app *Application) getTopics(orgID string, appID string) ([]model.Topic, error) {

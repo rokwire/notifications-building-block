@@ -255,7 +255,7 @@ func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth
 // @Security RokwireAuth UserAuth
 // @Router /user-data [get]
 func (h ApisHandler) GetUserData(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	userData, err := h.app.Services.GetUserData(claims.Subject)
+	userData, err := h.app.Services.GetUserData(claims.OrgID, claims.AppID, claims.Subject)
 	if err != nil {
 		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "user", nil, err, http.StatusInternalServerError, true)
 	}

@@ -35,7 +35,7 @@ type Services interface {
 	FindUserByID(orgID string, appID string, userID string) (*model.User, error)
 	UpdateUserByID(orgID string, appID string, userID string, notificationsEnabled bool) (*model.User, error)
 	DeleteUserWithID(orgID string, appID string, userID string) error
-	GetUserData(userID string) (*model.UserDataResponse, error)
+	GetUserData(orgID string, appID string, userID string) (*model.UserDataResponse, error)
 
 	GetMessagesRecipientsDeep(orgID string, appID string, userID *string, read *bool, mute *bool, messageIDs []string, startDateEpoch *int64, endDateEpoch *int64, filterTopic *string, offset *int64, limit *int64, order *string) ([]model.MessageRecipient, error)
 
@@ -75,8 +75,8 @@ func (s *servicesImpl) UnsubscribeToTopic(orgID string, appID string, token stri
 	return s.app.unsubscribeToTopic(orgID, appID, token, userID, anonymous, topic)
 }
 
-func (s *servicesImpl) GetUserData(userID string) (*model.UserDataResponse, error) {
-	return s.app.getUserData(userID)
+func (s *servicesImpl) GetUserData(orgID string, appID string, userID string) (*model.UserDataResponse, error) {
+	return s.app.getUserData(orgID, appID, userID)
 }
 
 func (s *servicesImpl) GetTopics(orgID string, appID string) ([]model.Topic, error) {
