@@ -13,7 +13,6 @@ properties:
     items:
       $ref: "./QueueItem.yaml"
   users:
-    type: array
     items:
       $ref: "./User.yaml"   
       

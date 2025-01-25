@@ -118,5 +118,5 @@ type UserDataResponse struct {
 	Messages         []Message          `json:"messages"`
 	MessageRecipient []MessageRecipient `json:"received_notifications"`
 	Queue            []QueueItem        `json:"scheduled_notifications_for_me"`
-	Users            []User             `json:"my_accounts"`
+	Users            User               `json:"my_accounts"`
 }

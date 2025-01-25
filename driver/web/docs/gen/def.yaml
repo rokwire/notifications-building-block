@@ -1484,7 +1484,6 @@ components:
               priority:
                 type: integer
         users:
-          type: array
           items:
             $ref: '#/components/schemas/User'
     _shared_req_CreateMessages:
