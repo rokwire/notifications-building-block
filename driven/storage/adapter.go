@@ -1061,21 +1061,6 @@ func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Mess
 	return message, nil
 }
 
-// GetMessagesByUserID gets all messages by userID
-func (sa Adapter) GetMessagesByUserID(userID string) ([]model.Message, error) {
-	filter := bson.D{
-		primitive.E{Key: "sender.user.user_id", Value: userID},
-	}
-
-	var versions []model.Message
-	err := sa.db.messages.Find(filter, &versions, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return versions, nil
-}
-
 // CreateMessageWithContext creates a new message.
 func (sa Adapter) CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error) {
 	if len(message.ID) == 0 {
