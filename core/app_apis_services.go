@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"notifications/core/model"
+	"notifications/driven/storage"
 )
 
 func (app *Application) getVersion() string {
@@ -58,7 +59,59 @@ func (app *Application) unsubscribeToTopic(orgID string, appID string, token str
 }
 
 func (app *Application) getUserData(orgID string, appID string, userID string) (*model.UserDataResponse, error) {
-	return nil, nil
+	var userData model.UserDataResponse
+	transaction := func(context storage.TransactionContext) error {
+		var messageIDs []string
+		resievedNotifications, err := app.storage.FindMessagesRecipientsByUserID(orgID, appID, userID)
+		if err != nil {
+			return err
+		}
+		if resievedNotifications == nil {
+			resievedNotifications = nil
+		} else {
+			for _, m := range resievedNotifications {
+				messageIDs = append(messageIDs, m.MessageID)
+			}
+		}
+
+		messages, err := app.storage.FindMessagesWithContext(context, messageIDs)
+		if err != nil {
+			return err
+		}
+
+		if messages == nil {
+			messages = nil
+		}
+
+		scheduledNotifications, err := app.storage.FindQueueDataByUserID(userID)
+		if err != nil {
+			return err
+		}
+		if scheduledNotifications == nil {
+			scheduledNotifications = nil
+		}
+
+		myAccounts, err := app.storage.FindUserByID(orgID, appID, userID)
+		if err != nil {
+			return err
+		}
+
+		if myAccounts == nil {
+			myAccounts = nil
+		}
+
+		userData = model.UserDataResponse{Messages: messages, MessageRecipient: resievedNotifications, Queue: scheduledNotifications, Users: *myAccounts}
+		return nil
+	}
+
+	//perform transactions
+	err := app.storage.PerformTransaction(transaction, 60000)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userData, nil
+
 }
 
 func (app *Application) getTopics(orgID string, appID string) ([]model.Topic, error) {
