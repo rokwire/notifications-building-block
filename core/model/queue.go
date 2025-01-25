@@ -45,9 +45,3 @@ type QueueItem struct {
 	Time     time.Time `bson:"time"`
 	Priority int       `bson:"priority"`
 }
-
-// QueueItemResponse represent notifications queue data item
-type QueueItemResponse struct {
-	ID     string `json:"_id" bson:"_id"`
-	UserID string `json:"user_id" bson:"user_id"`
-}

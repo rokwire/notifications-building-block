@@ -31,9 +31,3 @@ type MessageRecipient struct {
 
 	DateCreated *time.Time `json:"date_created" bson:"date_created"`
 }
-
-// MessageRecipientResponse represent recipient of a message
-type MessageRecipientResponse struct {
-	ID     string `json:"id" bson:"_id"`
-	UserID string `json:"user_id" bson:"user_id"`
-}

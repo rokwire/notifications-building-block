@@ -1450,47 +1450,43 @@ components:
         messages:
           type: array
           items:
-            $ref: '#/components/schemas/MessageResponse'
+            $ref: '#/components/schemas/Message'
         message_recipient:
           type: array
           items:
-            $ref: '#/components/schemas/MessageRecipientResponse'
+            $ref: '#/components/schemas/MessageRecipient'
         queue:
           type: array
           items:
-            $ref: '#/components/schemas/QueueItemResponse'
+            type: object
+            properties:
+              _id:
+                type: string
+              user_id:
+                type: string
+              org_id:
+                type: string
+              app_id:
+                type: string
+              message_id:
+                type: string
+              message_recipient_id:
+                type: string
+              subjects:
+                type: string
+              body:
+                type: string
+              data:
+                type: object
+              time:
+                type: integer
+                format: int64
+              priority:
+                type: integer
         users:
           type: array
           items:
-            $ref: '#/components/schemas/UserResponse'
-    UserResponse:
-      type: object
-      properties:
-        _id:
-          type: string
-        user_id:
-          type: string
-    MessageRecipientResponse:
-      type: object
-      properties:
-        _id:
-          type: string
-        user_id:
-          type: string
-    MessageResponse:
-      type: object
-      properties:
-        _id:
-          type: string
-        user_id:
-          type: string
-    QueueItemResponse:
-      type: object
-      properties:
-        _id:
-          type: string
-        user_id:
-          type: string
+            $ref: '#/components/schemas/User'
     _shared_req_CreateMessages:
       type: array
       items:

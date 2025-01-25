@@ -3,17 +3,17 @@ properties:
   messages:
     type: array
     items:
-      $ref: "./MessageResponse.yaml"
+      $ref: "./Message.yaml"
   message_recipient:
     type: array
     items:
-      $ref: "./MessageRecipientResponse.yaml"
+      $ref: "./MessageRecipient.yaml"
   queue:
     type: array
     items:
-      $ref: "./QueueItemResponse.yaml"
+      $ref: "./QueueItem.yaml"
   users:
     type: array
     items:
-      $ref: "./UserResponse.yaml"   
+      $ref: "./User.yaml"   
       

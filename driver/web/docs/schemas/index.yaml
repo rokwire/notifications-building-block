@@ -28,16 +28,7 @@ Topic:
 User:
   $ref: "./application/User.yaml"
 UserDataResponse:
-  $ref: "./application/UserDataResponse.yaml" 
-UserResponse:
-  $ref: "./application/UserResponse.yaml"   
-MessageRecipientResponse:
-  $ref: "./application/MessageRecipientResponse.yaml"  
-MessageResponse:
-  $ref: "./application/MessageResponse.yaml"   
-QueueItemResponse:
-  $ref: "./application/QueueItemResponse.yaml"  
-
+  $ref: "./application/UserDataResponse.yaml"
 ##### APIs requests and responses - they are at bottom
 
 ## SHARED requests and responses

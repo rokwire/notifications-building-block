@@ -107,11 +107,3 @@ type MessagesStats struct {
 	Unread       *int64 `json:"not_read_count" bson:"not_read_count"`
 	UnreadUnmute *int64 `json:"not_read_not_mute" bson:"not_read_not_mute"`
 }
-
-// MessageResponse wraps messages user data
-// @name MessageResponse
-// @ID MessageResponse
-type MessageResponse struct {
-	ID     string `json:"id" bson:"_id"`
-	UserID string `json:"user_id" bson:"user_id"`
-}

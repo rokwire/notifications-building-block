@@ -30,12 +30,6 @@ type User struct {
 	DateUpdated           time.Time       `json:"date_updated" bson:"date_updated"`
 } //@name User
 
-// UserResponse represents user entity and all its relationship with firebase tokens and topics
-type UserResponse struct {
-	ID     string `json:"id" bson:"_id"`
-	UserID string `json:"user_id" bson:"user_id"`
-} //@name UserResponse
-
 // AddToken adds topic to the list
 func (t *User) AddToken(token string) {
 	if t.FirebaseTokens == nil {
@@ -121,8 +115,8 @@ type DeletedMembership struct {
 
 // UserDataResponse represents a user data
 type UserDataResponse struct {
-	Messages         []MessageResponse          `json:"messages"`
-	MessageRecipient []MessageRecipientResponse `json:"message_recipient"`
-	Queue            []QueueItemResponse        `json:"queue"`
-	Users            []UserResponse             `json:"users"`
+	Messages         []Message          `json:"messages"`
+	MessageRecipient []MessageRecipient `json:"message_recipient"`
+	Queue            []QueueItem        `json:"queue"`
+	Users            []User             `json:"users"`
 }
