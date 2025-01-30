@@ -1447,10 +1447,6 @@ components:
     UserDataResponse:
       type: object
       properties:
-        messages:
-          type: array
-          items:
-            $ref: '#/components/schemas/Message'
         message_recipient:
           type: array
           items:

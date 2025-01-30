@@ -1,9 +1,5 @@
 type: object
 properties:
-  messages:
-    type: array
-    items:
-      $ref: "./Message.yaml"
   message_recipient:
     type: array
     items:
