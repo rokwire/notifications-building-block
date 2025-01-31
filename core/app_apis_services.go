@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"notifications/core/model"
+	"sync"
 )
 
 func (app *Application) getVersion() string {
@@ -58,17 +59,99 @@ func (app *Application) unsubscribeToTopic(orgID string, appID string, token str
 }
 
 func (app *Application) getUserData(orgID, appID, userID string) (*model.UserDataResponse, error) {
-	/*      "received_notifications": [
-	{
-	//the same message structure as in the get messages API. //from messages_recipients
+	var (
+		receivedNotifications       []model.Message
+		scheduledNotificationsForMe []model.Message
+		recipientData               []model.MessageRecipient
+		queueData                   []model.QueueItem
+		user                        *model.User
+		err                         error
+	)
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	errCh := make(chan error, 3)
+
+	// Fetch recipient data concurrently
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		recipientData, err = app.storage.FindMessagesRecipientsByUserID(orgID, appID, userID)
+		if err != nil {
+			errCh <- err
+		}
+	}()
+
+	// Fetch queue data concurrently
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		queueData, err = app.storage.FindQueueDataByUserID(userID)
+		if err != nil {
+			errCh <- err
+		}
+	}()
+
+	// Fetch user data concurrently
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		user, err = app.storage.FindUserByID(orgID, appID, userID)
+		if err != nil {
+			errCh <- err
+		}
+	}()
+
+	wg.Wait()
+	close(errCh)
+
+	// Check for errors
+	for e := range errCh {
+		if e != nil {
+			return nil, e
+		}
 	}
-	],
-	"scheduled_notifications_for_me":[
-	{
-	//the same message structure as in the get messages API. //from gueue_data.
+
+	// Fetch messages related to recipient data
+	if recipientData != nil {
+		for _, rn := range recipientData {
+			wg.Add(1)
+			go func(rn model.MessageRecipient) {
+				defer wg.Done()
+				rnr, err := app.storage.GetMessage(rn.OrgID, rn.AppID, rn.MessageID)
+				if err == nil && rnr != nil {
+					mu.Lock()
+					receivedNotifications = append(receivedNotifications, *rnr)
+					mu.Unlock()
+				}
+			}(rn)
+		}
 	}
-	],*/
-	return nil, nil
+
+	// Fetch messages related to queue data
+	if queueData != nil {
+		for _, q := range queueData {
+			wg.Add(1)
+			go func(q model.QueueItem) {
+				defer wg.Done()
+				qr, err := app.storage.GetMessage(q.OrgID, q.AppID, q.MessageID)
+				if err == nil && qr != nil {
+					mu.Lock()
+					scheduledNotificationsForMe = append(scheduledNotificationsForMe, *qr)
+					mu.Unlock()
+				}
+			}(q)
+		}
+	}
+
+	wg.Wait()
+
+	userData := &model.UserDataResponse{
+		ReceivedNotifications:       receivedNotifications,
+		ScheduledNotificationsForMe: scheduledNotificationsForMe,
+		Users:                       *user,
+	}
+	return userData, nil
 }
 
 func (app *Application) getTopics(orgID string, appID string) ([]model.Topic, error) {
