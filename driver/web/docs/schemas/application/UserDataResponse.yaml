@@ -1,13 +1,13 @@
 type: object
 properties:
-  message_recipient:
+  received_notificationsst:
     type: array
     items:
-      $ref: "./MessageRecipient.yaml"
-  queue:
+      $ref: "./Message.yaml"
+  scheduled_notifications_for_me:
     type: array
     items:
-      $ref: "./QueueItem.yaml"
+      $ref: "./Message.yaml"
   users:
     items:
       $ref: "./User.yaml"   

@@ -1447,38 +1447,14 @@ components:
     UserDataResponse:
       type: object
       properties:
-        message_recipient:
+        received_notificationsst:
           type: array
           items:
-            $ref: '#/components/schemas/MessageRecipient'
-        queue:
+            $ref: '#/components/schemas/Message'
+        scheduled_notifications_for_me:
           type: array
           items:
-            type: object
-            properties:
-              _id:
-                type: string
-              user_id:
-                type: string
-              org_id:
-                type: string
-              app_id:
-                type: string
-              message_id:
-                type: string
-              message_recipient_id:
-                type: string
-              subjects:
-                type: string
-              body:
-                type: string
-              data:
-                type: object
-              time:
-                type: integer
-                format: int64
-              priority:
-                type: integer
+            $ref: '#/components/schemas/Message'
         users:
           items:
             $ref: '#/components/schemas/User'

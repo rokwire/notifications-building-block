@@ -115,7 +115,7 @@ type DeletedMembership struct {
 
 // UserDataResponse represents a user data
 type UserDataResponse struct {
-	MessageRecipient []MessageRecipient `json:"received_notifications"`
-	Queue            []QueueItem        `json:"scheduled_notifications_for_me"`
-	Users            User               `json:"my_accounts"`
+	ReceivedNotifications       []Message `json:"received_notifications"`
+	ScheduledNotificationsForMe []Message `json:"scheduled_notifications_for_me"`
+	Users                       User      `json:"my_accounts"`
 }

@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"notifications/core/model"
-	"sync"
 )
 
 func (app *Application) getVersion() string {
@@ -59,93 +58,17 @@ func (app *Application) unsubscribeToTopic(orgID string, appID string, token str
 }
 
 func (app *Application) getUserData(orgID, appID, userID string) (*model.UserDataResponse, error) {
-	var wg sync.WaitGroup
-	var mu sync.Mutex // For safe concurrent writes
-
-	var userData model.UserDataResponse
-	var errResult error
-
-	// Channels for results
-	receivedChan := make(chan []model.MessageRecipient, 1)
-	scheduledChan := make(chan []model.QueueItem, 1)
-	userChan := make(chan *model.User, 1)
-	errorChan := make(chan error, 3) // Buffer to hold errors
-
-	// Fetch received notifications
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		data, err := app.storage.FindMessagesRecipientsByUserID(orgID, appID, userID)
-		if err != nil {
-			errorChan <- err
-			return
-		}
-		receivedChan <- data
-	}()
-
-	// Fetch scheduled notifications
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		data, err := app.storage.FindQueueDataByUserID(userID)
-		if err != nil {
-			errorChan <- err
-			return
-		}
-		scheduledChan <- data
-	}()
-
-	// Fetch user accounts
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		data, err := app.storage.FindUserByID(orgID, appID, userID)
-		if err != nil {
-			errorChan <- err
-			return
-		}
-		userChan <- data
-	}()
-
-	// Close channels when all goroutines finish
-	go func() {
-		wg.Wait()
-		close(receivedChan)
-		close(scheduledChan)
-		close(userChan)
-		close(errorChan)
-	}()
-
-	// Collect results
-	for i := 0; i < 3; i++ {
-		select {
-		case receivedNotifications := <-receivedChan:
-			mu.Lock()
-			userData.MessageRecipient = receivedNotifications
-			mu.Unlock()
-		case scheduledNotifications := <-scheduledChan:
-			mu.Lock()
-			userData.Queue = scheduledNotifications
-			mu.Unlock()
-		case myAccounts := <-userChan:
-			mu.Lock()
-			if myAccounts != nil {
-				userData.Users = *myAccounts
-			}
-			mu.Unlock()
-		case err := <-errorChan:
-			mu.Lock()
-			errResult = err
-			mu.Unlock()
-		}
+	/*      "received_notifications": [
+	{
+	//the same message structure as in the get messages API. //from messages_recipients
 	}
-
-	// Return error if any occurred
-	if errResult != nil {
-		return nil, errResult
+	],
+	"scheduled_notifications_for_me":[
+	{
+	//the same message structure as in the get messages API. //from gueue_data.
 	}
-
-	return &userData, nil
+	],*/
+	return nil, nil
 }
 
 func (app *Application) getTopics(orgID string, appID string) ([]model.Topic, error) {
