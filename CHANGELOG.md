@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.22.0] - 2024-02-03
 ### Added
 - Consolidate the information, and make it accessible with a single API call [#184](https://github.com/rokwire/notifications-building-block/issues/184)
 
