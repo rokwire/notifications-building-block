@@ -107,5 +107,3 @@ type MessagesStats struct {
 	Unread       *int64 `json:"not_read_count" bson:"not_read_count"`
 	UnreadUnmute *int64 `json:"not_read_not_mute" bson:"not_read_not_mute"`
 }
-
-///

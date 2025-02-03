@@ -246,6 +246,28 @@ func (h ApisHandler) Unsubscribe(l *logs.Log, r *http.Request, claims *tokenauth
 	return l.HTTPResponseSuccess()
 }
 
+// GetUserData Get the user data
+// @Description Get the user data
+// @Tags Client
+// @ID Unsubscribe
+// @Param data body tokenBody true "body json"
+// @Success 200
+// @Security RokwireAuth UserAuth
+// @Router /user-data [get]
+func (h ApisHandler) GetUserData(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	userData, err := h.app.Services.GetUserData(claims.OrgID, claims.AppID, claims.Subject)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionUpdate, "user", nil, err, http.StatusInternalServerError, true)
+	}
+
+	responseData, err := json.Marshal(userData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, logutils.TypeResponseBody, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccessJSON(responseData)
+}
+
 // TODO - for now all fields but almost all of them will be removed!
 type getUserMessageResponse struct {
 	OrgID                     string                    `json:"org_id"`
