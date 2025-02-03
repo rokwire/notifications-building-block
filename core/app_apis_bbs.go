@@ -193,26 +193,25 @@ func (app *Application) bbsDeleteRecipients(l *logs.Log, serviceAccountID string
 		if err != nil {
 			return err
 		}
-		if len(recipients) != len(usersIDs) {
-			return errors.New("not found recipient/s")
-		}
 
-		//prepare the messages recipients ids
-		messagesRecipeintsIDs := make([]string, len(recipients))
-		for i, item := range recipients {
-			messagesRecipeintsIDs[i] = item.ID
-		}
+		if len(recipients) > 0 {
+			//prepare the messages recipients ids
+			messagesRecipeintsIDs := make([]string, len(recipients))
+			for i, item := range recipients {
+				messagesRecipeintsIDs[i] = item.ID
+			}
 
-		//delete the messages recipients
-		err = app.storage.DeleteMessagesRecipientsForIDsWithContext(context, messagesRecipeintsIDs)
-		if err != nil {
-			return err
-		}
+			//delete the messages recipients
+			err = app.storage.DeleteMessagesRecipientsForIDsWithContext(context, messagesRecipeintsIDs)
+			if err != nil {
+				return err
+			}
 
-		//delete the queue data items
-		err = app.storage.DeleteQueueDataForRecipientsWithContext(context, messagesRecipeintsIDs)
-		if err != nil {
-			return err
+			//delete the queue data items
+			err = app.storage.DeleteQueueDataForRecipientsWithContext(context, messagesRecipeintsIDs)
+			if err != nil {
+				return err
+			}
 		}
 
 		//notify the queue

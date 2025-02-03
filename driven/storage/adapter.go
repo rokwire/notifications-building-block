@@ -937,6 +937,23 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 	return nil
 }
 
+// FindMessagesRecipientsByUserID finds messages recipients
+func (sa Adapter) FindMessagesRecipientsByUserID(orgID string, appID string, userID string) ([]model.MessageRecipient, error) {
+	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
+		primitive.E{Key: "user_id", Value: userID},
+	}
+
+	var data []model.MessageRecipient
+	err := sa.db.messagesRecipients.Find(filter, &data, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
 // DeleteMessagesRecipientsForIDsWithContext deletes messages recipients for ids
 func (sa Adapter) DeleteMessagesRecipientsForIDsWithContext(ctx context.Context, ids []string) error {
 	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
@@ -1358,6 +1375,21 @@ func (sa *Adapter) DeleteQueueDataForUsers(ctx context.Context, orgID string, ap
 		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
 	}
 	return nil
+}
+
+// FindQueueDataByUserID gets all queue data by userID
+func (sa Adapter) FindQueueDataByUserID(userID string) ([]model.QueueItem, error) {
+	filter := bson.D{
+		primitive.E{Key: "user_id", Value: userID},
+	}
+
+	var queue []model.QueueItem
+	err := sa.db.queueData.Find(filter, &queue, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return queue, nil
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {
