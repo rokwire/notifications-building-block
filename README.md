@@ -1,5 +1,5 @@
 # Notifications Building Block
-The Notifications Building Block manages user notifications for the Rokwire platform.
+The Notifications Building Block manages user notifications for the Rokwire platform. 
 
 ## Documentation
 The functionality provided by this application is documented in the [Wiki](https://github.com/rokwire/notifications-building-block/wiki).
