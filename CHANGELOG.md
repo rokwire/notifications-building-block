@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- [VD-1162] Livestream notification logic [#1790](https://github.com/rokmetro/vogue-app/issues/1790)
+
+### Added
 - Batch messages [#185](https://github.com/rokwire/notifications-building-block/issues/185)
 - Add in Airship Push Notifications [#173](https://github.com/rokwire/notifications-building-block/issues/173)
 - Add multiple topic support

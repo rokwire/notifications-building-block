@@ -27,6 +27,8 @@ paths:
     $ref: "./resources/internal/v2/message.yaml"
   /api/int/mail:
     $ref: "./resources/internal/mail.yaml"
+  /api/int/messages:
+    $ref: "./resources/internal/messages.yaml"
   #Client
   /api/token:
     $ref: "./resources/client/token.yaml"

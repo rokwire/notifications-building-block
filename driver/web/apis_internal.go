@@ -21,6 +21,7 @@ import (
 	"notifications/core/model"
 	Def "notifications/driver/web/docs/gen"
 	"strconv"
+	"strings"
 
 	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -166,6 +167,25 @@ func (h InternalApisHandler) processSendMessage(l *logs.Log,
 	}
 
 	return l.HTTPResponseSuccessJSON(data)
+}
+
+// DeleteMessages deletes messages
+func (h InternalApisHandler) DeleteMessages(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	idsParam := getStringQueryParam(r, "ids")
+	if idsParam == nil {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("ids"), nil, http.StatusBadRequest, false)
+	}
+	ids := strings.Split(*idsParam, ",")
+	if len(ids) == 0 {
+		return l.HTTPResponseErrorData(logutils.StatusInvalid, logutils.TypePathParam, logutils.StringArgs("ids"), nil, http.StatusBadRequest, false)
+	}
+
+	err := h.app.Services.DeleteMessages(l, ids)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, "message", nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
 }
 
 // sendMailRequestBody mail request body

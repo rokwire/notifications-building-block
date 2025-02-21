@@ -47,6 +47,7 @@ type Services interface {
 	UpdateMessage(userID *string, message *model.Message) (*model.Message, error)
 	DeleteUserMessage(orgID string, appID string, userID string, messageID string) error
 	DeleteMessage(orgID string, appID string, ID string) error
+	DeleteMessages(l *logs.Log, messagesIDs []string) error
 	UpdateReadMessage(orgID string, appID string, ID string, userID string) (*model.Message, error)
 	UpdateAllUserMessagesRead(orgID string, appID string, userID string, read bool) error
 
@@ -138,6 +139,10 @@ func (s *servicesImpl) DeleteUserMessage(orgID string, appID string, userID stri
 
 func (s *servicesImpl) DeleteMessage(orgID string, appID string, messageID string) error {
 	return s.app.deleteMessage(orgID, appID, messageID)
+}
+
+func (s *servicesImpl) DeleteMessages(l *logs.Log, messagesIDs []string) error {
+	return s.app.DeleteMessages(l, messagesIDs)
 }
 
 func (s *servicesImpl) GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
