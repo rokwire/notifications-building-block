@@ -29,6 +29,8 @@ type queueLogic struct {
 	storage  Storage
 	firebase Firebase
 
+	app *Application
+
 	//timer
 	queueTimer *time.Timer
 	timerDone  chan bool
@@ -216,26 +218,31 @@ func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 	for i, item := range queueItems {
 		itemsIDs[i] = item.ID
 
-		var user *model.User
+		if item.CalculateRecipients {
+			go q.handleDelayedRecipientCalculation(item)
+		} else {
+			var user *model.User
 
-		//get the user
-		for _, cUser := range users {
-			if cUser.UserID == item.UserID {
-				user = &cUser
-				break
+			//get the user
+			for _, cUser := range users {
+				if cUser.UserID == item.UserID {
+					user = &cUser
+					break
+				}
 			}
-		}
 
-		if user == nil {
-			continue //for some reasons there is no a corresponding user
-		}
+			if user == nil {
+				continue //for some reasons there is no a corresponding user
+			}
 
-		if user.NotificationsDisabled {
-			continue //do not send notification if disabled for the user
-		}
+			if user.NotificationsDisabled {
+				continue //do not send notification if disabled for the user
+			}
 
-		tokens := user.FirebaseTokens
-		go q.sendNotifications(item, tokens) //new thread
+			tokens := user.DeviceTokens
+
+			go q.sendNotifications(item, tokens) //new thread
+		}
 	}
 
 	//remove the items from the queue
@@ -258,4 +265,76 @@ func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.
 			q.logger.Infof("queue item(%s:%s:%s) has been sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
 		}
 	}
+}
+
+func (q queueLogic) handleDelayedRecipientCalculation(queueItem model.QueueItem) error {
+	message, err := q.storage.GetMessage(queueItem.OrgID, queueItem.AppID, queueItem.MessageID)
+	if message == nil || err != nil {
+		err = fmt.Errorf("error finding delayed message (org_id: %s, app_id: %s, message_id: %s) - %s", queueItem.OrgID, queueItem.AppID, queueItem.MessageID, err)
+		q.logger.Errorf(err.Error())
+		return err
+	}
+
+	notifyQueue := false
+	var recipients []model.MessageRecipient
+	transaction := func(context storage.TransactionContext) error {
+		//calculate the recipients
+		recipients, err = q.app.sharedCalculateRecipients(context, message.OrgID, message.AppID,
+			message.Subject, message.Body, nil, message.RecipientsCriteriaList,
+			message.RecipientAccountCriteria, message.Topics, message.ID, false)
+		if err != nil {
+			err = fmt.Errorf("error calculating delayed recipients for a message (%s): %s", message.ID, err)
+			q.logger.Errorf(err.Error())
+			return err
+		}
+
+		count := len(recipients)
+		if message.CalculatedRecipientsCount != nil {
+			count += *message.CalculatedRecipientsCount
+		}
+
+		queueItems := q.app.sharedCreateQueueItems(*message, recipients)
+
+		//store the messages object
+		err = q.app.storage.UpdateMessageRecipientCount(context, message.ID, count)
+		if err != nil {
+			fmt.Printf("error on creating a message: %s", err)
+			return err
+		}
+
+		//store recipients
+		err = q.app.storage.InsertMessagesRecipientsWithContext(context, recipients)
+		if err != nil {
+			fmt.Printf("error on inserting recipients: %s", err)
+			return err
+		}
+
+		//store the notifications queue items in the queue
+		if len(queueItems) > 0 {
+			err = q.app.storage.InsertQueueDataItemsWithContext(context, queueItems)
+			if err != nil {
+				fmt.Printf("error on inserting queue data items: %s", err)
+				return err
+			}
+
+			//notify the queue that new items are added
+			notifyQueue = true
+		}
+
+		return nil
+	}
+	//perform transactions
+	err = q.storage.PerformTransaction(transaction, 2000)
+	if err != nil {
+		err = fmt.Errorf("error performing delayed recipients transaction - %s", err)
+		q.logger.Errorf(err.Error())
+		return err
+	}
+
+	//notify the queue that new items are added
+	if notifyQueue {
+		go q.onQueuePush()
+	}
+
+	return nil
 }

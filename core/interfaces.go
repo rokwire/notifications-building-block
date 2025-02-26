@@ -243,6 +243,7 @@ type Storage interface {
 	CreateMessageWithContext(ctx context.Context, message model.Message) (*model.Message, error)
 	InsertMessagesWithContext(ctx context.Context, messages []model.Message) error
 	UpdateMessage(message *model.Message) (*model.Message, error)
+	UpdateMessageRecipientCount(ctx context.Context, messageID string, recipientCount int) error
 	DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error
 	DeleteMessagesWithContext(ctx context.Context, ids []string) error
 	GetMessagesStats(userID string) (*model.MessagesStats, error)

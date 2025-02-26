@@ -44,4 +44,6 @@ type QueueItem struct {
 	//when to send
 	Time     time.Time `bson:"time"`
 	Priority int       `bson:"priority"`
+
+	CalculateRecipients bool `bson:"calculate_recipients"`
 }
