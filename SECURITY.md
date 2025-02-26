@@ -6,8 +6,8 @@ Patches for **Notifications Building Block** in this repository will only be app
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.20.0   | :white_check_mark: |
-| < 1.20.0 | :x:                |
+| 1.22.0   | :white_check_mark: |
+| < 1.22.0 | :x:                |
 
 ## Reporting a Bug or Vulnerability
 

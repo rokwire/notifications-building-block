@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Scheduled notifications calculate recipients immediately [#190](https://github.com/rokwire/notifications-building-block/issues/190)
 
+## [1.22.0] - 2024-02-03
+### Added
+- Consolidate the information, and make it accessible with a single API call [#184](https://github.com/rokwire/notifications-building-block/issues/184)
+
 ## [1.21.1] - 2024-09-06
 ### Fixed
 - Group Members receive Post Notifications even when Groups Notifications are overridden and disabled. [#181](https://github.com/rokwire/notifications-building-block/issues/181)

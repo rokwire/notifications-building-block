@@ -1,0 +1,14 @@
+type: object
+properties:
+  received_notificationsst:
+    type: array
+    items:
+      $ref: "./Message.yaml"
+  scheduled_notifications_for_me:
+    type: array
+    items:
+      $ref: "./Message.yaml"
+  users:
+    items:
+      $ref: "./User.yaml"   
+      

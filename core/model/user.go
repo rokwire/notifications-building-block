@@ -112,3 +112,10 @@ type DeletedMembership struct {
 	AccountID string                  `json:"account_id"`
 	Context   *map[string]interface{} `json:"context,omitempty"`
 }
+
+// UserDataResponse represents a user data
+type UserDataResponse struct {
+	ReceivedNotifications       []Message `json:"received_notifications"`
+	ScheduledNotificationsForMe []Message `json:"scheduled_notifications_for_me"`
+	Users                       User      `json:"my_accounts"`
+}

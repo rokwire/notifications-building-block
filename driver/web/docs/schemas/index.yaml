@@ -27,7 +27,8 @@ Topic:
   $ref: "./application/Topic.yaml"
 User:
   $ref: "./application/User.yaml"
-
+UserDataResponse:
+  $ref: "./application/UserDataResponse.yaml"
 ##### APIs requests and responses - they are at bottom
 
 ## SHARED requests and responses
