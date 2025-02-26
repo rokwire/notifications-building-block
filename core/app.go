@@ -78,17 +78,16 @@ func (app *Application) Start() {
 func NewApplication(version string, build string, storage Storage, firebase Firebase, mailer *mailer.Adapter, logger *logs.Logger, core *core.Adapter) *Application {
 
 	timerDone := make(chan bool)
-	queueLogic := queueLogic{logger: logger, storage: storage, firebase: firebase, timerDone: timerDone}
-
 	deleteDataLogic := deleteDataLogic{logger: *logger, coreAdapter: core, storage: storage}
 
 	application := Application{version: version, build: build, storage: storage, firebase: firebase,
-		mailer: mailer, logger: logger, core: core, queueLogic: queueLogic, deleteDataLogic: deleteDataLogic}
+		mailer: mailer, logger: logger, core: core, deleteDataLogic: deleteDataLogic}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
 	application.Admin = &adminImpl{app: &application}
 	application.BBs = &bbsImpl{app: &application}
+	application.queueLogic = queueLogic{app: &application, logger: logger, storage: storage, firebase: firebase, timerDone: timerDone, airship: airship}
 
 	return &application
 }

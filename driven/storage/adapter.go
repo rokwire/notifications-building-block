@@ -1116,6 +1116,28 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 	return message, nil
 }
 
+// UpdateMessageRecipientCount updates a message recipient count
+func (sa Adapter) UpdateMessageRecipientCount(ctx context.Context, messageID string, recipientCount int) error {
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: messageID},
+	}
+
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "calculated_recipients_count", Value: recipientCount},
+			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+		}},
+	}
+
+	_, err := sa.db.messages.UpdateOneWithContext(ctx, filter, update, nil)
+	if err != nil {
+		fmt.Printf("warning: error updating message recipient count (%s) - %s", messageID, err)
+		return err
+	}
+
+	return nil
+}
+
 // DeleteUserMessageWithContext removes the desired user from the recipients list
 func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string, appID string, userID string, messageID string) error {
 	if ctx == nil {
