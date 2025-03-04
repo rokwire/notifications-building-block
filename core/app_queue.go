@@ -262,7 +262,7 @@ func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.
 				invalidTokens = append(invalidTokens, token)
 			}
 		} else {
-			q.logger.Infof("queue item(%s:%s:%s) sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
+			q.logger.Infof("queue item(%s:%s:%s) has been sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
 		}
 	}
 
