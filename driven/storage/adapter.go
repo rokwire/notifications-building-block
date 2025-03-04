@@ -1377,6 +1377,32 @@ func (sa *Adapter) DeleteQueueDataForUsers(ctx context.Context, orgID string, ap
 	return nil
 }
 
+// DeleteFirebaseTokens removes invalid Firebase tokens from user records
+func (sa *Adapter) DeleteFirebaseTokens(tokens []string) error {
+	if len(tokens) == 0 {
+		return nil
+	}
+
+	filter := bson.D{
+		primitive.E{Key: "firebase_tokens.token", Value: bson.M{"$in": tokens}},
+	}
+
+	update := bson.D{
+		primitive.E{Key: "$pull", Value: bson.D{
+			primitive.E{Key: "firebase_tokens", Value: bson.D{
+				primitive.E{Key: "token", Value: bson.M{"$in": tokens}},
+			}},
+		}},
+	}
+
+	_, err := sa.db.users.UpdateMany(filter, update, nil)
+	if err != nil {
+		return fmt.Errorf("failed to delete invalid Firebase tokens: %w", err)
+	}
+
+	return nil
+}
+
 // FindQueueDataByUserID gets all queue data by userID
 func (sa Adapter) FindQueueDataByUserID(userID string) ([]model.QueueItem, error) {
 	filter := bson.D{

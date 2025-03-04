@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"notifications/core/model"
 	"notifications/driven/storage"
+	"strings"
 	"time"
 
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -248,14 +249,33 @@ func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 	return nil
 }
 
-func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.FirebaseToken) {
+func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.FirebaseToken) error {
+	var invalidTokens []string
+
 	for _, fToken := range tokens {
 		token := fToken.Token
 		sendErr := q.firebase.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
 		if sendErr != nil {
-			q.logger.Errorf("error send notification to token (%s): %s", token, sendErr)
+			q.logger.Errorf("error sending notification to token (%s): %s", token, sendErr)
+
+			if isInvalidTokenError(sendErr) {
+				invalidTokens = append(invalidTokens, token)
+			}
 		} else {
-			q.logger.Infof("queue item(%s:%s:%s) has been sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
+			q.logger.Infof("queue item(%s:%s:%s) sent to token: %s", queueItem.ID, queueItem.Subject, queueItem.Body, token)
 		}
 	}
+
+	if len(invalidTokens) > 0 {
+		if err := q.storage.DeleteFirebaseTokens(invalidTokens); err != nil {
+			q.logger.Errorf("error deleting invalid firebase tokens - %s", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func isInvalidTokenError(err error) bool {
+	return strings.Contains(err.Error(), "registration-token-not-registered")
 }
