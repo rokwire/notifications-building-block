@@ -269,7 +269,6 @@ func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.
 	if len(invalidTokens) > 0 {
 		if err := q.storage.DeleteFirebaseTokens(invalidTokens); err != nil {
 			q.logger.Errorf("error deleting invalid firebase tokens - %s", err)
-			return err
 		}
 	}
 
