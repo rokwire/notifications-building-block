@@ -10,10 +10,10 @@ WORKDIR /app
 COPY . .
 RUN make
 
-FROM alpine:3.20
+FROM alpine:3.21.3
 
-#we need timezone database
-RUN apk add --no-cache --update tzdata
+#we need timezone database + certificates
+RUN apk add --no-cache tzdata ca-certificates
 
 COPY --from=builder /app/bin/notifications /
 COPY --from=builder /app/driver/web/docs/gen/def.yaml /driver/web/docs/gen/def.yaml
