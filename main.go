@@ -23,14 +23,14 @@ import (
 	"notifications/driven/mailer"
 	storage "notifications/driven/storage"
 	driver "notifications/driver/web"
-	"os"
 	"strconv"
 	"strings"
 
-	"github.com/golang-jwt/jwt"
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/sigauth"
-	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/keys"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/sigauth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/envloader"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
 )
 
 var (
@@ -46,22 +46,24 @@ func main() {
 	}
 
 	serviceID := "notifications"
+	envPrefix := strings.ReplaceAll(strings.ToUpper(serviceID), "-", "_") + "_"
 
 	loggerOpts := logs.LoggerOpts{SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties(serviceID + "/version")}
 	loggerOpts.SuppressRequests = append(loggerOpts.SuppressRequests, logs.NewStandardHealthCheckHTTPRequestProperties("notifications/api/version")...)
 	logger := logs.NewLogger(serviceID, &loggerOpts)
+	envLoader := envloader.NewEnvLoader(Version, logger)
 
-	port := getEnvKey("PORT", false)
+	port := envLoader.GetAndLogEnvVar("PORT", false, false)
 	if len(port) == 0 {
 		port = "80"
 	}
 
 	// mongoDB adapter
-	mongoDBAuth := getEnvKey("MONGO_AUTH", true)
-	mongoDBName := getEnvKey("MONGO_DATABASE", true)
-	mongoTimeout := getEnvKey("MONGO_TIMEOUT", false)
-	mtOrgID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_ORG_ID", true)
-	mtAppID := getEnvKey("NOTIFICATIONS_MULTI_TENANCY_APP_ID", true)
+	mongoDBAuth := envLoader.GetAndLogEnvVar("MONGO_AUTH", true, true)
+	mongoDBName := envLoader.GetAndLogEnvVar("MONGO_DATABASE", true, false)
+	mongoTimeout := envLoader.GetAndLogEnvVar("MONGO_TIMEOUT", false, false)
+	mtOrgID := envLoader.GetAndLogEnvVar(envPrefix+"MULTI_TENANCY_ORG_ID", true, true)
+	mtAppID := envLoader.GetAndLogEnvVar(envPrefix+"MULTI_TENANCY_APP_ID", true, true)
 	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout, mtOrgID, mtAppID, logger)
 	err := storageAdapter.Start()
 	if err != nil {
@@ -79,58 +81,63 @@ func main() {
 		log.Fatal("Cannot start the Firebase adapter - " + err.Error())
 	}
 
-	smtpHost := getEnvKey("SMTP_HOST", true)
-	smtpPort := getEnvKey("SMTP_PORT", true)
-	smtpUser := getEnvKey("SMTP_USER", true)
-	smtpPassword := getEnvKey("SMTP_PASSWORD", true)
-	smtpFrom := getEnvKey("SMTP_EMAIL_FROM", true)
+	smtpHost := envLoader.GetAndLogEnvVar("SMTP_HOST", true, false)
+	smtpPort := envLoader.GetAndLogEnvVar("SMTP_PORT", true, false)
+	smtpUser := envLoader.GetAndLogEnvVar("SMTP_USER", true, true)
+	smtpPassword := envLoader.GetAndLogEnvVar("SMTP_PASSWORD", true, true)
+	smtpFrom := envLoader.GetAndLogEnvVar("SMTP_EMAIL_FROM", true, true)
 	smtpPortNum, _ := strconv.Atoi(smtpPort)
 	mailAdapter := mailer.NewMailerAdapter(smtpHost, smtpPortNum, smtpUser, smtpPassword, smtpFrom)
 
 	// web adapter
-	host := getEnvKey("HOST", true)
-	internalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
-	coreBBHost := getEnvKey("CORE_BB_HOST", true)
-	notificationsServiceURL := getEnvKey("NOTIFICATIONS_SERVICE_URL", true)
+	host := envLoader.GetAndLogEnvVar("HOST", true, false)
+	internalAPIKey := envLoader.GetAndLogEnvVar("INTERNAL_API_KEY", true, true)
+	coreBBHost := envLoader.GetAndLogEnvVar("CORE_BB_HOST", true, false)
+	notificationsServiceURL := envLoader.GetAndLogEnvVar(envPrefix+"SERVICE_URL", true, false)
 
-	authService := authservice.AuthService{
+	authService := auth.Service{
 		ServiceID:   serviceID,
 		ServiceHost: notificationsServiceURL,
 		FirstParty:  true,
 		AuthBaseURL: coreBBHost,
 	}
 
-	serviceRegLoader, err := authservice.NewRemoteServiceRegLoader(&authService, []string{"auth"})
+	serviceRegLoader, err := auth.NewRemoteServiceRegLoader(&authService, []string{"auth"})
 	if err != nil {
 		log.Fatalf("Error initializing remote service registration loader: %v", err)
 	}
 
-	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
+	serviceRegManager, err := auth.NewServiceRegManager(&authService, serviceRegLoader, !strings.HasPrefix(host, "http://localhost"))
 	if err != nil {
 		log.Fatalf("Error initializing service registration manager: %v", err)
 	}
 
-	//core adapter
-	serviceAccountID := getEnvKey("NOTIFICATIONS_SERVICE_ACCOUNT_ID", false)
-	privKeyRaw := getEnvKey("NOTIFICATIONS_PRIV_KEY", true)
+	// Service account
+	var serviceAccountManager *auth.ServiceAccountManager
+
+	serviceAccountID := envLoader.GetAndLogEnvVar(envPrefix+"SERVICE_ACCOUNT_ID", false, false)
+	privKeyRaw := envLoader.GetAndLogEnvVar(envPrefix+"PRIV_KEY", true, true)
 	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
+	privKey, err := keys.NewPrivKey(keys.RS256, privKeyRaw)
 	if err != nil {
-		log.Fatalf("Error parsing priv key: %v", err)
-	}
-	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false)
-	if err != nil {
-		log.Fatalf("Error initializing signature auth: %v", err)
-	}
+		logger.Errorf("Error parsing priv key: %v", err)
+	} else if serviceAccountID == "" {
+		logger.Errorf("Missing service account id")
+	} else {
+		signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false, false)
+		if err != nil {
+			logger.Fatalf("Error initializing signature auth: %v", err)
+		}
 
-	serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
-	if err != nil {
-		log.Fatalf("Error initializing remote service account loader: %v", err)
-	}
+		serviceAccountLoader, err := auth.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
+		if err != nil {
+			logger.Fatalf("Error initializing remote service account loader: %v", err)
+		}
 
-	serviceAccountManager, err := authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
-	if err != nil {
-		log.Fatalf("Error initializing service account manager: %v", err)
+		serviceAccountManager, err = auth.NewServiceAccountManager(&authService, serviceAccountLoader)
+		if err != nil {
+			logger.Fatalf("Error initializing service account manager: %v", err)
+		}
 	}
 
 	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
@@ -148,16 +155,4 @@ func main() {
 	webAdapter := driver.NewWebAdapter(host, port, application, config, serviceRegManager, logger)
 
 	webAdapter.Start()
-}
-
-func getEnvKey(key string, required bool) string {
-	//get from the environment
-	value, exist := os.LookupEnv(key)
-	if !exist {
-		if required {
-			log.Fatal("No provided environment variable for " + key)
-		}
-	}
-
-	return value
 }
