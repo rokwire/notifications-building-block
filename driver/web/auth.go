@@ -19,12 +19,12 @@ import (
 	"notifications/core"
 	"notifications/core/model"
 
-	"github.com/rokwire/core-auth-library-go/v2/authorization"
-	"github.com/rokwire/logging-library-go/v2/errors"
-	"github.com/rokwire/logging-library-go/v2/logutils"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/authorization"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logutils"
 
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/tokenauth"
 )
 
 // Auth handler
@@ -36,7 +36,7 @@ type Auth struct {
 }
 
 // NewAuth creates new auth handler
-func NewAuth(app *core.Application, config *model.Config, serviceRegManager *authservice.ServiceRegManager) (*Auth, error) {
+func NewAuth(app *core.Application, config *model.Config, serviceRegManager *auth.ServiceRegManager) (*Auth, error) {
 	client, err := newClientAuth(serviceRegManager)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionCreate, "client auth", nil, err)
@@ -107,7 +107,7 @@ type ClientAuth struct {
 
 // Check validates the request contains a valid client token
 func (auth ClientAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
-	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	claims, err := auth.tokenAuth.CheckRequestToken(req)
 	if err != nil {
 		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
 	}
@@ -133,7 +133,7 @@ func (auth ClientAuth) GetTokenAuth() *tokenauth.TokenAuth {
 	return auth.tokenAuth
 }
 
-func newClientAuth(serviceRegManager *authservice.ServiceRegManager) (*ClientAuth, error) {
+func newClientAuth(serviceRegManager *auth.ServiceRegManager) (*ClientAuth, error) {
 	clientPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/client_permission_policy.csv")
 	clientTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, clientPermissionAuth, nil)
 	if err != nil {
@@ -151,7 +151,7 @@ type AdminAuth struct {
 
 // Check validates the request contains a valid admin token
 func (auth AdminAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
-	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	claims, err := auth.tokenAuth.CheckRequestToken(req)
 	if err != nil {
 		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
 	}
@@ -168,7 +168,7 @@ func (auth AdminAuth) GetTokenAuth() *tokenauth.TokenAuth {
 	return auth.tokenAuth
 }
 
-func newAdminAuth(serviceRegManager *authservice.ServiceRegManager) (*AdminAuth, error) {
+func newAdminAuth(serviceRegManager *auth.ServiceRegManager) (*AdminAuth, error) {
 	adminPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/admin_permission_policy.csv")
 	adminTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, adminPermissionAuth, nil)
 	if err != nil {
@@ -186,7 +186,7 @@ type BBsAuth struct {
 
 // Check validates the request contains a valid first-party service token
 func (auth *BBsAuth) Check(req *http.Request) (int, *tokenauth.Claims, error) {
-	claims, err := auth.tokenAuth.CheckRequestTokens(req)
+	claims, err := auth.tokenAuth.CheckRequestToken(req)
 	if err != nil {
 		return http.StatusUnauthorized, nil, errors.WrapErrorAction(logutils.ActionValidate, logutils.TypeToken, nil, err)
 	}
@@ -207,7 +207,7 @@ func (auth *BBsAuth) GetTokenAuth() *tokenauth.TokenAuth {
 	return auth.tokenAuth
 }
 
-func newBBsAuth(serviceRegManager *authservice.ServiceRegManager) (*BBsAuth, error) {
+func newBBsAuth(serviceRegManager *auth.ServiceRegManager) (*BBsAuth, error) {
 	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/bbs_permission_policy.csv")
 	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
 	if err != nil {

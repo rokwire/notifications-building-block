@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rokwire/logging-library-go/v2/errors"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
 )
 
 func (app *Application) sharedCreateMessages(imMessages []model.InputMessage) ([]model.Message, error) {
