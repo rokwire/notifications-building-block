@@ -8,3 +8,4 @@ docker-compose.env
 docker-compose.yml
 run.sh
 env.list
+.env
