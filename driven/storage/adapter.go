@@ -561,8 +561,10 @@ func (sa Adapter) DeleteUsersWithIDs(ctx context.Context, orgID string, appID st
 }
 
 // GetMessagesStats counts read/unread and muted/unmuted messages
-func (sa *Adapter) GetMessagesStats(userID string) (*model.MessagesStats, error) {
+func (sa *Adapter) GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error) {
 	filter := bson.D{
+		primitive.E{Key: "org_id", Value: orgID},
+		primitive.E{Key: "app_id", Value: appID},
 		primitive.E{Key: "user_id", Value: userID},
 	}
 
