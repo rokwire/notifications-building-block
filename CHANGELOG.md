@@ -5,10 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.24.1] - 2025-03-09
 ### Fixed
 - Wrong unread messages count is returned by messages/stats API [#180](https://github.com/rokwire/notifications-building-block/issues/180)
 
-## [1.24.0] - 2025-09-007
+## [1.24.0] - 2025-09-07
 ### Changed
 - Replace auth library and logging library with Building Block SDK [#196](https://github.com/rokwire/notifications-building-block/issues/196)
 
