@@ -184,7 +184,7 @@ func (app *Application) getMessagesRecipientsDeep(orgID string, appID string, us
 }
 
 func (app *Application) getMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error) {
-	stats, _ := app.storage.GetMessagesStats(userID)
+	stats, _ := app.storage.GetMessagesStats(orgID, appID, userID)
 	return stats, nil
 }
 
