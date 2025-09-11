@@ -290,6 +290,22 @@ func (m *database) applyQueueDataChecks(queueData *collectionWrapper) error {
 		return err
 	}
 
+	//add user id index - recomended by Atlas
+	err = queueData.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	// compound index - app_id + org_id + user_id - recomended by Atlas
+	err = queueData.AddIndex(bson.D{
+		{Key: "app_id", Value: 1},
+		{Key: "org_id", Value: 1},
+		{Key: "user_id", Value: 1},
+	}, false)
+	if err != nil {
+		return err
+	}
+
 	log.Println("apply queue data passed")
 	return nil
 }
