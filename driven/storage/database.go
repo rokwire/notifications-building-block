@@ -154,24 +154,31 @@ func (m *database) start() error {
 	go m.queueData.Watch(nil)
 
 	//fix queue data - TMP
-	err = m.fixQueueData(queueData)
+	err = m.fixQueueData(queueData, queue)
 	if err != nil {
 		return err
 	}
+	///////
 
 	return nil
 }
 
-func (m *database) fixQueueData(queueData *collectionWrapper) error {
+func (m *database) fixQueueData(queueData *collectionWrapper, queue *collectionWrapper) error {
 	//remove all items with time in the past
 	err := m.fixRemoveOldItems(queueData)
 	if err != nil {
 		return err
 	}
 
-	//TODO - set ready
+	//set ready
+	err = m.fixSetReady(queue)
+	if err != nil {
+		return err
+	}
 
-	return errors.New("todo: implement fixQueueData")
+	fmt.Println("queue data fixed")
+
+	return nil
 }
 
 func (m *database) fixRemoveOldItems(queueData *collectionWrapper) error {
@@ -186,6 +193,25 @@ func (m *database) fixRemoveOldItems(queueData *collectionWrapper) error {
 	}
 
 	fmt.Printf("old queue data items removed: %d\n", deleteResult.DeletedCount)
+	return nil
+}
+
+func (m *database) fixSetReady(queue *collectionWrapper) error {
+
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: "1"},
+	}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "status", Value: "ready"},
+		}},
+	}
+	_, err := queue.UpdateOne(filter, update, nil)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("queue set to ready")
 	return nil
 }
 
