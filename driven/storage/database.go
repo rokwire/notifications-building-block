@@ -16,6 +16,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -152,7 +153,7 @@ func (m *database) start() error {
 	go m.queueData.Watch(nil)
 
 	//fix queue data - TMP
-	err = m.fixQueueData()
+	err = m.fixQueueData(queueData)
 	if err != nil {
 		return err
 	}
@@ -160,8 +161,25 @@ func (m *database) start() error {
 	return nil
 }
 
-func (m *database) fixQueueData() error {
+func (m *database) fixQueueData(queueData *collectionWrapper) error {
+
+	m.fixTMP(queueData)
+
 	return errors.New("todo: implement fixQueueData")
+}
+
+func (m *database) fixTMP(queueData *collectionWrapper) error {
+	filter := primitive.E{Key: "time", Value: bson.M{"$lte": time.Now()}}
+
+	//var result []model.QueueItem
+	//err := queueData.Find(filter, &result, nil)
+	count, err := queueData.CountDocuments(filter)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(count)
+	return nil
 }
 
 func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
