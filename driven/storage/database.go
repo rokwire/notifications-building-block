@@ -22,6 +22,7 @@ import (
 
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logutils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -162,23 +163,29 @@ func (m *database) start() error {
 }
 
 func (m *database) fixQueueData(queueData *collectionWrapper) error {
-
-	m.fixTMP(queueData)
-
-	return errors.New("todo: implement fixQueueData")
-}
-
-func (m *database) fixTMP(queueData *collectionWrapper) error {
-	filter := primitive.E{Key: "time", Value: bson.M{"$lte": time.Now()}}
-
-	//var result []model.QueueItem
-	//err := queueData.Find(filter, &result, nil)
-	count, err := queueData.CountDocuments(filter)
+	//remove all items with time in the past
+	err := m.fixRemoveOldItems(queueData)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(count)
+	//TODO - set ready
+
+	return errors.New("todo: implement fixQueueData")
+}
+
+func (m *database) fixRemoveOldItems(queueData *collectionWrapper) error {
+	filter := bson.D{primitive.E{Key: "time", Value: bson.M{"$lt": time.Now()}}}
+
+	deleteResult, err := queueData.DeleteMany(filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
+	}
+	if deleteResult == nil {
+		return errors.New("deleteResult is nil")
+	}
+
+	fmt.Printf("old queue data items removed: %d\n", deleteResult.DeletedCount)
 	return nil
 }
 
