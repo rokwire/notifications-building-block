@@ -184,7 +184,7 @@ func (m *database) fixQueueData(queueData *collectionWrapper, queue *collectionW
 func (m *database) fixRemoveOldItems(queueData *collectionWrapper) error {
 	filter := bson.D{primitive.E{Key: "time", Value: bson.M{"$lt": time.Now()}}}
 
-	deleteResult, err := queueData.DeleteMany(filter, nil)
+	deleteResult, err := queueData.DeleteManyWithContextTMP(context.Background(), filter, nil)
 	if err != nil {
 		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
 	}
