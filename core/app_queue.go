@@ -15,7 +15,6 @@
 package core
 
 import (
-	"fmt"
 	"notifications/core/model"
 	"notifications/driven/storage"
 	"time"
@@ -34,19 +33,19 @@ type queueLogic struct {
 	timerDone  chan bool
 }
 
-func (q queueLogic) start() {
+func (q *queueLogic) start() {
 	q.logger.Info("queueLogic start")
 
 	q.processQueue()
 }
 
-func (q queueLogic) onQueuePush() {
+func (q *queueLogic) onQueuePush() {
 	q.logger.Info("queueLogic onQueuePush")
 
 	q.processQueue()
 }
 
-func (q queueLogic) processQueue() {
+func (q *queueLogic) processQueue() {
 	q.logger.Info("queueLogic processQueue")
 
 	//check if the queue is locked and lock it for processing
@@ -60,16 +59,22 @@ func (q queueLogic) processQueue() {
 		return
 	}
 
+	//ensure the queue is always unlocked and protect against panics
+	defer func() {
+		if r := recover(); r != nil {
+			q.logger.Errorf("panic in processQueue: %v", r)
+		}
+		q.unlockQueue(*queue)
+	}()
+
 	//process the queue items until they are available
-	time := time.Now()
+	now := time.Now()
 	limit := queue.ProcessItemsCount
 	for {
 		//get the current items
-		queueItems, err := q.storage.FindQueueData(&time, limit)
+		queueItems, err := q.storage.FindQueueData(&now, limit)
 		if err != nil {
 			q.logger.Errorf("error on finding queue data - %s", err)
-
-			q.unlockQueue(*queue) //always unlock the queue on error
 			return
 		}
 
@@ -85,8 +90,6 @@ func (q queueLogic) processQueue() {
 		err = q.processQueueItem(queueItems)
 		if err != nil {
 			q.logger.Errorf("error on processing items - %s", err)
-
-			q.unlockQueue(*queue) //always unlock the queue on error
 			return
 		}
 	}
@@ -95,16 +98,11 @@ func (q queueLogic) processQueue() {
 	err = q.setTimerIfNecessary()
 	if err != nil {
 		q.logger.Errorf("error on setting timer - %s", err)
-
-		q.unlockQueue(*queue) //always unlock the queue on error
 		return
 	}
-
-	//unlock the queue at the end
-	q.unlockQueue(*queue)
 }
 
-func (q queueLogic) setTimerIfNecessary() error {
+func (q *queueLogic) setTimerIfNecessary() error {
 	//check if there is scheduled messages
 	scheduled, err := q.storage.FindQueueData(nil, 1) //it gives the first upcoming message
 	if err != nil {
@@ -125,7 +123,7 @@ func (q queueLogic) setTimerIfNecessary() error {
 	return nil
 }
 
-func (q queueLogic) setTimer(upcomingTime time.Time) error {
+func (q *queueLogic) setTimer(upcomingTime time.Time) error {
 	nowInSeconds := time.Now().Unix()
 	upcomingInSeconds := upcomingTime.Unix()
 	durationInSeconds := (upcomingInSeconds - nowInSeconds) + 2 //add two seconds to be sure that the timer will be executed after the message time
@@ -149,7 +147,7 @@ func (q queueLogic) setTimer(upcomingTime time.Time) error {
 	return nil
 }
 
-func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
+func (q *queueLogic) lockQueue() (*bool, *model.Queue, error) {
 	var err error
 	var queue *model.Queue
 	queueAvailable := true
@@ -183,22 +181,28 @@ func (q queueLogic) lockQueue() (*bool, *model.Queue, error) {
 	//perform transactions
 	err = q.storage.PerformTransaction(transaction, 2000)
 	if err != nil {
-		fmt.Printf("error performing lock queue transaction - %s", err)
+		q.logger.Errorf("error performing lock queue transaction - %s", err)
 		return nil, nil, err
 	}
 
 	return &queueAvailable, queue, nil
 }
 
-func (q queueLogic) unlockQueue(queue model.Queue) {
+func (q *queueLogic) unlockQueue(queue model.Queue) {
 	queue.Status = "ready"
-	err := q.storage.SaveQueue(queue)
-	if err != nil {
-		q.logger.Errorf("error unlocking the queue - %s", err) //cannot be done anything else
+	var err error
+	for i := 0; i < 3; i++ {
+		err = q.storage.SaveQueue(queue)
+		if err == nil {
+			return
+		}
+		q.logger.Errorf("error unlocking the queue (attempt %d) - %s", i+1, err)
+		time.Sleep(200 * time.Millisecond)
 	}
+	q.logger.Errorf("failed to unlock the queue after retries - %s", err)
 }
 
-func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
+func (q *queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 
 	//get the users as we need their tokens and if they have disabled notifications
 	usersIDs := make([]string, len(queueItems))
@@ -248,7 +252,8 @@ func (q queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 	return nil
 }
 
-func (q queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.FirebaseToken) {
+func (q *queueLogic) sendNotifications(queueItem model.QueueItem, tokens []model.FirebaseToken) {
+
 	for _, fToken := range tokens {
 		token := fToken.Token
 		sendErr := q.firebase.SendNotificationToToken(queueItem.OrgID, queueItem.AppID, token, queueItem.Subject, queueItem.Body, queueItem.Data)
