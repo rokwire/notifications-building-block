@@ -551,7 +551,7 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 	if changeDoc == nil {
 		return
 	}
-	m.logger.Infof("onDataChanged: %+v\n", changeDoc)
+	//m.logger.Infof("onDataChanged: %+v\n", changeDoc) //for now
 	ns := changeDoc["ns"]
 	if ns == nil {
 		return
