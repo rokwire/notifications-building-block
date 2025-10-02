@@ -19,6 +19,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -150,7 +151,17 @@ func (m *database) start() error {
 	go m.firebaseConfigurations.Watch(nil)
 	go m.queueData.Watch(nil)
 
+	//fix queue data - TMP
+	err = m.fixQueueData()
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (m *database) fixQueueData() error {
+	return errors.New("todo: implement fixQueueData")
 }
 
 func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
