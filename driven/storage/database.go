@@ -16,10 +16,13 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logutils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -150,6 +153,65 @@ func (m *database) start() error {
 	go m.firebaseConfigurations.Watch(nil)
 	go m.queueData.Watch(nil)
 
+	//fix queue data - TMP
+	err = m.fixQueueData(queueData, queue)
+	if err != nil {
+		return err
+	}
+	///////
+
+	return nil
+}
+
+func (m *database) fixQueueData(queueData *collectionWrapper, queue *collectionWrapper) error {
+	//remove all items with time in the past
+	err := m.fixRemoveOldItems(queueData)
+	if err != nil {
+		return err
+	}
+
+	//set ready
+	err = m.fixSetReady(queue)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("queue data fixed")
+
+	return nil
+}
+
+func (m *database) fixRemoveOldItems(queueData *collectionWrapper) error {
+	filter := bson.D{primitive.E{Key: "time", Value: bson.M{"$lt": time.Now()}}}
+
+	deleteResult, err := queueData.DeleteManyWithContextTMP(context.Background(), filter, nil)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", nil, err)
+	}
+	if deleteResult == nil {
+		return errors.New("deleteResult is nil")
+	}
+
+	fmt.Printf("old queue data items removed: %d\n", deleteResult.DeletedCount)
+	return nil
+}
+
+func (m *database) fixSetReady(queue *collectionWrapper) error {
+
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: "1"},
+	}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "status", Value: "ready"},
+		}},
+	}
+	_, err := queue.UpdateOne(filter, update, nil)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("queue set to ready")
 	return nil
 }
 
@@ -489,14 +551,14 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 	if changeDoc == nil {
 		return
 	}
-	m.logger.Infof("onDataChanged: %+v\n", changeDoc)
+	//m.logger.Infof("onDataChanged: %+v\n", changeDoc) //for now
 	ns := changeDoc["ns"]
 	if ns == nil {
 		return
 	}
 	nsMap := ns.(map[string]interface{})
 	coll := nsMap["coll"]
-	operationType := changeDoc["operationType"].(string)
+	//operationType := changeDoc["operationType"].(string)
 
 	switch coll {
 	case "firebase_configurations":
@@ -506,8 +568,9 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 			go listener.OnFirebaseConfigurationsUpdated()
 		}
 	case "queue_data":
-		m.logger.Info("queue_data collection changed")
-		m.logger.Info(operationType)
+		//for now
+		//m.logger.Info("queue_data collection changed")
+		//m.logger.Info(operationType)
 	}
 
 }
