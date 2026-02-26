@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.28.0] - 2026-02-26
+### Changed
+- Updated golang version
+- Notifications improvement: Send to tokens that are created during the past year. Original ticket: No notification for adding a new event to a group [#213](https://github.com/rokwire/notifications-building-block/issues/213)
+
+
 ## [1.27.1] - 2026-01-07
 ### Changed
 - Prepare for automatic deploy [#211](https://github.com/rokwire/notifications-building-block/issues/211)

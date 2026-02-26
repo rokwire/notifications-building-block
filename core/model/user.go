@@ -30,6 +30,17 @@ type User struct {
 	DateUpdated           time.Time       `json:"date_updated" bson:"date_updated"`
 } //@name User
 
+// GetReversetTokensList returns the list of firebase tokens in reverse order and only those that are created within the last 12 months
+func (t *User) GetReversetTokensList() []FirebaseToken {
+	var tokens []FirebaseToken
+	for i := len(t.FirebaseTokens) - 1; i >= 0; i-- {
+		if time.Since(t.FirebaseTokens[i].DateCreated) < 12*30*24*time.Hour {
+			tokens = append(tokens, t.FirebaseTokens[i])
+		}
+	}
+	return tokens
+}
+
 // AddToken adds topic to the list
 func (t *User) AddToken(token string) {
 	if t.FirebaseTokens == nil {

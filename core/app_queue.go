@@ -238,7 +238,7 @@ func (q *queueLogic) processQueueItem(queueItems []model.QueueItem) error {
 			continue //do not send notification if disabled for the user
 		}
 
-		tokens := user.FirebaseTokens
+		tokens := user.GetReversetTokensList()
 		go q.sendNotifications(item, tokens) //new thread
 	}
 
