@@ -59,7 +59,9 @@ func (m *database) start() error {
 	log.Println("database -> start")
 
 	//connect to the database
-	clientOptions := options.Client().ApplyURI(m.mongoDBAuth)
+	clientOptions := options.Client().ApplyURI(m.mongoDBAuth).
+		SetConnectTimeout(m.mongoTimeout).
+		SetBSONOptions(&options.BSONOptions{DefaultDocumentMap: true})
 	client, err := mongo.Connect(clientOptions)
 	if err != nil {
 		return err
