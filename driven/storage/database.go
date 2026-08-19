@@ -21,11 +21,10 @@ import (
 
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type database struct {
@@ -61,9 +60,7 @@ func (m *database) start() error {
 
 	//connect to the database
 	clientOptions := options.Client().ApplyURI(m.mongoDBAuth)
-	connectContext, cancel := context.WithTimeout(context.Background(), m.mongoTimeout)
-	client, err := mongo.Connect(connectContext, clientOptions)
-	cancel()
+	client, err := mongo.Connect(clientOptions)
 	if err != nil {
 		return err
 	}
@@ -157,7 +154,7 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	log.Println("apply messages checks.....")
 
 	//add compound unique index - org_id + app_id
-	err := messages.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	err := messages.AddIndex(bson.D{bson.E{Key: "org_id", Value: 1}, bson.E{Key: "app_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -174,7 +171,7 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	if indexMapping["recipients.user_id_1"] == nil {
 		err := messages.AddIndex(
 			bson.D{
-				primitive.E{Key: "recipients.user_id", Value: 1},
+				bson.E{Key: "recipients.user_id", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -184,7 +181,7 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	if indexMapping["date_created_1"] == nil {
 		err := messages.AddIndex(
 			bson.D{
-				primitive.E{Key: "date_created", Value: 1},
+				bson.E{Key: "date_created", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -194,7 +191,7 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	if indexMapping["date_updated_1"] == nil {
 		err := messages.AddIndex(
 			bson.D{
-				primitive.E{Key: "date_updated", Value: 1},
+				bson.E{Key: "date_updated", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -204,7 +201,7 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	if indexMapping["date_sent_1"] == nil {
 		err := messages.AddIndex(
 			bson.D{
-				primitive.E{Key: "date_sent", Value: 1},
+				bson.E{Key: "date_sent", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -214,7 +211,7 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	if indexMapping["time_1"] == nil {
 		err := messages.AddIndex(
 			bson.D{
-				primitive.E{Key: "time", Value: 1},
+				bson.E{Key: "time", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -222,7 +219,7 @@ func (m *database) applyMessagesChecks(messages *collectionWrapper) error {
 	}
 
 	//add sender type index
-	err = messages.AddIndex(bson.D{primitive.E{Key: "sender.type", Value: 1}}, false)
+	err = messages.AddIndex(bson.D{bson.E{Key: "sender.type", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -235,25 +232,25 @@ func (m *database) applyMessagesRecipientsChecks(messagesRecipients *collectionW
 	log.Println("apply messages recipients checks.....")
 
 	//add org id index
-	err := messagesRecipients.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}}, false)
+	err := messagesRecipients.AddIndex(bson.D{bson.E{Key: "org_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
 
 	//add app id index
-	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "app_id", Value: 1}}, false)
+	err = messagesRecipients.AddIndex(bson.D{bson.E{Key: "app_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
 
 	//add user id index
-	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
+	err = messagesRecipients.AddIndex(bson.D{bson.E{Key: "user_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
 
 	//add messages id index
-	err = messagesRecipients.AddIndex(bson.D{primitive.E{Key: "message_id", Value: 1}}, false)
+	err = messagesRecipients.AddIndex(bson.D{bson.E{Key: "message_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -273,25 +270,25 @@ func (m *database) applyQueueDataChecks(queueData *collectionWrapper) error {
 	log.Println("apply queue data checks.....")
 
 	//add message id index
-	err := queueData.AddIndex(bson.D{primitive.E{Key: "message_id", Value: 1}}, false)
+	err := queueData.AddIndex(bson.D{bson.E{Key: "message_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
 
 	//add time index
-	err = queueData.AddIndex(bson.D{primitive.E{Key: "time", Value: 1}}, false)
+	err = queueData.AddIndex(bson.D{bson.E{Key: "time", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
 
 	//add priority index
-	err = queueData.AddIndex(bson.D{primitive.E{Key: "priority", Value: 1}}, false)
+	err = queueData.AddIndex(bson.D{bson.E{Key: "priority", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
 
 	//add user id index - recomended by Atlas
-	err = queueData.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
+	err = queueData.AddIndex(bson.D{bson.E{Key: "user_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -314,7 +311,7 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	log.Println("apply users checks.....")
 
 	//add compound unique index - org_id + app_id
-	err := users.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	err := users.AddIndex(bson.D{bson.E{Key: "org_id", Value: 1}, bson.E{Key: "app_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -331,7 +328,7 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	if indexMapping["user_id_1"] == nil {
 		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "user_id", Value: 1},
+				bson.E{Key: "user_id", Value: 1},
 			}, true)
 		if err != nil {
 			return err
@@ -341,7 +338,7 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	if indexMapping["firebase_tokens.token_1"] == nil {
 		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "firebase_tokens.token", Value: 1},
+				bson.E{Key: "firebase_tokens.token", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -351,7 +348,7 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	if indexMapping["topics_1"] == nil {
 		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "topics", Value: 1},
+				bson.E{Key: "topics", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -364,7 +361,7 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 
 		err = users.AddIndex(
 			bson.D{
-				primitive.E{Key: "topics", Value: 1},
+				bson.E{Key: "topics", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -374,7 +371,7 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	if indexMapping["date_created_1"] == nil {
 		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "date_created", Value: 1},
+				bson.E{Key: "date_created", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -384,7 +381,7 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	if indexMapping["date_updated_1"] == nil {
 		err := users.AddIndex(
 			bson.D{
-				primitive.E{Key: "date_updated", Value: 1},
+				bson.E{Key: "date_updated", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -399,7 +396,7 @@ func (m *database) applyTopicsChecks(topics *collectionWrapper) error {
 	log.Println("apply topics checks.....")
 
 	//add compound unique index - org_id + app_id
-	err := topics.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	err := topics.AddIndex(bson.D{bson.E{Key: "org_id", Value: 1}, bson.E{Key: "app_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -412,7 +409,7 @@ func (m *database) applyVersionsChecks(appVersions *collectionWrapper) error {
 	log.Println("apply app_versions checks.....")
 
 	//add compound unique index - org_id + app_id
-	err := appVersions.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	err := appVersions.AddIndex(bson.D{bson.E{Key: "org_id", Value: 1}, bson.E{Key: "app_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -429,7 +426,7 @@ func (m *database) applyVersionsChecks(appVersions *collectionWrapper) error {
 	if indexMapping["name"] == nil {
 		err := appVersions.AddIndex(
 			bson.D{
-				primitive.E{Key: "name", Value: 1},
+				bson.E{Key: "name", Value: 1},
 			}, true)
 		if err != nil {
 			return err
@@ -444,7 +441,7 @@ func (m *database) applyPlatformsChecks(appPlatforms *collectionWrapper) error {
 	log.Println("apply app_platforms checks.....")
 
 	//add compound unique index - org_id + app_id
-	err := appPlatforms.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, false)
+	err := appPlatforms.AddIndex(bson.D{bson.E{Key: "org_id", Value: 1}, bson.E{Key: "app_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -461,7 +458,7 @@ func (m *database) applyPlatformsChecks(appPlatforms *collectionWrapper) error {
 	if indexMapping["name"] == nil {
 		err := appPlatforms.AddIndex(
 			bson.D{
-				primitive.E{Key: "name", Value: 1},
+				bson.E{Key: "name", Value: 1},
 			}, true)
 		if err != nil {
 			return err
@@ -476,7 +473,7 @@ func (m *database) applyFirebaseConfigurationsChecks(fc *collectionWrapper) erro
 	log.Println("apply firebase configurations checks.....")
 
 	//add compound unique index - org_id + app_id
-	err := fc.AddIndex(bson.D{primitive.E{Key: "org_id", Value: 1}, primitive.E{Key: "app_id", Value: 1}}, true)
+	err := fc.AddIndex(bson.D{bson.E{Key: "org_id", Value: 1}, bson.E{Key: "app_id", Value: 1}}, true)
 	if err != nil {
 		return err
 	}

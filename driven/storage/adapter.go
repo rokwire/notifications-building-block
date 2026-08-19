@@ -28,10 +28,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logutils"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Adapter implements the Storage interface
@@ -56,8 +55,9 @@ func (sa *Adapter) PerformTransaction(transaction func(context TransactionContex
 	timeout := time.Millisecond * time.Duration(timeoutMilliSeconds)
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	err := sa.db.dbClient.UseSession(ctx, func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
+	err := sa.db.dbClient.UseSession(ctx, func(sessionContext context.Context) error {
+		session := mongo.SessionFromContext(sessionContext)
+		err := session.StartTransaction()
 		if err != nil {
 			sa.abortTransaction(sessionContext)
 			return errors.WrapErrorAction(logutils.ActionStart, logutils.TypeTransaction, nil, err)
@@ -69,7 +69,7 @@ func (sa *Adapter) PerformTransaction(transaction func(context TransactionContex
 			return errors.WrapErrorAction("performing", logutils.TypeTransaction, nil, err)
 		}
 
-		err = sessionContext.CommitTransaction(sessionContext)
+		err = session.CommitTransaction(sessionContext)
 		if err != nil {
 			sa.abortTransaction(sessionContext)
 			return errors.WrapErrorAction(logutils.ActionCommit, logutils.TypeTransaction, nil, err)
@@ -109,7 +109,7 @@ func (sa Adapter) LoadFirebaseConfigurations() ([]model.FirebaseConf, error) {
 // FindUsersByIDs finds users by ids
 func (sa Adapter) FindUsersByIDs(usersIDs []string) ([]model.User, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: bson.M{"$in": usersIDs}},
+		bson.E{Key: "user_id", Value: bson.M{"$in": usersIDs}},
 	}
 
 	var result []model.User
@@ -131,9 +131,9 @@ func (sa Adapter) findUserByTokenWithContext(context context.Context, orgID stri
 	filter := bson.D{}
 	if len(token) > 0 {
 		filter = bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "$elemMatch", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+			bson.E{Key: "org_id", Value: orgID},
+			bson.E{Key: "app_id", Value: appID},
+			bson.E{Key: "firebase_tokens", Value: bson.D{bson.E{Key: "$elemMatch", Value: bson.D{bson.E{Key: "token", Value: token}}}}},
 		}
 	}
 
@@ -155,9 +155,9 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, orgID string,
 	filter := bson.D{}
 	if len(userID) > 0 {
 		filter = bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "user_id", Value: userID},
+			bson.E{Key: "org_id", Value: orgID},
+			bson.E{Key: "app_id", Value: appID},
+			bson.E{Key: "user_id", Value: userID},
 		}
 	}
 
@@ -173,8 +173,9 @@ func (sa Adapter) findUserByIDWithContext(context context.Context, orgID string,
 
 // StoreFirebaseToken stores firebase token
 func (sa Adapter) StoreFirebaseToken(orgID string, appID string, tokenInfo *model.TokenInfo, userID string) error {
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext context.Context) error {
+		session := mongo.SessionFromContext(sessionContext)
+		err := session.StartTransaction()
 		if err != nil {
 			log.Printf("error starting a transaction - %s", err)
 			return err
@@ -226,7 +227,7 @@ func (sa Adapter) StoreFirebaseToken(orgID string, appID string, tokenInfo *mode
 		}
 
 		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
+		err = session.CommitTransaction(sessionContext)
 		if err != nil {
 			abortTransaction(sessionContext)
 			fmt.Println(err)
@@ -273,16 +274,16 @@ func (sa Adapter) createUserWithContext(context context.Context, orgID string, a
 func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, appID string, userID string, token string, appPlatform *string, appVersion *string) error {
 	// transaction
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "user_id", Value: userID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "user_id", Value: userID},
 	}
 
 	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+		bson.E{Key: "$set", Value: bson.D{
+			bson.E{Key: "date_updated", Value: time.Now().UTC()},
 		}},
-		primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: model.FirebaseToken{
+		bson.E{Key: "$push", Value: bson.D{bson.E{Key: "firebase_tokens", Value: model.FirebaseToken{
 			Token:       token,
 			AppVersion:  appVersion,
 			AppPlatform: appPlatform,
@@ -312,16 +313,16 @@ func (sa Adapter) addTokenToUserWithContext(ctx context.Context, orgID string, a
 
 func (sa Adapter) removeTokenFromUserWithContext(ctx context.Context, orgID string, appID string, token string, userID string) error {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "user_id", Value: userID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "user_id", Value: userID},
 	}
 
 	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+		bson.E{Key: "$set", Value: bson.D{
+			bson.E{Key: "date_updated", Value: time.Now().UTC()},
 		}},
-		primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "firebase_tokens", Value: bson.D{primitive.E{Key: "token", Value: token}}}}},
+		bson.E{Key: "$pull", Value: bson.D{bson.E{Key: "firebase_tokens", Value: bson.D{bson.E{Key: "token", Value: token}}}}},
 	}
 
 	_, err := sa.db.users.UpdateOneWithContext(ctx, filter, &update, nil)
@@ -343,9 +344,9 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 		}
 
 		filter := bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "user_id", Value: bson.M{"$in": innerFilter}},
+			bson.E{Key: "org_id", Value: orgID},
+			bson.E{Key: "app_id", Value: appID},
+			bson.E{Key: "user_id", Value: bson.M{"$in": innerFilter}},
 		}
 
 		var users []model.User
@@ -386,9 +387,9 @@ func (sa Adapter) GetFirebaseTokensByRecipients(orgID string, appID string, reci
 func (sa Adapter) GetUsersByTopicWithContext(ctx context.Context, orgID string, appID string, topic string) ([]model.User, error) {
 	if len(topic) > 0 {
 		filter := bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "topics", Value: topic},
+			bson.E{Key: "org_id", Value: orgID},
+			bson.E{Key: "app_id", Value: appID},
+			bson.E{Key: "topics", Value: topic},
 		}
 
 		var tokenMappings []model.User
@@ -417,10 +418,10 @@ func (sa Adapter) GetUsersByRecipientCriteriasWithContext(ctx context.Context, o
 
 		for _, criteria := range recipientCriterias {
 			if criteria.AppVersion != nil && len(*criteria.AppVersion) > 0 {
-				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "firebase_tokens.app_version", Value: criteria.AppVersion}})
+				innerFilter = append(innerFilter, bson.D{bson.E{Key: "firebase_tokens.app_version", Value: criteria.AppVersion}})
 			}
 			if criteria.AppPlatform != nil && len(*criteria.AppPlatform) > 0 {
-				innerFilter = append(innerFilter, bson.D{primitive.E{Key: "firebase_tokens.app_platform", Value: criteria.AppPlatform}})
+				innerFilter = append(innerFilter, bson.D{bson.E{Key: "firebase_tokens.app_platform", Value: criteria.AppPlatform}})
 			}
 		}
 
@@ -429,9 +430,9 @@ func (sa Adapter) GetUsersByRecipientCriteriasWithContext(ctx context.Context, o
 		}
 
 		filter := bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "$or", Value: innerFilter},
+			bson.E{Key: "org_id", Value: orgID},
+			bson.E{Key: "app_id", Value: appID},
+			bson.E{Key: "$or", Value: innerFilter},
 		}
 
 		err := sa.db.users.FindWithContext(ctx, filter, &users, nil)
@@ -448,18 +449,18 @@ func (sa Adapter) GetUsersByRecipientCriteriasWithContext(ctx context.Context, o
 func (sa Adapter) UpdateUserByID(orgID string, appID string, userID string, notificationsDisabled bool) (*model.User, error) {
 	if userID != "" {
 		filter := bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "user_id", Value: userID},
+			bson.E{Key: "org_id", Value: orgID},
+			bson.E{Key: "app_id", Value: appID},
+			bson.E{Key: "user_id", Value: userID},
 		}
 
 		innerUpdate := bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now().UTC()},
-			primitive.E{Key: "notifications_disabled", Value: notificationsDisabled},
+			bson.E{Key: "date_updated", Value: time.Now().UTC()},
+			bson.E{Key: "notifications_disabled", Value: notificationsDisabled},
 		}
 
 		update := bson.D{
-			primitive.E{Key: "$set", Value: innerUpdate},
+			bson.E{Key: "$set", Value: innerUpdate},
 		}
 
 		_, err := sa.db.users.UpdateOneWithContext(context.Background(), filter, &update, nil)
@@ -477,8 +478,9 @@ func (sa Adapter) UpdateUserByID(orgID string, appID string, userID string, noti
 func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) error {
 	if userID != "" {
 
-		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-			err := sessionContext.StartTransaction()
+		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext context.Context) error {
+			session := mongo.SessionFromContext(sessionContext)
+			err := session.StartTransaction()
 			if err != nil {
 				log.Printf("error starting a transaction - %s", err)
 				abortTransaction(sessionContext)
@@ -510,9 +512,9 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			}
 
 			filter := bson.D{
-				primitive.E{Key: "org_id", Value: orgID},
-				primitive.E{Key: "app_id", Value: appID},
-				primitive.E{Key: "user_id", Value: userID},
+				bson.E{Key: "org_id", Value: orgID},
+				bson.E{Key: "app_id", Value: appID},
+				bson.E{Key: "user_id", Value: userID},
 			}
 			_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
 			if err != nil {
@@ -528,7 +530,7 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 			}
 
 			//commit the transaction
-			err = sessionContext.CommitTransaction(sessionContext)
+			err = session.CommitTransaction(sessionContext)
 			if err != nil {
 				fmt.Println(err)
 				return err
@@ -548,9 +550,9 @@ func (sa Adapter) DeleteUserWithID(orgID string, appID string, userID string) er
 // DeleteUsersWithIDs Deletes users
 func (sa Adapter) DeleteUsersWithIDs(ctx context.Context, orgID string, appID string, accountsIDs []string) error {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
 	}
 
 	_, err := sa.db.users.DeleteManyWithContext(ctx, filter, nil)
@@ -563,9 +565,9 @@ func (sa Adapter) DeleteUsersWithIDs(ctx context.Context, orgID string, appID st
 // GetMessagesStats counts read/unread and muted/unmuted messages
 func (sa *Adapter) GetMessagesStats(orgID string, appID string, userID string) (*model.MessagesStats, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "user_id", Value: userID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "user_id", Value: userID},
 	}
 
 	var data []model.MessageRecipient
@@ -612,15 +614,15 @@ func (sa Adapter) SubscribeToTopic(orgID string, appID string, token string, use
 	if err == nil && record != nil {
 		if err == nil && record != nil && !record.HasTopic(topic) {
 			filter := bson.D{
-				primitive.E{Key: "org_id", Value: orgID},
-				primitive.E{Key: "app_id", Value: appID},
-				primitive.E{Key: "user_id", Value: record.UserID},
+				bson.E{Key: "org_id", Value: orgID},
+				bson.E{Key: "app_id", Value: appID},
+				bson.E{Key: "user_id", Value: record.UserID},
 			}
 			update := bson.D{
-				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+				bson.E{Key: "$set", Value: bson.D{
+					bson.E{Key: "date_updated", Value: time.Now().UTC()},
 				}},
-				primitive.E{Key: "$push", Value: bson.D{primitive.E{Key: "topics", Value: topic}}},
+				bson.E{Key: "$push", Value: bson.D{bson.E{Key: "topics", Value: topic}}},
 			}
 			_, err = sa.db.users.UpdateOne(filter, update, nil)
 			if err == nil {
@@ -641,15 +643,15 @@ func (sa Adapter) UnsubscribeToTopic(orgID string, appID string, token string, u
 	if err == nil && record != nil {
 		if err == nil && record != nil && record.HasTopic(topic) {
 			filter := bson.D{
-				primitive.E{Key: "org_id", Value: orgID},
-				primitive.E{Key: "app_id", Value: appID},
-				primitive.E{Key: "user_id", Value: record.UserID},
+				bson.E{Key: "org_id", Value: orgID},
+				bson.E{Key: "app_id", Value: appID},
+				bson.E{Key: "user_id", Value: record.UserID},
 			}
 			update := bson.D{
-				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+				bson.E{Key: "$set", Value: bson.D{
+					bson.E{Key: "date_updated", Value: time.Now().UTC()},
 				}},
-				primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "topics", Value: topic}}},
+				bson.E{Key: "$pull", Value: bson.D{bson.E{Key: "topics", Value: topic}}},
 			}
 			_, err = sa.db.users.UpdateOne(filter, update, nil)
 			if err == nil {
@@ -667,8 +669,8 @@ func (sa Adapter) UnsubscribeToTopic(orgID string, appID string, token string, u
 // GetTopics gets all topics
 func (sa Adapter) GetTopics(orgID string, appID string) ([]model.Topic, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
 	}
 	var result []model.Topic
 
@@ -684,9 +686,9 @@ func (sa Adapter) GetTopics(orgID string, appID string) ([]model.Topic, error) {
 func (sa Adapter) GetTopicByName(orgID string, appID string, name string) (*model.Topic, error) {
 	if name != "" {
 		filter := bson.D{
-			primitive.E{Key: "org_id", Value: orgID},
-			primitive.E{Key: "app_id", Value: appID},
-			primitive.E{Key: "_id", Value: name},
+			bson.E{Key: "org_id", Value: orgID},
+			bson.E{Key: "app_id", Value: appID},
+			bson.E{Key: "_id", Value: name},
 		}
 		var topic model.Topic
 		err := sa.db.topics.FindOne(filter, &topic, nil)
@@ -719,18 +721,18 @@ func (sa Adapter) InsertTopic(topic *model.Topic) (*model.Topic, error) {
 // UpdateTopic updates a topic (for now only description is updatable)
 func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: topic.OrgID},
-		primitive.E{Key: "app_id", Value: topic.AppID},
-		primitive.E{Key: "_id", Value: topic.Name},
+		bson.E{Key: "org_id", Value: topic.OrgID},
+		bson.E{Key: "app_id", Value: topic.AppID},
+		bson.E{Key: "_id", Value: topic.Name},
 	}
 
 	now := time.Now().UTC()
 	topic.DateUpdated = now
 
 	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "description", Value: topic.Description},
-			primitive.E{Key: "date_updated", Value: topic.DateUpdated},
+		bson.E{Key: "$set", Value: bson.D{
+			bson.E{Key: "description", Value: topic.Description},
+			bson.E{Key: "date_updated", Value: topic.DateUpdated},
 		}},
 	}
 
@@ -746,10 +748,10 @@ func (sa Adapter) UpdateTopic(topic *model.Topic) (*model.Topic, error) {
 // FindMessagesRecipients finds messages recipients
 func (sa Adapter) FindMessagesRecipients(orgID string, appID string, messageID string, userID string) ([]model.MessageRecipient, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "message_id", Value: messageID},
-		primitive.E{Key: "user_id", Value: userID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "message_id", Value: messageID},
+		bson.E{Key: "user_id", Value: userID},
 	}
 
 	var data []model.MessageRecipient
@@ -764,8 +766,8 @@ func (sa Adapter) FindMessagesRecipients(orgID string, appID string, messageID s
 // FindMessagesRecipientsByMessageAndUsers finds messages recipients by message and users
 func (sa Adapter) FindMessagesRecipientsByMessageAndUsers(messageID string, usersIDs []string) ([]model.MessageRecipient, error) {
 	filter := bson.D{
-		primitive.E{Key: "message_id", Value: messageID},
-		primitive.E{Key: "user_id", Value: bson.M{"$in": usersIDs}},
+		bson.E{Key: "message_id", Value: messageID},
+		bson.E{Key: "user_id", Value: bson.M{"$in": usersIDs}},
 	}
 
 	var data []model.MessageRecipient
@@ -780,7 +782,7 @@ func (sa Adapter) FindMessagesRecipientsByMessageAndUsers(messageID string, user
 // FindMessagesRecipientsByMessages finds messages recipients by messages
 func (sa Adapter) FindMessagesRecipientsByMessages(messagesIDs []string) ([]model.MessageRecipient, error) {
 	filter := bson.D{
-		primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}},
+		bson.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}},
 	}
 
 	var data []model.MessageRecipient
@@ -867,12 +869,12 @@ func (sa Adapter) FindMessagesRecipientsDeep(orgID string, appID string, userID 
 	if startDateEpoch != nil {
 		seconds := *startDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"time": bson.D{primitive.E{Key: "$gte", Value: &timeValue}}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"time": bson.D{bson.E{Key: "$gte", Value: &timeValue}}}})
 	}
 	if endDateEpoch != nil {
 		seconds := *endDateEpoch / 1000
 		timeValue := time.Unix(seconds, 0)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{"time": bson.D{primitive.E{Key: "$lte", Value: &timeValue}}}})
+		pipeline = append(pipeline, bson.M{"$match": bson.M{"time": bson.D{bson.E{Key: "$lte", Value: &timeValue}}}})
 	}
 
 	if order != nil && *order == "asc" {
@@ -942,9 +944,9 @@ func (sa Adapter) InsertMessagesRecipientsWithContext(ctx context.Context, items
 // FindMessagesRecipientsByUserID finds messages recipients
 func (sa Adapter) FindMessagesRecipientsByUserID(orgID string, appID string, userID string) ([]model.MessageRecipient, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "user_id", Value: userID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "user_id", Value: userID},
 	}
 
 	var data []model.MessageRecipient
@@ -958,7 +960,7 @@ func (sa Adapter) FindMessagesRecipientsByUserID(orgID string, appID string, use
 
 // DeleteMessagesRecipientsForIDsWithContext deletes messages recipients for ids
 func (sa Adapter) DeleteMessagesRecipientsForIDsWithContext(ctx context.Context, ids []string) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
+	filter := bson.D{bson.E{Key: "_id", Value: bson.M{"$in": ids}}}
 
 	_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
@@ -969,7 +971,7 @@ func (sa Adapter) DeleteMessagesRecipientsForIDsWithContext(ctx context.Context,
 
 // DeleteMessagesRecipientsForMessagesWithContext deletes messages recipients for messages
 func (sa Adapter) DeleteMessagesRecipientsForMessagesWithContext(ctx context.Context, messagesIDs []string) error {
-	filter := bson.D{primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}}}
+	filter := bson.D{bson.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}}}
 
 	_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
@@ -981,9 +983,9 @@ func (sa Adapter) DeleteMessagesRecipientsForMessagesWithContext(ctx context.Con
 // DeleteMessagesRecipientsForUsers deletes messages recipients for users
 func (sa Adapter) DeleteMessagesRecipientsForUsers(ctx context.Context, orgID string, appID string, accountsIDs []string) error {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
 	}
 
 	_, err := sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
@@ -995,7 +997,7 @@ func (sa Adapter) DeleteMessagesRecipientsForUsers(ctx context.Context, orgID st
 
 // FindMessagesWithContext finds messages by ids using context
 func (sa Adapter) FindMessagesWithContext(ctx context.Context, ids []string) ([]model.Message, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
+	filter := bson.D{bson.E{Key: "_id", Value: bson.M{"$in": ids}}}
 
 	var messageArr []model.Message
 	err := sa.db.messages.FindWithContext(ctx, filter, &messageArr, nil)
@@ -1009,13 +1011,13 @@ func (sa Adapter) FindMessagesWithContext(ctx context.Context, ids []string) ([]
 // FindMessagesByParams finds messages by params
 func (sa Adapter) FindMessagesByParams(orgID string, appID string, senderType string, senderAccountID *string, offset *int64, limit *int64, order *string) ([]model.Message, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "sender.type", Value: senderType},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "sender.type", Value: senderType},
 	}
 	//sender account id
 	if senderAccountID != nil {
-		filter = append(filter, primitive.E{Key: "sender.user.user_id", Value: *senderAccountID})
+		filter = append(filter, bson.E{Key: "sender.user.user_id", Value: *senderAccountID})
 	}
 
 	findOptions := options.Find()
@@ -1035,7 +1037,7 @@ func (sa Adapter) FindMessagesByParams(orgID string, appID string, senderType st
 	if order != nil && *order == "desc" {
 		sortValue = 1
 	}
-	findOptions.SetSort(bson.D{primitive.E{Key: "date_created", Value: sortValue}})
+	findOptions.SetSort(bson.D{bson.E{Key: "date_created", Value: sortValue}})
 
 	var messages []model.Message
 	err := sa.db.messages.Find(filter, &messages, findOptions)
@@ -1049,9 +1051,9 @@ func (sa Adapter) FindMessagesByParams(orgID string, appID string, senderType st
 // GetMessage gets a message by id
 func (sa Adapter) GetMessage(orgID string, appID string, ID string) (*model.Message, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "_id", Value: ID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "_id", Value: ID},
 	}
 
 	var message *model.Message
@@ -1110,18 +1112,18 @@ func (sa Adapter) UpdateMessage(message *model.Message) (*model.Message, error) 
 		}
 
 		filter := bson.D{
-			primitive.E{Key: "org_id", Value: message.OrgID},
-			primitive.E{Key: "app_id", Value: message.AppID},
-			primitive.E{Key: "_id", Value: message.ID},
+			bson.E{Key: "org_id", Value: message.OrgID},
+			bson.E{Key: "app_id", Value: message.AppID},
+			bson.E{Key: "_id", Value: message.ID},
 		}
 
 		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "priority", Value: message.Priority},
-				primitive.E{Key: "topic", Value: message.Topic},
-				primitive.E{Key: "subject", Value: message.Subject},
-				primitive.E{Key: "body", Value: message.Body},
-				primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+			bson.E{Key: "$set", Value: bson.D{
+				bson.E{Key: "priority", Value: message.Priority},
+				bson.E{Key: "topic", Value: message.Topic},
+				bson.E{Key: "subject", Value: message.Subject},
+				bson.E{Key: "body", Value: message.Body},
+				bson.E{Key: "date_updated", Value: time.Now().UTC()},
 			}},
 		}
 
@@ -1147,10 +1149,10 @@ func (sa Adapter) DeleteUserMessageWithContext(ctx context.Context, orgID string
 
 	//remove the messages recipients records
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "message_id", Value: messageID},
-		primitive.E{Key: "user_id", Value: userID}}
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "message_id", Value: messageID},
+		bson.E{Key: "user_id", Value: userID}}
 
 	_, err = sa.db.messagesRecipients.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
@@ -1166,7 +1168,7 @@ func (sa Adapter) DeleteMessagesWithContext(ctx context.Context, ids []string) e
 		ctx = context.Background()
 	}
 
-	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
+	filter := bson.D{bson.E{Key: "_id", Value: bson.M{"$in": ids}}}
 	_, err := sa.db.messages.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
 		fmt.Printf("warning: error while delete messages - %s", err)
@@ -1179,13 +1181,13 @@ func (sa Adapter) DeleteMessagesWithContext(ctx context.Context, ids []string) e
 // UpdateUnreadMessage updates a unread message in the recipients to read
 func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID string, ID string, userID string) (*model.Message, error) {
 	read := true
-	filter := bson.D{primitive.E{Key: "message_id", Value: ID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "user_id", Value: userID}}
+	filter := bson.D{bson.E{Key: "message_id", Value: ID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "user_id", Value: userID}}
 	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "read", Value: read},
+		bson.E{Key: "$set", Value: bson.D{
+			bson.E{Key: "read", Value: read},
 		}},
 	}
 	_, err := sa.db.messagesRecipients.UpdateOneWithContext(ctx, filter, update, nil)
@@ -1199,12 +1201,12 @@ func (sa Adapter) UpdateUnreadMessage(ctx context.Context, orgID string, appID s
 // UpdateAllUserMessagesRead Update all user messages as read or as unread
 func (sa Adapter) UpdateAllUserMessagesRead(ctx context.Context, orgID string, appID string, userID string, read bool) error {
 	filter := bson.D{
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "user_id", Value: userID}}
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "user_id", Value: userID}}
 	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "read", Value: read},
+		bson.E{Key: "$set", Value: bson.D{
+			bson.E{Key: "read", Value: read},
 		}},
 	}
 	_, err := sa.db.messagesRecipients.UpdateManyWithContext(ctx, filter, update, nil)
@@ -1218,8 +1220,8 @@ func (sa Adapter) UpdateAllUserMessagesRead(ctx context.Context, orgID string, a
 // GetAllAppVersions gets all registered versions
 func (sa Adapter) GetAllAppVersions(orgID string, appID string) ([]model.AppVersion, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
 	}
 
 	var versions []model.AppVersion
@@ -1234,8 +1236,8 @@ func (sa Adapter) GetAllAppVersions(orgID string, appID string) ([]model.AppVers
 // GetAllAppPlatforms gets all registered platforms
 func (sa Adapter) GetAllAppPlatforms(orgID string, appID string) ([]model.AppPlatform, error) {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
 	}
 
 	var platforms []model.AppPlatform
@@ -1290,7 +1292,7 @@ func (sa Adapter) LoadQueueWithContext(ctx context.Context) (*model.Queue, error
 
 // SaveQueueWithContext saves queue with context
 func (sa *Adapter) SaveQueueWithContext(ctx context.Context, queue model.Queue) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: queue.ID}}
+	filter := bson.D{bson.E{Key: "_id", Value: queue.ID}}
 	err := sa.db.queue.ReplaceOneWithContext(ctx, filter, queue, nil)
 	if err != nil {
 		return errors.WrapErrorAction(logutils.ActionUpdate, "queue", &logutils.FieldArgs{"_id": queue.ID}, err)
@@ -1300,7 +1302,7 @@ func (sa *Adapter) SaveQueueWithContext(ctx context.Context, queue model.Queue) 
 
 // SaveQueue saves queue
 func (sa *Adapter) SaveQueue(queue model.Queue) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: queue.ID}}
+	filter := bson.D{bson.E{Key: "_id", Value: queue.ID}}
 	err := sa.db.queue.ReplaceOne(filter, queue, nil)
 	if err != nil {
 		return errors.WrapErrorAction(logutils.ActionUpdate, "queue", &logutils.FieldArgs{"_id": queue.ID}, err)
@@ -1314,7 +1316,7 @@ func (sa *Adapter) FindQueueData(time *time.Time, limit int) ([]model.QueueItem,
 
 	//time
 	if time != nil {
-		filter = append(filter, primitive.E{Key: "time", Value: bson.M{"$lte": time}})
+		filter = append(filter, bson.E{Key: "time", Value: bson.M{"$lte": time}})
 	}
 
 	//set limit
@@ -1322,7 +1324,7 @@ func (sa *Adapter) FindQueueData(time *time.Time, limit int) ([]model.QueueItem,
 	findOptions.SetLimit(int64(limit))
 
 	//set sort
-	findOptions.SetSort(bson.D{primitive.E{Key: "time", Value: 1}, primitive.E{Key: "priority", Value: 1}})
+	findOptions.SetSort(bson.D{bson.E{Key: "time", Value: 1}, bson.E{Key: "priority", Value: 1}})
 
 	var result []model.QueueItem
 	err := sa.db.queueData.Find(filter, &result, findOptions)
@@ -1334,7 +1336,7 @@ func (sa *Adapter) FindQueueData(time *time.Time, limit int) ([]model.QueueItem,
 
 // DeleteQueueData removes queue data
 func (sa *Adapter) DeleteQueueData(ids []string) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: bson.M{"$in": ids}}}
+	filter := bson.D{bson.E{Key: "_id", Value: bson.M{"$in": ids}}}
 	_, err := sa.db.queueData.DeleteMany(filter, nil)
 	if err != nil {
 		return errors.WrapErrorAction(logutils.ActionDelete, "queue data", &logutils.FieldArgs{"ids": ids}, err)
@@ -1344,7 +1346,7 @@ func (sa *Adapter) DeleteQueueData(ids []string) error {
 
 // DeleteQueueDataForMessagesWithContext removes queue data items for messages
 func (sa *Adapter) DeleteQueueDataForMessagesWithContext(ctx context.Context, messagesIDs []string) error {
-	filter := bson.D{primitive.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}}}
+	filter := bson.D{bson.E{Key: "message_id", Value: bson.M{"$in": messagesIDs}}}
 
 	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
@@ -1355,7 +1357,7 @@ func (sa *Adapter) DeleteQueueDataForMessagesWithContext(ctx context.Context, me
 
 // DeleteQueueDataForRecipientsWithContext removes queue data items for recepients
 func (sa *Adapter) DeleteQueueDataForRecipientsWithContext(ctx context.Context, recipientsIDs []string) error {
-	filter := bson.D{primitive.E{Key: "message_recipient_id", Value: bson.M{"$in": recipientsIDs}}}
+	filter := bson.D{bson.E{Key: "message_recipient_id", Value: bson.M{"$in": recipientsIDs}}}
 
 	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
 	if err != nil {
@@ -1367,9 +1369,9 @@ func (sa *Adapter) DeleteQueueDataForRecipientsWithContext(ctx context.Context, 
 // DeleteQueueDataForUsers removes queue data items for users
 func (sa *Adapter) DeleteQueueDataForUsers(ctx context.Context, orgID string, appID string, accountsIDs []string) error {
 	filter := bson.D{
-		primitive.E{Key: "org_id", Value: orgID},
-		primitive.E{Key: "app_id", Value: appID},
-		primitive.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
+		bson.E{Key: "org_id", Value: orgID},
+		bson.E{Key: "app_id", Value: appID},
+		bson.E{Key: "user_id", Value: bson.M{"$in": accountsIDs}},
 	}
 
 	_, err := sa.db.queueData.DeleteManyWithContext(ctx, filter, nil)
@@ -1382,7 +1384,7 @@ func (sa *Adapter) DeleteQueueDataForUsers(ctx context.Context, orgID string, ap
 // FindQueueDataByUserID gets all queue data by userID
 func (sa Adapter) FindQueueDataByUserID(userID string) ([]model.QueueItem, error) {
 	filter := bson.D{
-		primitive.E{Key: "user_id", Value: userID},
+		bson.E{Key: "user_id", Value: userID},
 	}
 
 	var queue []model.QueueItem
@@ -1394,15 +1396,15 @@ func (sa Adapter) FindQueueDataByUserID(userID string) ([]model.QueueItem, error
 	return queue, nil
 }
 
-func abortTransaction(sessionContext mongo.SessionContext) {
-	err := sessionContext.AbortTransaction(sessionContext)
+func abortTransaction(sessionContext context.Context) {
+	err := mongo.SessionFromContext(sessionContext).AbortTransaction(sessionContext)
 	if err != nil {
 		log.Printf("error on aborting a transaction - %s", err)
 	}
 }
 
-func (sa *Adapter) abortTransaction(sessionContext mongo.SessionContext) {
-	err := sessionContext.AbortTransaction(sessionContext)
+func (sa *Adapter) abortTransaction(sessionContext context.Context) {
+	err := mongo.SessionFromContext(sessionContext).AbortTransaction(sessionContext)
 	if err != nil {
 		log.Printf("error aborting a transaction - %s", err)
 	}
@@ -1414,6 +1416,4 @@ type Listener interface {
 }
 
 // TransactionContext represents storage transaction interface
-type TransactionContext interface {
-	mongo.SessionContext
-}
+type TransactionContext = context.Context
