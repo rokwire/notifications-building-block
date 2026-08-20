@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.29.0] - 2026-08-20
 ### Changed
 - Migrate to latest v2 mongo driver [#215](https://github.com/rokwire/notifications-building-block/issues/215)
 
