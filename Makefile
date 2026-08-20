@@ -89,7 +89,7 @@ fixfmt: vendor ; $(info $(M) fixing formatting...) @ ## Run gofmt to fix formatt
 
 .PHONY: vuln
 vuln: tools ; $(info $(M) running govulncheck...) @ ## Run govulncheck
-	$Q cd $(CURDIR) && $(GOVULN) ./...
+	$Q cd $(CURDIR) && GOMEMLIMIT=2200MiB $(GOVULN) ./...
 
 # Misc
 
